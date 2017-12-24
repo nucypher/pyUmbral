@@ -94,3 +94,19 @@ class BigNum(object):
             inv = backend._ffi.gc(inv, backend._lib.BN_free)
 
         return BigNum(inv, self.curve_nid, self.group, self.order)
+
+    def __add__(self, other):
+        """
+        Performs a BN_mod_add on two BIGNUMs.
+        """
+        sum = backend._lib.BN_new()
+        backend.openssl_assert(sum != backend._ffi.NULL)
+        sum = backend._ffi.gc(sum, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_add(
+                sum, self.bignum, other.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return BigNum(sum, self.curve_nid, self.group, self.order)

@@ -110,3 +110,19 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(sum, self.curve_nid, self.group, self.order)
+
+    def __sub__(self, other):
+        """
+        Performs a BN_mod_sub on two BIGNUMS.
+        """
+        diff = backend._lib.BN_new()
+        backend.openssl_assert(diff != backend._ffi.NULL)
+        diff = backend._ffi.gc(diff, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_sub(
+                diff, self.bignum, other.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return BigNum(diff, self.curve_nid, self.group, self.order)

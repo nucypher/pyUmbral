@@ -7,11 +7,11 @@ class BigNum(object):
     Represents an OpenSSL BIGNUM except more Pythonic
     """
 
-    def __init__(self, bignum, curve_nid, curve_group, curve_order):
+    def __init__(self, bignum, curve_nid, group, order):
         self.bignum = bignum
         self.curve_nid = curve_nid
-        self.curve_group = curve_group
-        self.curve_order = curve_order
+        self.group = group
+        self.order = order
 
     @classmethod
     def gen_rand(cls, curve):
@@ -45,4 +45,23 @@ class BigNum(object):
         return BigNum(new_rand_bn, curve_nid, group, order)
 
     def __int__(self):
+        """
+        Converts the BigNum to a Python int.
+        """
         return backend._bn_to_int(self.bignum)
+
+    def __mul__(self, other):
+        """
+        Performs a BN_MOD_MUL between two BIGNUMS.
+        """
+        product = backend._lib.BN_new()
+        backend.openssl_assert(product != backend._ffi.NULL)
+        product = backend._ffi.gc(product, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_mul(
+                product, self.bignum, other.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return BigNum(product, self.curve_nid, self.group, self.order)

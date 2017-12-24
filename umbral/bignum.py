@@ -52,7 +52,7 @@ class BigNum(object):
 
     def __mul__(self, other):
         """
-        Performs a BN_MOD_MUL between two BIGNUMS.
+        Performs a BN_mod_mul between two BIGNUMS.
         """
         product = backend._lib.BN_new()
         backend.openssl_assert(product != backend._ffi.NULL)
@@ -65,3 +65,19 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(product, self.curve_nid, self.group, self.order)
+
+    def __div__(self, other):
+        """
+        Performs a BN_div on two BIGNUMs.
+        """
+        quotient = backend._lib.BN_new()
+        backend.openssl_assert(quotient != backend._ffi.NULL)
+        quotient = backend._ffi.gc(quotient, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_div(
+                quotient, backend._ffi.NULL, self.bignum, other.bignum, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return BigNum(quotient, self.curve_nid, self.group, self.order)

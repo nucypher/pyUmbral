@@ -81,3 +81,16 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(quotient, self.curve_nid, self.group, self.order)
+
+    def __inv__(self):
+        """
+        Performs a BN_mod_inverse.
+        """
+        with backend._tmp_bn_ctx() as bn_ctx:
+            inv = backend._lib.BN_mod_inverse(
+                backend._ffi.NULL, self.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(inv != backend._ffi.NULL)
+            inv = backend._ffi.gc(inv, backend._lib.BN_free)
+
+        return BigNum(inv, self.curve_nid, self.group, self.order)

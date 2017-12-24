@@ -44,6 +44,34 @@ class BigNum(object):
 
         return BigNum(new_rand_bn, curve_nid, group, order)
 
+    @classmethod
+    def from_int(cls, num, curve):
+        """
+        Returns a BigNum object from a given integer on a curve.
+        """
+        curve_nid = backend._elliptic_curve_to_nid(curve)
+
+        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
+        backend.openssl_assert(group != backend._ffi.NULL)
+
+        order = backend._lib.BN_new()
+        backend.openssl_assert(order != backend._ffi.NULL)
+        order = backend._ffi.gc(order, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
+            backend.openssl_assert(res == 1)
+
+        order_int = int(order)
+        if num <= 0 or num >= order_int:
+            # TODO: Handle this better maybe? Ask David.
+            raise ValueError("Integer provided is not on the given curve.")
+
+        bignum = backend._int_to_bn(num)
+        backend._ffi.gc(bignum, backend._lib.BN_free)
+
+        return BigNum(bignum, curve_nid, group, order)
+
     def __int__(self):
         """
         Converts the BigNum to a Python int.

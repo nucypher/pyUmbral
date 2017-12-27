@@ -108,6 +108,12 @@ class Point(object):
 
         return Point(sum, self.curve_nid, self.group)
 
+    def __sub__(self, other):
+        """
+        Performs subtraction by adding the inverse of the `other` to the point.
+        """
+        return (self + (~other))
+
     def __invert__(self):
         """
         Performs an EC_POINT_invert on itself.

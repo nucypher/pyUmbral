@@ -75,6 +75,25 @@ class Point(object):
 
         return Point(ec_point, curve_nid, group)
 
+    @classmethod
+    def get_generator_from_curve(cls, curve):
+        """
+        Returns a generator Point from the given curve.
+        """
+        try:
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        except AttributeError:
+            # Presume that the user passed in the curve_nid
+            curve_nid = curve
+
+        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
+        backend.openssl_assert(group != backend._ffi.NULL)
+
+        generator = backend._lib.EC_GROUP_get0_generator(group)
+        backend.openssl_assert(generator != backend._ffi.NULL)
+
+        return Point(generator, curve_nid, group)
+
     def __eq__(self, other):
         """
         Compares two EC_POINTS for equality.

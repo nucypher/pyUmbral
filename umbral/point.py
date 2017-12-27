@@ -91,3 +91,19 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return Point(prod, self.curve_nid, self.group)
+
+    def __add__(self, other):
+        """
+        Performs an EC_POINT_add on two EC_POINTS.
+        """
+        sum = backend._lib.EC_POINT_new(self.group)
+        backend.openssl_assert(sum != backend._ffi.NULL)
+        sum = backend._ffi.gc(sum, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_add(
+                self.group, sum, self.ec_point, other.ec_point, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return Point(sum, self.curve_nid, self.group)

@@ -210,7 +210,9 @@ class BigNum(object):
         rem = backend._ffi.gc(rem, backend._lib.BN_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.BN_nnmod(rem, self.bignum, other.bignum, bn_ctx)
+            res = backend._lib.BN_nnmod(
+                rem, self.bignum, other.bignum, bn_ctx
+            )
             backend.openssl_assert(res == 1)
 
         return BigNum(rem, self.curve_nid, self.group, self.order)

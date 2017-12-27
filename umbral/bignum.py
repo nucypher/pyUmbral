@@ -155,3 +155,20 @@ class BigNum(object):
             inv = backend._ffi.gc(inv, backend._lib.BN_free)
 
         return BigNum(inv, self.curve_nid, self.group, self.order)
+
+    def __mod__(self, other):
+        """
+        Performs a BN_nnmod on two BIGNUMS.
+        """
+        if type(other) == int:
+            other = BigNum.from_int(int, self.curve)
+
+        rem = backend._lib.BN_new()
+        backend.openssl_assert(rem != backend._ffi.NULL)
+        rem = backend._ffi.gc(rem, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_nnmod(rem, self.bignum, other.bignum, bn_ctx)
+            backend.openssl_assert(res == 1)
+
+        return BigNum(rem, self.curve_nid, self.group, self.order)

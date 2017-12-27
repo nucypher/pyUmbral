@@ -50,7 +50,11 @@ class BigNum(object):
         """
         Returns a BigNum object from a given integer on a curve.
         """
-        curve_nid = backend._elliptic_curve_to_nid(curve)
+        try:
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        except AttributeError:
+            # Presume that the user passed in the curve_nid
+            curve_nid = curve
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
@@ -63,7 +67,7 @@ class BigNum(object):
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
             backend.openssl_assert(res == 1)
 
-        order_int = int(order)
+        order_int = backend._bn_to_int(order)
         if num <= 0 or num >= order_int:
             # TODO: Handle this better maybe? Ask David.
             raise ValueError("Integer provided is not on the given curve.")
@@ -78,6 +82,28 @@ class BigNum(object):
         Converts the BigNum to a Python int.
         """
         return backend._bn_to_int(self.bignum)
+
+    def __pow__(self, other):
+        """
+        Performs a BN_mod_exp on two BIGNUMS.
+        """
+        if type(other) == int:
+            other = backend._int_to_bn(other)
+            other = backend._ffi.gc(other, backend._lib.BN_free)
+
+            other = BigNum(other, None, None, None)
+
+        power = backend._lib.BN_new()
+        backend.openssl_assert(power != backend._ffi.NULL)
+        power = backend._ffi.gc(power, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_exp(
+                power, self.bignum, other.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return BigNum(power, self.curve_nid, self.group, self.order)
 
     def __mul__(self, other):
         """
@@ -161,7 +187,10 @@ class BigNum(object):
         Performs a BN_nnmod on two BIGNUMS.
         """
         if type(other) == int:
-            other = BigNum.from_int(int, self.curve)
+            other = backend._int_to_bn(other)
+            other = backend._ffi.gc(other, backend._lib.BN_free)
+
+            other = BigNum(other, None, None, None)
 
         rem = backend._lib.BN_new()
         backend.openssl_assert(rem != backend._ffi.NULL)

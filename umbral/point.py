@@ -11,7 +11,6 @@ class Point(object):
         self.ec_point = ec_point
         self.curve_nid = curve_nid
         self.group = group
-        self.generator = generator
 
     @classmethod
     def gen_rand(cls, curve):
@@ -39,10 +38,39 @@ class Point(object):
             )
             backend.openssl_assert(res == 1)
 
-            on_curve = backend._lib.EC_POINT_is_on_curve(
-                group, rand_point, bn_ctx
-            )
-            if on_curve != 1:
-                raise ValueError("Generated point is not on curve.")
+        return Point(rand_point, curve_nid, group)
 
-        return Point(rand_point, curve_nid, group, generator)
+    @classmethod
+    def from_affine(cls, coords, curve):
+        """
+        Returns a Point object from the given affine coordinates in a tuple in
+        the format of (x, y) and a given curve.
+        """
+        try:
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        except AttributeError:
+            # Presume that the user passed in the curve_nid
+            curve_nid = curve
+
+        affine_x, affine_y = coords
+        if type(affine_x) == int:
+            affine_x = backend._int_to_bn(affine_x)
+            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+
+        if type(affine_y) == int:
+            affine_y = backend._int_to_bn(affine_y)
+            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+
+        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
+        backend.openssl_assert(group != backend._ffi.NULL)
+
+        ec_point = backend._lib.EC_POINT_new(group)
+        backend.openssl_assert(ec_point != backend._ffi.NULL)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_set_affine_coordinates_GFp(
+                group, ec_point, affine_x, affine_y, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return Point(ec_point, curve_nid, group)

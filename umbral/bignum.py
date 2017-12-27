@@ -83,6 +83,19 @@ class BigNum(object):
         """
         return backend._bn_to_int(self.bignum)
 
+    def __eq__(self, other):
+        """
+        Compares the two BIGNUMS or int.
+        """
+        if type(other) == int:
+            other = backend._int_to_bn(other)
+            other = backend._ffi.gc(other, backend._lib.BN_free)
+
+            other = BigNum(other, None, None, None)
+
+        # -1 less than, 0 is equal to, 1 is greater than
+        return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
+
     def __pow__(self, other):
         """
         Performs a BN_mod_exp on two BIGNUMS.

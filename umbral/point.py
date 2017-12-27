@@ -75,6 +75,19 @@ class Point(object):
 
         return Point(ec_point, curve_nid, group)
 
+    def __eq__(self, other):
+        """
+        Compares two EC_POINTS for equality.
+        """
+        with backend._tmp_bn_ctx() as bn_ctx:
+            is_equal = backend._lib.EC_POINT_cmp(
+                self.group, self.ec_point, other.ec_point, bn_ctx
+            )
+            backend.openssl_assert(is_equal != -1)
+
+        # 1 is not-equal, 0 is equal, -1 is error
+        return not bool(is_equal)
+
     def __mul__(self, other):
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.

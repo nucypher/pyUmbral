@@ -107,3 +107,19 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return Point(sum, self.curve_nid, self.group)
+
+    def __invert__(self):
+        """
+        Performs an EC_POINT_invert on itself.
+        """
+        inv = backend._lib.EC_POINT_dup(self.ec_point, self.group)
+        backend.openssl_assert(inv != backend._ffi.NULL)
+        inv = backend._ffi.gc(inv, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_invert(
+                self.group, inv, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return Point(inv, self.curve_nid, self.group)

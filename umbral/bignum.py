@@ -136,19 +136,24 @@ class BigNum(object):
 
     def __truediv__(self, other):
         """
-        Performs a BN_div on two BIGNUMs.
+        Performs a BN_div on two BIGNUMs (modulo the order of the curve).
         """
-        quotient = backend._lib.BN_new()
-        backend.openssl_assert(quotient != backend._ffi.NULL)
-        quotient = backend._ffi.gc(quotient, backend._lib.BN_free)
+        product = backend._lib.BN_new()
+        backend.openssl_assert(product != backend._ffi.NULL)
+        product = backend._ffi.gc(product, backend._lib.BN_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.BN_div(
-                quotient, backend._ffi.NULL, self.bignum, other.bignum, bn_ctx
+            inv_other = backend._lib.BN_mod_inverse(
+                backend._ffi.NULL, other.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(inv_other != backend._ffi.NULL)
+
+            res = backend._lib.BN_mod_mul(
+                product, self.bignum, inv_other, self.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(quotient, self.curve_nid, self.group, self.order)
+        return BigNum(product, self.curve_nid, self.group, self.order)
 
     def __add__(self, other):
         """

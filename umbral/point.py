@@ -7,7 +7,7 @@ class Point(object):
     Represents an OpenSSL EC_POINT except more Pythonic
     """
 
-    def __init__(self, ec_point, curve_nid, group, generator):
+    def __init__(self, ec_point, curve_nid, group):
         self.ec_point = ec_point
         self.curve_nid = curve_nid
         self.group = group
@@ -74,3 +74,20 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return Point(ec_point, curve_nid, group)
+
+    def __mul__(self, other):
+        """
+        Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
+        """
+        prod = backend._lib.EC_POINT_new(self.group)
+        backend.openssl_assert(prod != backend._ffi.NULL)
+        prod = backend._ffi.gc(prod, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_mul(
+                self.group, prod, backend._ffi.NULL, self.ec_point,
+                other.bignum, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return Point(prod, self.curve_nid, self.group)

@@ -78,7 +78,7 @@ class Point(object):
     @classmethod
     def get_generator_from_curve(cls, curve):
         """
-        Returns a generator Point from the given curve.
+        Returns the generator Point from the given curve as a Point object.
         """
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
@@ -93,6 +93,30 @@ class Point(object):
         backend.openssl_assert(generator != backend._ffi.NULL)
 
         return Point(generator, curve_nid, group)
+
+    @classmethod
+    def get_order_from_curve(cls, curve):
+        """
+        Returns the order from the given curve as a BigNum.
+        """
+        try:
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        except AttributeError:
+            # Presume that the user passed in the curve_nid
+            curve_nid = curve
+
+        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
+        backend.openssl_assert(group != backend._ffi.NULL)
+
+        order = backend._lib.BN_new()
+        backend.openssl_assert(order != backend._ffi.NULL)
+        order = backend._ffi.gc(order, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
+            backend.openssl_assert(res == 1)
+
+        return BigNum(order, curve_nid, group, order)
 
     def __eq__(self, other):
         """

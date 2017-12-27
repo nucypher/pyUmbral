@@ -35,6 +35,7 @@ class BigNum(object):
         order_int = backend._bn_to_int(order)
 
         # Generate random number on curve
+        # TODO: Can we utilize a better way to do this via OpenSSL or crypto.io?
         rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
         while rand_num >= order_int or rand_num <= 0:
             rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
@@ -94,7 +95,7 @@ class BigNum(object):
 
         return BigNum(product, self.curve_nid, self.group, self.order)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         """
         Performs a BN_div on two BIGNUMs.
         """
@@ -109,19 +110,6 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(quotient, self.curve_nid, self.group, self.order)
-
-    def __inv__(self):
-        """
-        Performs a BN_mod_inverse.
-        """
-        with backend._tmp_bn_ctx() as bn_ctx:
-            inv = backend._lib.BN_mod_inverse(
-                backend._ffi.NULL, self.bignum, self.order, bn_ctx
-            )
-            backend.openssl_assert(inv != backend._ffi.NULL)
-            inv = backend._ffi.gc(inv, backend._lib.BN_free)
-
-        return BigNum(inv, self.curve_nid, self.group, self.order)
 
     def __add__(self, other):
         """
@@ -154,3 +142,16 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(diff, self.curve_nid, self.group, self.order)
+
+    def __invert__(self):
+        """
+        Performs a BN_mod_inverse.
+        """
+        with backend._tmp_bn_ctx() as bn_ctx:
+            inv = backend._lib.BN_mod_inverse(
+                backend._ffi.NULL, self.bignum, self.order, bn_ctx
+            )
+            backend.openssl_assert(inv != backend._ffi.NULL)
+            inv = backend._ffi.gc(inv, backend._lib.BN_free)
+
+        return BigNum(inv, self.curve_nid, self.group, self.order)

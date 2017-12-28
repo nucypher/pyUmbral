@@ -95,6 +95,27 @@ class Point(object):
             backend.openssl_assert(res == 1)
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
+    def to_bytes(self, is_compressed=True):
+        """
+        Returns the Point serialized as bytes. It will return a compressed form
+        if is_compressed is set to True.
+        """
+        affine_x, affine_y = self.to_affine()
+
+        # Get size of curve via order
+        order = Point.get_order_from_curve(self.curve_nid)
+        key_size = backend._lib.BN_num_bytes(order.bignum)
+
+        if is_compressed:
+            data = int.to_bytes(affine_y & 1, 1, 'big')
+            data += int.to_bytes(affine_x, key_size, 'big')
+        else:
+            data = b'\x04'
+            data += int.to_bytes(affine_x, key_size, 'big')
+            data += int.to_bytes(affine_y, key_size, 'big')
+
+        return data
+
     @classmethod
     def get_generator_from_curve(cls, curve):
         """
@@ -205,9 +226,3 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return Point(inv, self.curve_nid, self.group)
-
-    def to_bytes(self):
-        (x, y) = self.to_affine()
-        data = x.to_bytes(32, byteorder='big')
-        data = data + y.to_bytes(32, byteorder='big')
-        return data

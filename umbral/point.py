@@ -95,6 +95,45 @@ class Point(object):
             backend.openssl_assert(res == 1)
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
+    @classmethod
+    def from_bytes(self, data, curve):
+        """
+        Returns a Point object from the given byte data on the curve provided.
+        """
+        try:
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        except AttributeError:
+            # Presume that the user passed in the curve_nid
+            curve_nid = curve
+
+        # Check if compressed
+        if data[0] in [0, 1]:
+            type_y = data[0]
+            affine_x = BigNum.from_bytes(data[1:], curve)
+
+            ec_point = backend._lib.EC_POINT_new(affine_x.group)
+            backend.openssl_assert(ec_point != backend._ffi.NULL)
+            ec_point = backend._ffi.gc(ec_point, backend._lib.EC_POINT_free)
+
+            with backend._tmp_bn_ctx() as bn_ctx:
+                res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
+                    affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
+                )
+                backend.openssl_assert(res == 1)
+
+            return Point(ec_point, curve_nid, affine_x.group)
+
+        # Handle uncompressed point
+        elif data[0] == 4:
+            # Get size of curve via order
+            order = Point.get_order_from_curve(curve)
+            key_size = backend._lib.BN_num_bytes(order.bignum)
+
+            affine_x = int.from_bytes(data[1:key_size+1], 'big')
+            affine_y = int.from_bytes(data[1+key_size:], 'big')
+
+            return Point.from_affine((affine_x, affine_y), curve)
+
     def to_bytes(self, is_compressed=True):
         """
         Returns the Point serialized as bytes. It will return a compressed form

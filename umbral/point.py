@@ -109,6 +109,10 @@ class Point(object):
         # Check if compressed
         if data[0] in [0, 1]:
             type_y = data[0]
+
+            if len(data[1:]) > curve.key_size // 8:
+                raise ValueError("X coordinate too large for curve.")
+
             affine_x = BigNum.from_bytes(data[1:], curve)
 
             ec_point = backend._lib.EC_POINT_new(affine_x.group)
@@ -125,10 +129,7 @@ class Point(object):
 
         # Handle uncompressed point
         elif data[0] == 4:
-            # Get size of curve via order
-            order = Point.get_order_from_curve(curve)
-            key_size = backend._lib.BN_num_bytes(order.bignum)
-
+            key_size = curve.key_size // 8
             affine_x = int.from_bytes(data[1:key_size+1], 'big')
             affine_y = int.from_bytes(data[1+key_size:], 'big')
 

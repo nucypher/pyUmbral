@@ -75,6 +75,26 @@ class Point(object):
 
         return Point(ec_point, curve_nid, group)
 
+    def to_affine(self):
+        """
+        Returns a tuple of Python ints in the format of (x, y) that represents
+        the point in the curve.
+        """
+        affine_x = backend._lib.BN_new()
+        backend.openssl_assert(affine_x != backend._ffi.NULL)
+        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+
+        affine_y = backend._lib.BN_new()
+        backend.openssl_assert(affine_y != backend._ffi.NULL)
+        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_get_affine_coordinates_GFp(
+                self.group, self.ec_point, affine_x, affine_y, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+        return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
+
     @classmethod
     def get_generator_from_curve(cls, curve):
         """
@@ -186,25 +206,8 @@ class Point(object):
 
         return Point(inv, self.curve_nid, self.group)
 
-    def to_affine(self):
-        """
-        Returns a tuple of Python ints in the format of (x, y) that represents the point in the curve
-        """
-        x = backend._lib.BN_new()
-        backend.openssl_assert(x != backend._ffi.NULL)
-        x = backend._ffi.gc(x, backend._lib.BN_free)
-
-        y = backend._lib.BN_new()
-        backend.openssl_assert(y != backend._ffi.NULL)
-        y = backend._ffi.gc(y, backend._lib.BN_free)
-
-        with backend._tmp_bn_ctx() as bn_ctx:
-            backend._lib.EC_POINT_get_affine_coordinates_GFp(
-                self.group, self.ec_point, x, y, bn_ctx)
-        return (backend._bn_to_int(x), backend._bn_to_int(y))
-
     def to_bytes(self):
-        (x,y) = self.to_affine()
+        (x, y) = self.to_affine()
         data = x.to_bytes(32, byteorder='big')
         data = data + y.to_bytes(32, byteorder='big')
         return data

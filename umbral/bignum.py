@@ -21,6 +21,8 @@ class BigNum(object):
         """
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
+
+
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
 
@@ -56,6 +58,8 @@ class BigNum(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
+        
+
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
 
@@ -73,7 +77,7 @@ class BigNum(object):
             raise ValueError("Integer provided is not on the given curve.")
 
         bignum = backend._int_to_bn(num)
-        backend._ffi.gc(bignum, backend._lib.BN_free)
+        bignum = backend._ffi.gc(bignum, backend._lib.BN_free)
 
         return BigNum(bignum, curve_nid, group, order)
 

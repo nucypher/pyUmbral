@@ -133,6 +133,8 @@ class Point(object):
             affine_y = int.from_bytes(data[1+key_size:], 'big')
 
             return Point.from_affine((affine_x, affine_y), curve)
+        else:
+            raise ValueError("Invalid point serialization.")
 
     def to_bytes(self, is_compressed=True):
         """

@@ -81,6 +81,14 @@ class BigNum(object):
 
         return BigNum(bignum, curve_nid, group, order)
 
+    def to_bytes(self):
+        """
+        Returns the BigNum as bytes.
+        """
+        size = backend._lib.BN_num_bytes(self.order)
+
+        return int.to_bytes(int(self), size, 'big')
+
     def __int__(self):
         """
         Converts the BigNum to a Python int.

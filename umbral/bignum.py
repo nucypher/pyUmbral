@@ -21,8 +21,6 @@ class BigNum(object):
         """
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
-
-
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
 
@@ -37,7 +35,6 @@ class BigNum(object):
         order_int = backend._bn_to_int(order)
 
         # Generate random number on curve
-        # TODO: Can we utilize a better way to do this via OpenSSL or crypto.io?
         rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
         while rand_num >= order_int or rand_num <= 0:
             rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
@@ -57,8 +54,6 @@ class BigNum(object):
         except AttributeError:
             # Presume that the user passed in the curve_nid
             curve_nid = curve
-
-        
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
@@ -80,6 +75,16 @@ class BigNum(object):
         bignum = backend._ffi.gc(bignum, backend._lib.BN_free)
 
         return BigNum(bignum, curve_nid, group, order)
+
+    @classmethod
+    def from_bytes(cls, data, curve):
+        """
+        Returns a BigNum object from the given byte data that's within the size
+        of the provided curve's order.
+        """
+        num = int.from_bytes(data, 'big')
+
+        return BigNum.from_int(num, curve)
 
     def to_bytes(self):
         """

@@ -8,13 +8,13 @@ import pytest
 
 # (N,threshold)
 parameters = [
-    (10, 8),
+    #(10, 8),
     (3, 2),
-    (5, 4),
+    #(5, 4),
     # (100, 85),
     # (100, 99),
-    (1, 1),
-    (3, 1)
+    #(1, 1),
+    #(3, 1)
     ]
 
 # def test_basic():
@@ -52,30 +52,32 @@ def test_encrypt_decrypt():
     assert sym_key_2 == sym_key
 
 
-# @pytest.mark.parametrize("N,threshold", parameters)
-# def test_m_of_n(N, threshold):
-#     pre = umbral.PRE()
-#     priv_alice = pre.gen_priv()
-#     pub_alice = pre.priv2pub(priv_alice)
-#     priv_bob = pre.gen_priv()
-#     pub_bob = pre.priv2pub(priv_bob)
+@pytest.mark.parametrize("N,threshold", parameters)
+def test_m_of_n(N, threshold):
+    pre = umbral.PRE()
+    priv_alice = pre.gen_priv()
+    pub_alice = pre.priv2pub(priv_alice)
+    priv_bob = pre.gen_priv()
+    pub_bob = pre.priv2pub(priv_bob)
 
-#     sym_key, ekey_alice = pre.encapsulate(pub_alice)
+    sym_key, ekey_alice = pre.encapsulate(pub_alice)
 
-#     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
+    kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
-#     for kfrag in kfrags:
-#         assert pre.check_kFrag_consistency(kfrag, vkeys)
+    
 
-#     ekeys = [pre.reencrypt(rk, ekey_alice) for rk in kfrags[:threshold]]
+    # for kfrag in kfrags:
+    #     assert pre.check_kFrag_consistency(kfrag, vkeys)
 
-#     for (ekey,ch) in ekeys:
-#         assert pre.check_challenge(ekey_alice, ekey, ch, pub_alice)
+    # ekeys = [pre.reencrypt(rk, ekey_alice) for rk in kfrags[:threshold]]
 
-#     ekey_bob = pre.combine(ekeys)
+    # for (ekey,ch) in ekeys:
+    #     assert pre.check_challenge(ekey_alice, ekey, ch, pub_alice)
 
-#     sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
-#     assert sym_key_2 == sym_key
+    # ekey_bob = pre.combine(ekeys)
+
+    # sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
+    # assert sym_key_2 == sym_key
 
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_m_of_n_when_an_Ursula_tries_to_cheat(N, threshold):

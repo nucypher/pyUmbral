@@ -1,5 +1,6 @@
 from umbral.bignum import BigNum
 from umbral.point import Point
+from umbral.utils import poly_eval
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
@@ -65,6 +66,8 @@ class PRE(object):
         for x in list:
             if isinstance(x, Point):
                 bytes  = x.to_bytes()
+            elif isinstance(x, BigNum):
+                bytes = int(x).to_bytes(32, byteorder='big')
             else:
                 bytes = x
             digest.update(bytes)
@@ -77,11 +80,13 @@ class PRE(object):
             hash = digest_i.finalize()
             h = int.from_bytes(hash, byteorder='big', signed=False)
             i += 1
-        print(hash.hex())
         hash_bn = h % int(self.order)
-        print(hash_bn)
-        print(int(self.order))
-        return BigNum.from_int(hash_bn, self.curve)
+        print()
+        print("hash_bn: ", hash_bn)
+        print("order: ", int(self.order))
+        res = BigNum.from_int(hash_bn, self.curve)
+        print("res: ", int(res))
+        return res
 
 
     def gen_priv(self):
@@ -102,6 +107,39 @@ class PRE(object):
             info=None,
             backend=default_backend()
         ).derive(data)
+
+    def split_rekey(self, priv_a, pub_b, threshold, N):
+
+        x = BigNum.gen_rand(self.curve)
+        xcomp = self.g * x
+        d = self.hash_to_bn([xcomp, pub_b, pub_b * x])
+        # print([xcomp, pub_b, pub_b ** x])
+        #print("d: ", int(d))
+
+        coeffs = [priv_a * (~d)]
+        coeffs += [BigNum.gen_rand(self.curve) for _ in range(threshold - 1)]
+
+        # TODO: change this into public parameters different than g
+        h = self.g
+        u = self.g
+
+        vKeys = [h * coeff for coeff in coeffs]
+
+        rk_shares = []
+        for _ in range(N):
+            id = BigNum.gen_rand(self.curve)
+            rk = poly_eval(coeffs, id)
+
+            u1 = u * rk
+            y  = BigNum.gen_rand(self.curve)
+
+            z1 = self.hash_to_bn([xcomp, u1, self.g * y, id])
+            z2 = y - priv_a * z1
+
+            kFrag = RekeyFrag(id=id, key=rk, xcomp=xcomp, u1=u1, z1=z1, z2=z2)
+            rk_shares.append(kFrag)
+
+        return rk_shares, vKeys
     
     def encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""

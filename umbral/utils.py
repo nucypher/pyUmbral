@@ -13,7 +13,7 @@ def lambda_coeff(id_i, selected_ids):
     return reduce(mul, map_list)
 
 
-def poly_evail(coeff, x):
+def poly_eval(coeff, x):
     result = coeff[-1]
     for i in range(-2, -len(coeff) - 1, -1):
         result = ((result * x) + coeff[i])

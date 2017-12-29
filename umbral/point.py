@@ -107,8 +107,8 @@ class Point(object):
             curve_nid = curve
 
         # Check if compressed
-        if data[0] in [0, 1]:
-            type_y = data[0]
+        if data[0] in [2, 3]:
+            type_y = data[0] - 2
 
             if len(data[1:]) > curve.key_size // 8:
                 raise ValueError("X coordinate too large for curve.")
@@ -149,7 +149,8 @@ class Point(object):
         key_size = backend._lib.BN_num_bytes(order.bignum)
 
         if is_compressed:
-            data = int.to_bytes(affine_y & 1, 1, 'big')
+            y_bit = (affine_y & 1) + 2
+            data = int.to_bytes(y_bit, 1, 'big')
             data += int.to_bytes(affine_x, key_size, 'big')
         else:
             data = b'\x04'

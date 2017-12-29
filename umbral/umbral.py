@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-class RekeyFrag(object):
+class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
         self.id = id_
         self.key = key
@@ -131,7 +131,7 @@ class PRE(object):
             z1 = self.hash_to_bn([xcomp, u1, self.g * y, id_])
             z2 = y - priv_a * z1
 
-            kFrag = RekeyFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
+            kFrag = KFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
         return rk_shares, vKeys

@@ -8,13 +8,14 @@ import pytest
 
 # (N,threshold)
 parameters = [
-    #(10, 8),
+    (1, 1),
+    (3, 1),
     (3, 2),
-    #(5, 4),
+    (5, 4),
+    (10, 8),
     # (100, 85),
     # (100, 99),
-    #(1, 1),
-    #(3, 1)
+    
     ]
 
 # def test_basic():
@@ -69,15 +70,17 @@ def test_m_of_n(N, threshold):
     # for kfrag in kfrags:
     #     assert pre.check_kFrag_consistency(kfrag, vkeys)
 
-    # ekeys = [pre.reencrypt(rk, ekey_alice) for rk in kfrags[:threshold]]
+    reencs = []
+    for rk in kfrags[:threshold]:
+        reenc = pre.reencrypt(rk, ekey_alice)
+        ch = pre.challenge(rk, ekey_alice, reenc)
+        assert pre.check_challenge(ekey_alice, reenc, ch, pub_alice)
+        reencs.append(reenc)
 
-    # for (ekey,ch) in ekeys:
-    #     assert pre.check_challenge(ekey_alice, ekey, ch, pub_alice)
+    ekey_bob = pre.combine(reencs)
 
-    # ekey_bob = pre.combine(ekeys)
-
-    # sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
-    # assert sym_key_2 == sym_key
+    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
+    assert sym_key_2 == sym_key
 
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_m_of_n_when_an_Ursula_tries_to_cheat(N, threshold):

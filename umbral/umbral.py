@@ -1,16 +1,16 @@
 from umbral.bignum import BigNum
 from umbral.point import Point
-from umbral.utils import poly_eval
+from umbral.utils import poly_eval,lambda_coeff
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 class RekeyFrag(object):
-    def __init__(self, id, key, xcomp, u1, z1, z2):
-        self.id = id
+    def __init__(self, id_, key, x, u1, z1, z2):
+        self.id = id_
         self.key = key
-        self.xcomp = xcomp
+        self.x = x
         self.u1 = u1
         self.z1 = z1
         self.z2 = z2
@@ -24,26 +24,23 @@ class CiphertextKEM(object):
 
 
 class CiphertextFrag(object):
-    def __init__(self, e_r, v_r, id_r, x):
-        self.e_r = e_r
-        self.v_r = v_r
-        self.id_r = id_r
+    def __init__(self, e1, v1, id_, x):
+        self.e1 = e1
+        self.v1 = v1
+        self.id = id_
         self.x = x
 
 class CiphertextCombined(object):
-    def __init__(self, e, v, x, u1, z1, z2):
-        self.e = e
-        self.v = v
+    def __init__(self, e_prime, v_prime, x):
+        self.e_prime = e_prime
+        self.v_prime = v_prime
         self.x = x
-        self.u1 = u1
-        self.z1 = z1
-        self.z2 = z2
 
 
 class ChallengeResponse(object):
-    def __init__(self, e_t, v_t, u1, u2, z1, z2, z3):
-        self.e_r = e_r
-        self.v_r = v_r
+    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
+        self.e2 = e2
+        self.v2 = v2
         self.u1 = u1
         self.u2 = u2
         self.z1 = z1
@@ -69,6 +66,7 @@ class PRE(object):
             elif isinstance(x, BigNum):
                 bytes = int(x).to_bytes(32, byteorder='big')
             else:
+                #print(type(x))
                 bytes = x
             digest.update(bytes)
         
@@ -81,11 +79,11 @@ class PRE(object):
             h = int.from_bytes(hash, byteorder='big', signed=False)
             i += 1
         hash_bn = h % int(self.order)
-        print()
-        print("hash_bn: ", hash_bn)
-        print("order: ", int(self.order))
+        #print()
+        #print("hash_bn: ", hash_bn)
+        #print("order: ", int(self.order))
         res = BigNum.from_int(hash_bn, self.curve)
-        print("res: ", int(res))
+        #print("res: ", int(res))
         return res
 
 
@@ -127,19 +125,92 @@ class PRE(object):
 
         rk_shares = []
         for _ in range(N):
-            id = BigNum.gen_rand(self.curve)
-            rk = poly_eval(coeffs, id)
+            id_ = BigNum.gen_rand(self.curve)
+            rk = poly_eval(coeffs, id_)
 
             u1 = u * rk
             y  = BigNum.gen_rand(self.curve)
 
-            z1 = self.hash_to_bn([xcomp, u1, self.g * y, id])
+            z1 = self.hash_to_bn([xcomp, u1, self.g * y, id_])
             z2 = y - priv_a * z1
 
-            kFrag = RekeyFrag(id=id, key=rk, xcomp=xcomp, u1=u1, z1=z1, z2=z2)
+            kFrag = RekeyFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
         return rk_shares, vKeys
+
+    def reencrypt(self, rk, ciphertext_kem):
+
+        e1 = ciphertext_kem.e * rk.key
+        v1 = ciphertext_kem.v * rk.key
+
+        reenc = CiphertextFrag(e1=e1, v1=v1, id_=rk.id, x=rk.x)
+
+        # Check correctness of original ciphertext (check nº 2) at the end 
+        # to avoid timing oracles
+        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
+        return reenc
+
+    def challenge(self, rk, ciphertext_kem, cFrag):
+
+        e1 = cFrag.e1
+        v1 = cFrag.v1
+
+        e = ciphertext_kem.e
+        v = ciphertext_kem.v
+
+        # TODO: change this into a public parameter different than g
+        u = self.g
+        u1 = rk.u1
+
+        t = BigNum.gen_rand(self.curve)
+        e2 = e * t
+        v2 = v * t
+        u2 = u * t
+
+        h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
+
+        z3 = t + h * rk.key
+
+        ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.z1, z2=rk.z2, z3=z3)
+
+        # Check correctness of original ciphertext (check nº 2) at the end 
+        # to avoid timing oracles
+        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
+        return ch_resp
+
+    def check_challenge(self, ciphertext_kem, ciphertext_frag, challenge_resp, pub_a):
+        e = ciphertext_kem.e
+        v = ciphertext_kem.v
+
+        e1 = ciphertext_frag.e1
+        v1 = ciphertext_frag.v1
+        xcomp = ciphertext_frag.x
+        re_id = ciphertext_frag.id
+
+        e2 = challenge_resp.e2
+        v2 = challenge_resp.v2
+
+        # TODO: change this into a public parameter different than g
+        u = self.g
+        u1 = challenge_resp.u1
+        u2 = challenge_resp.u2
+
+        z1 = challenge_resp.z1
+        z2 = challenge_resp.z2
+        z3 = challenge_resp.z3
+
+        ycomp = (self.g * z2) + (pub_a * z1)
+
+        h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
+        #print(h)
+
+        check31 = z1 == self.hash_to_bn([xcomp, u1, ycomp, re_id])
+        check32 = e * z3 == e2 + (e1 * h)
+        check33 = u * z3 == u2 + (u1 * h)
+
+        return check31 & check32 & check33
+
     
     def encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
@@ -165,7 +236,7 @@ class PRE(object):
         e = ciphertext_kem.e
         v = ciphertext_kem.v
         s = ciphertext_kem.s
-        h = self.hash_points_to_bn([e, v])
+        h = self.hash_to_bn([e, v])
 
         return self.g * s == v + (e * h)
 
@@ -177,10 +248,45 @@ class PRE(object):
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
-        # assert self.check_original(ciphertext_kem), "Generic Umbral Error"
+        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
         return key
 
-    
+    def combine(self, cFrags):
+        cFrag_0 = cFrags[0]
+        
+        if len(cFrags) > 1:
+            ids = [cFrag.id for cFrag in cFrags]
+            lambda_0 = lambda_coeff(cFrag_0.id, ids)
+            e = cFrag_0.e1 * lambda_0
+            v = cFrag_0.v1 * lambda_0
+            for cFrag in cFrags[1:]:
+                lambda_i = lambda_coeff(cFrag.id, ids)
+                e = e + (cFrag.e1 * lambda_i)
+                v = v + (cFrag.v1 * lambda_i)
 
+            return CiphertextCombined(e_prime=e, v_prime=v, x=cFrag_0.x)
 
+        else: #if len(reencrypted_keys) == 1:
+            return CiphertextCombined(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.x)
+
+    def decapsulate_reencrypted(self, pub_key, priv_key, ctxt_combined, orig_pk, orig_ciphertext, key_length=32):
+        """Derive the same symmetric key"""
+
+        xcomp = ctxt_combined.x
+        d = self.hash_to_bn([xcomp, pub_key, xcomp * priv_key])
+
+        e_prime = ctxt_combined.e_prime
+        v_prime = ctxt_combined.v_prime
+        
+        shared_key = (e_prime + v_prime) * d
+        key = self.kdf(shared_key, key_length)
+
+        e = orig_ciphertext.e
+        v = orig_ciphertext.v
+        s = orig_ciphertext.s
+        h = self.hash_to_bn([e, v])
+        inv_d = ~d
+        assert orig_pk * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"
+
+        return key
         

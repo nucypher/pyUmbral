@@ -15,13 +15,11 @@ class RekeyFrag(object):
         self.z1 = z1
         self.z2 = z2
 
-
 class CiphertextKEM(object):
     def __init__(self, e, v, s):
         self.e = e
         self.v = v
         self.s = s
-
 
 class CiphertextFrag(object):
     def __init__(self, e1, v1, id_, x):
@@ -35,7 +33,6 @@ class CiphertextCombined(object):
         self.e_prime = e_prime
         self.v_prime = v_prime
         self.x = x
-
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):

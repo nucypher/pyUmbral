@@ -15,3 +15,19 @@ def test_from_to_bytes():
     q = Point.from_bytes(pbytes, curve)
 
     assert p == q
+
+def test_invalid_points():
+    curve = ec.SECP256K1()
+    p = Point.gen_rand(curve)
+
+    pbytes = bytearray(p.to_bytes(is_compressed=False))
+    # Flips last bit
+    pbytes[-1] = pbytes[-1] ^ 0x01
+    pbytes = bytes(pbytes)
+
+    try:
+    	q = Point.from_bytes(pbytes, curve)
+    	assert False
+    except:
+    	pass
+

@@ -15,20 +15,20 @@ class KFrag(object):
         self.z1 = z1
         self.z2 = z2
 
-class CiphertextKEM(object):
+class Capsule(object):
     def __init__(self, e, v, s):
         self.e = e
         self.v = v
         self.s = s
 
-class CiphertextFrag(object):
+class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
         self.e1 = e1
         self.v1 = v1
         self.id = id_
         self.x = x
 
-class CiphertextCombined(object):
+class ReconstructedCapsule(object):
     def __init__(self, e_prime, v_prime, x):
         self.e_prime = e_prime
         self.v_prime = v_prime
@@ -141,7 +141,7 @@ class PRE(object):
         e1 = ciphertext_kem.e * rk.key
         v1 = ciphertext_kem.v * rk.key
 
-        reenc = CiphertextFrag(e1=e1, v1=v1, id_=rk.id, x=rk.x)
+        reenc = CapsuleFrag(e1=e1, v1=v1, id_=rk.id, x=rk.x)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
@@ -226,7 +226,7 @@ class PRE(object):
         # Key to be used for symmetric encryption
         key = self.kdf(shared_key, key_length)
 
-        return key, CiphertextKEM(e=pub_r, v=pub_u, s=s)
+        return key, Capsule(e=pub_r, v=pub_u, s=s)
 
     def check_original(self, ciphertext_kem):
 
@@ -248,7 +248,7 @@ class PRE(object):
         assert self.check_original(ciphertext_kem), "Generic Umbral Error"
         return key
 
-    def combine(self, cFrags):
+    def reconstruct_capsule(self, cFrags):
         cFrag_0 = cFrags[0]
         
         if len(cFrags) > 1:
@@ -261,10 +261,10 @@ class PRE(object):
                 e = e + (cFrag.e1 * lambda_i)
                 v = v + (cFrag.v1 * lambda_i)
 
-            return CiphertextCombined(e_prime=e, v_prime=v, x=cFrag_0.x)
+            return ReconstructedCapsule(e_prime=e, v_prime=v, x=cFrag_0.x)
 
         else: #if len(reencrypted_keys) == 1:
-            return CiphertextCombined(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.x)
+            return ReconstructedCapsule(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.x)
 
     def decapsulate_reencrypted(self, pub_key, priv_key, ctxt_combined, orig_pk, orig_ciphertext, key_length=32):
         """Derive the same symmetric key"""

@@ -77,7 +77,7 @@ def test_m_of_n(N, threshold):
         assert pre.check_challenge(ekey_alice, reenc, ch, pub_alice)
         reencs.append(reenc)
 
-    ekey_bob = pre.combine(reencs)
+    ekey_bob = pre.reconstruct_capsule(reencs)
 
     sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
     assert sym_key_2 == sym_key

@@ -136,12 +136,28 @@ class PRE(object):
 
         return rk_shares, vKeys
 
-    def reencrypt(self, rk, ciphertext_kem):
+    def check_kFrag_consistency(self, kFrag, vKeys):
+        if vKeys is None or len(vKeys) == 0:
+            raise ValueError('vKeys must not be empty')
+        
+        # TODO: change this!
+        h = self.g
+        lh_exp = h * kFrag.key
 
-        e1 = ciphertext_kem.e * rk.key
-        v1 = ciphertext_kem.v * rk.key
+        rh_exp = vKeys[0]
+        i_j = kFrag.id
+        for vKey in vKeys[1:]:
+            rh_exp = rh_exp + (vKey * i_j)
+            i_j = i_j * kFrag.id
 
-        reenc = CapsuleFrag(e1=e1, v1=v1, id_=rk.id, x=rk.x)
+        return lh_exp == rh_exp
+
+    def reencrypt(self, kFrag, ciphertext_kem):
+
+        e1 = ciphertext_kem.e * kFrag.key
+        v1 = ciphertext_kem.v * kFrag.key
+
+        reenc = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.id, x=kFrag.x)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles

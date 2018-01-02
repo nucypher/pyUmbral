@@ -18,25 +18,6 @@ parameters = [
     
     ]
 
-# def test_basic():
-#     pre = umbral.PRE()
-#     print(pre.g)
-#     print(pre.order)
-
-#     priv_a = pre.gen_priv()
-#     priv_b = pre.gen_priv()
-
-#     pub_a = priv_a.public_key()
-#     pub_b = priv_b.public_key()
-
-#     # rks = pre.split_rekey(priv_a, priv_b, 2, 3)
-
-#     # plain1, enc_a = pre.encapsulate(pub_a)
-#     # shares = [pre.reencrypt(rk, enc_a) for rk in rks]
-#     # sec = pre.combine(shares)
-
-
-
 
 def test_encrypt_decrypt():
     pre = umbral.PRE()
@@ -65,61 +46,65 @@ def test_m_of_n(N, threshold):
 
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
-    
+    for kfrag in kfrags:
+        assert pre.check_kFrag_consistency(kfrag, vkeys)
 
-    # for kfrag in kfrags:
-    #     assert pre.check_kFrag_consistency(kfrag, vkeys)
-
-    reencs = []
+    cFrags = []
     for rk in kfrags[:threshold]:
-        reenc = pre.reencrypt(rk, ekey_alice)
-        ch = pre.challenge(rk, ekey_alice, reenc)
-        assert pre.check_challenge(ekey_alice, reenc, ch, pub_alice)
-        reencs.append(reenc)
+        cFrag = pre.reencrypt(rk, ekey_alice)
+        ch = pre.challenge(rk, ekey_alice, cFrag)
+        assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
+        cFrags.append(cFrag)
 
-    ekey_bob = pre.reconstruct_capsule(reencs)
+    ekey_bob = pre.reconstruct_capsule(cFrags)
 
     sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
     assert sym_key_2 == sym_key
 
-# @pytest.mark.parametrize("N,threshold", parameters)
-# def test_m_of_n_when_an_Ursula_tries_to_cheat(N, threshold):
-#     pre = umbral.PRE()
-#     priv_alice = pre.gen_priv()
-#     pub_alice = pre.priv2pub(priv_alice)
-#     priv_bob = pre.gen_priv()
-#     pub_bob = pre.priv2pub(priv_bob)
+@pytest.mark.parametrize("N,threshold", parameters)
+def test_m_of_n_cheating_Ursula_replays_old_reencryption(N, threshold):
+    pre = umbral.PRE()
+    priv_alice = pre.gen_priv()
+    pub_alice = pre.priv2pub(priv_alice)
+    priv_bob = pre.gen_priv()
+    pub_bob = pre.priv2pub(priv_bob)
 
-#     sym_key, ekey_alice = pre.encapsulate(pub_alice)
-#     _, other_ekey_alice = pre.encapsulate(pub_alice)
+    sym_key, ekey_alice = pre.encapsulate(pub_alice)
+    _, other_ekey_alice = pre.encapsulate(pub_alice)
 
-#     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
+    kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
-#     for kfrag in kfrags:
-#         assert pre.check_kFrag_consistency(kfrag, vkeys)
+    for kfrag in kfrags:
+        assert pre.check_kFrag_consistency(kfrag, vkeys)
 
-#     ekeys = [pre.reencrypt(rk, ekey_alice) for rk in kfrags[:threshold]]
-
-
-#     # Let's put the re-encryption of a different Alice ciphertext
-#     ekeys[0] = pre.reencrypt(kfrags[0], other_ekey_alice)
-
-#     ekey_bob = pre.combine(ekeys)
-    
-#     try:
-#         # This line should always raise an AssertionError ("Generic Umbral Error")
-#         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
-#     except AssertionError:#, match="Generic Umbral Error"):
+    cFrags = []
+    challenges = []
+    for rk in kfrags[:threshold]:
+        cFrag = pre.reencrypt(rk, ekey_alice)
+        challenge =  pre.challenge(rk, ekey_alice, cFrag)
         
-#         # The response of cheating Ursula is in ekeys[0], 
-#         # so the rest of challenges chould be correct:
-#         for (ekey,ch) in ekeys[1:]:
-#             assert pre.check_challenge(ekey_alice, ekey, ch, pub_alice)
+        #assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
+        cFrags.append(cFrag)
+        challenges.append(challenge)
 
-#         ekey, ch = ekeys[0]
-#         assert not pre.check_challenge(ekey_alice, ekey, ch, pub_alice)
+    # Let's put the re-encryption of a different Alice ciphertext
+    cFrags[0] = pre.reencrypt(kfrags[0], other_ekey_alice)
 
+    ekey_bob = pre.reconstruct_capsule(cFrags)
+    
+    try:
+        # This line should always raise an AssertionError ("Generic Umbral Error")
+        sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
+        assert not sym_key_2 == sym_key
+    except AssertionError:#, match="Generic Umbral Error"):
+        
+        assert not pre.check_challenge(ekey_alice, cFrags[0], challenges[0], pub_alice)
+        # The response of cheating Ursula is in ekeys[0], 
+        # so the rest of challenges chould be correct:
+        for (cFrag,ch) in zip(cFrags[1:], challenges[1:]):
+            assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
 
+    
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_alice_sends_fake_kFrag_to_ursula(N, threshold):
 #     pre = umbral.PRE()

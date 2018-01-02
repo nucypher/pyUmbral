@@ -1,5 +1,6 @@
 from umbral import umbral
 import pytest
+from umbral.bignum import BigNum
 # import random
 # from npre import umbral
 # import npre.elliptic_curve as ec
@@ -105,23 +106,24 @@ def test_m_of_n_cheating_Ursula_replays_old_reencryption(N, threshold):
             assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
 
     
-# @pytest.mark.parametrize("N,threshold", parameters)
-# def test_alice_sends_fake_kFrag_to_ursula(N, threshold):
-#     pre = umbral.PRE()
-#     priv_alice = pre.gen_priv()
-#     pub_alice = pre.priv2pub(priv_alice)
-#     priv_bob = pre.gen_priv()
+@pytest.mark.parametrize("N,threshold", parameters)
+def test_alice_sends_fake_kFrag_to_ursula(N, threshold):
+    pre = umbral.PRE()
+    priv_alice = pre.gen_priv()
+    pub_alice = pre.priv2pub(priv_alice)
+    priv_bob = pre.gen_priv()
 
-#     sym_key, ekey_alice = pre.encapsulate(pub_alice)
+    sym_key, ekey_alice = pre.encapsulate(pub_alice)
 
-#     kfrags, vkeys = pre.split_rekey(priv_alice, priv_bob, threshold, N)
+    kfrags, vkeys = pre.split_rekey(priv_alice, priv_bob, threshold, N)
 
-#     for kfrag in kfrags:
-#         assert pre.check_kFrag_consistency(kfrag, vkeys)
+    for kfrag in kfrags:
+        assert pre.check_kFrag_consistency(kfrag, vkeys)
 
-#     # Alice tries to frame the first Ursula by sending her a random kFrag
-#     fake_kfrag = kfrags[0]._replace(key=ec.random(pre.ecgroup, ec.ZR))
-#     assert not pre.check_kFrag_consistency(fake_kfrag, vkeys)
+    # Alice tries to frame the first Ursula by sending her a random kFrag
+    fake_kfrag = kfrags[0]
+    fake_kfrag.key = BigNum.gen_rand(pre.curve)
+    assert not pre.check_kFrag_consistency(fake_kfrag, vkeys)
 
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_ursula_tries_to_send_gargabe(N, threshold):
@@ -149,41 +151,6 @@ def test_m_of_n_cheating_Ursula_replays_old_reencryption(N, threshold):
 
 #     ekey_bob = pre.combine(ekeys)
     
-#     try:
-#         # This line should always raise an AssertionError ("Generic Umbral Error")
-#         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
-
-#         # If we reach here, it means the validation doesn't work properly, 
-#         # but still, the decapsulated key should be incorrect
-#         assert not sym_key_2 == sym_key, "This just can't happen..."
-#     except AssertionError as e:
-#         assert str(e) == "Generic Umbral Error"
-
-
-# @pytest.mark.parametrize("N,threshold", parameters)
-# def test_ursula_tries_to_send_previous_reencryption(N, threshold):
-#     pre = umbral.PRE()
-#     priv_alice = pre.gen_priv()
-#     pub_alice = pre.priv2pub(priv_alice)
-#     priv_bob = pre.gen_priv()
-#     pub_bob = pre.priv2pub(priv_bob)
-
-#     sym_key, ekey_alice = pre.encapsulate(pub_alice)
-#     _, other_ekey_alice = pre.encapsulate(pub_alice)
-
-#     kfrags, vkeys = pre.split_rekey(priv_alice, priv_bob, threshold, N)
-
-#     for kfrag in kfrags:
-#         assert pre.check_kFrag_consistency(kfrag, vkeys)
-
-
-#     ekeys = [pre.reencrypt(rk, ekey_alice) for rk in kfrags[:threshold]]
-
-#     # Let's put another re-encryption of an Alice ciphertext
-#     ekeys[0] = pre.reencrypt(kfrags[0], other_ekey_alice)
-
-#     ekey_bob = pre.combine(ekeys)
-
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
 #         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)

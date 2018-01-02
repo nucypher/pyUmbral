@@ -16,10 +16,10 @@ class KFrag(object):
         self.z2 = z2
 
 class Capsule(object):
-    def __init__(self, e, v, s):
-        self.e = e
-        self.v = v
-        self.s = s
+    def __init__(self, point_eph_e, point_eph_v, bn_sig):
+        self.point_eph_e = point_eph_e
+        self.point_eph_v = point_eph_v
+        self.bn_sig = bn_sig
 
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
@@ -86,7 +86,6 @@ class PRE(object):
 
     def gen_priv(self):
         return BigNum.gen_rand(self.curve)
-        #return ec.generate_private_key(ec.SECP256K1(), default_backend())
 
     def priv2pub(self, priv):
         return self.g * priv
@@ -108,8 +107,6 @@ class PRE(object):
         x = BigNum.gen_rand(self.curve)
         xcomp = self.g * x
         d = self.hash_to_bn([xcomp, pub_b, pub_b * x])
-        # print([xcomp, pub_b, pub_b ** x])
-        #print("d: ", int(d))
 
         coeffs = [priv_a * (~d)]
         coeffs += [BigNum.gen_rand(self.curve) for _ in range(threshold - 1)]
@@ -152,25 +149,25 @@ class PRE(object):
 
         return lh_exp == rh_exp
 
-    def reencrypt(self, kFrag, ciphertext_kem):
+    def reencrypt(self, kFrag, capsule):
 
-        e1 = ciphertext_kem.e * kFrag.key
-        v1 = ciphertext_kem.v * kFrag.key
+        e1 = capsule.point_eph_e * kFrag.key
+        v1 = capsule.point_eph_v * kFrag.key
 
-        reenc = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.id, x=kFrag.x)
+        cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.id, x=kFrag.x)
 
-        # Check correctness of original ciphertext (check nº 2) at the end 
+        # Check correctness of original ciphertext at the end 
         # to avoid timing oracles
-        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
-        return reenc
+        assert self.check_original(capsule), "Generic Umbral Error"
+        return cFrag
 
-    def challenge(self, rk, ciphertext_kem, cFrag):
+    def challenge(self, rk, capsule, cFrag):
 
         e1 = cFrag.e1
         v1 = cFrag.v1
 
-        e = ciphertext_kem.e
-        v = ciphertext_kem.v
+        e = capsule.point_eph_e
+        v = capsule.point_eph_v
 
         # TODO: change this into a public parameter different than g
         u = self.g
@@ -189,17 +186,17 @@ class PRE(object):
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
-        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
+        assert self.check_original(capsule), "Generic Umbral Error"
         return ch_resp
 
-    def check_challenge(self, ciphertext_kem, ciphertext_frag, challenge_resp, pub_a):
-        e = ciphertext_kem.e
-        v = ciphertext_kem.v
+    def check_challenge(self, capsule, cFrag, challenge_resp, pub_a):
+        e = capsule.point_eph_e
+        v = capsule.point_eph_v
 
-        e1 = ciphertext_frag.e1
-        v1 = ciphertext_frag.v1
-        xcomp = ciphertext_frag.x
-        re_id = ciphertext_frag.id
+        e1 = cFrag.e1
+        v1 = cFrag.v1
+        xcomp = cFrag.x
+        re_id = cFrag.id
 
         e2 = challenge_resp.e2
         v2 = challenge_resp.v2
@@ -216,7 +213,6 @@ class PRE(object):
         ycomp = (self.g * z2) + (pub_a * z1)
 
         h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
-        #print(h)
 
         check31 = z1 == self.hash_to_bn([xcomp, u1, ycomp, re_id])
         check32 = e * z3 == e2 + (e1 * h)
@@ -242,26 +238,26 @@ class PRE(object):
         # Key to be used for symmetric encryption
         key = self.kdf(shared_key, key_length)
 
-        return key, Capsule(e=pub_r, v=pub_u, s=s)
+        return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-    def check_original(self, ciphertext_kem):
+    def check_original(self, capsule):
 
-        e = ciphertext_kem.e
-        v = ciphertext_kem.v
-        s = ciphertext_kem.s
+        e = capsule.point_eph_e
+        v = capsule.point_eph_v
+        s = capsule.bn_sig
         h = self.hash_to_bn([e, v])
 
         return self.g * s == v + (e * h)
 
-    def decapsulate_original(self, priv_key, ciphertext_kem, key_length=32):
+    def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        shared_key = (ciphertext_kem.e + ciphertext_kem.v) * priv_key
+        shared_key = (capsule.point_eph_e + capsule.point_eph_v) * priv_key
         key = self.kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
-        assert self.check_original(ciphertext_kem), "Generic Umbral Error"
+        assert self.check_original(capsule), "Generic Umbral Error"
         return key
 
     def reconstruct_capsule(self, cFrags):
@@ -294,9 +290,9 @@ class PRE(object):
         shared_key = (e_prime + v_prime) * d
         key = self.kdf(shared_key, key_length)
 
-        e = orig_ciphertext.e
-        v = orig_ciphertext.v
-        s = orig_ciphertext.s
+        e = orig_ciphertext.point_eph_e
+        v = orig_ciphertext.point_eph_v
+        s = orig_ciphertext.bn_sig
         h = self.hash_to_bn([e, v])
         inv_d = ~d
         assert orig_pk * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"

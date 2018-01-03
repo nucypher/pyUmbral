@@ -1,10 +1,12 @@
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
 from umbral.bignum import BigNum
 from umbral.point import Point
-from umbral.utils import poly_eval,lambda_coeff
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from umbral.utils import poly_eval, lambda_coeff
+
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
@@ -15,11 +17,13 @@ class KFrag(object):
         self.z1 = z1
         self.z2 = z2
 
+
 class Capsule(object):
     def __init__(self, point_eph_e, point_eph_v, bn_sig):
         self.point_eph_e = point_eph_e
         self.point_eph_v = point_eph_v
         self.bn_sig = bn_sig
+
 
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
@@ -28,11 +32,13 @@ class CapsuleFrag(object):
         self.id = id_
         self.x = x
 
+
 class ReconstructedCapsule(object):
     def __init__(self, e_prime, v_prime, x):
         self.e_prime = e_prime
         self.v_prime = v_prime
         self.x = x
+
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):
@@ -44,8 +50,10 @@ class ChallengeResponse(object):
         self.z2 = z2
         self.z3 = z3
 
+
 # minVal = (1 << 256) % self.order   (i.e., 2^256 % order)
 MINVAL_SECP256K1_HASH_256 = 432420386565659656852420866394968145599
+
 
 class PRE(object):
     def __init__(self):
@@ -59,14 +67,14 @@ class PRE(object):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         for x in list:
             if isinstance(x, Point):
-                bytes  = x.to_bytes()
+                bytes = x.to_bytes()
             elif isinstance(x, BigNum):
                 bytes = int(x).to_bytes(32, byteorder='big')
             else:
-                #print(type(x))
+                # print(type(x))
                 bytes = x
             digest.update(bytes)
-        
+
         i = 0
         h = 0
         while h < MINVAL_SECP256K1_HASH_256:
@@ -76,13 +84,12 @@ class PRE(object):
             h = int.from_bytes(hash, byteorder='big', signed=False)
             i += 1
         hash_bn = h % int(self.order)
-        #print()
-        #print("hash_bn: ", hash_bn)
-        #print("order: ", int(self.order))
+        # print()
+        # print("hash_bn: ", hash_bn)
+        # print("order: ", int(self.order))
         res = BigNum.from_int(hash_bn, self.curve)
-        #print("res: ", int(res))
+        # print("res: ", int(res))
         return res
-
 
     def gen_priv(self):
         return BigNum.gen_rand(self.curve)
@@ -123,7 +130,7 @@ class PRE(object):
             rk = poly_eval(coeffs, id_)
 
             u1 = u * rk
-            y  = BigNum.gen_rand(self.curve)
+            y = BigNum.gen_rand(self.curve)
 
             z1 = self.hash_to_bn([xcomp, u1, self.g * y, id_])
             z2 = y - priv_a * z1
@@ -136,7 +143,7 @@ class PRE(object):
     def check_kFrag_consistency(self, kFrag, vKeys):
         if vKeys is None or len(vKeys) == 0:
             raise ValueError('vKeys must not be empty')
-        
+
         # TODO: change this!
         h = self.g
         lh_exp = h * kFrag.key
@@ -220,10 +227,9 @@ class PRE(object):
 
         return check31 & check32 & check33
 
-    
     def encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
-        
+
         priv_r = BigNum.gen_rand(self.curve)
         pub_r = self.g * priv_r
 
@@ -262,7 +268,7 @@ class PRE(object):
 
     def reconstruct_capsule(self, cFrags):
         cFrag_0 = cFrags[0]
-        
+
         if len(cFrags) > 1:
             ids = [cFrag.id for cFrag in cFrags]
             lambda_0 = lambda_coeff(cFrag_0.id, ids)

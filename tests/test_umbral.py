@@ -54,7 +54,7 @@ def test_m_of_n(N, threshold):
 
     capsule_bob = pre.reconstruct_capsule(cfrags)
 
-    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, capsule_bob, pub_alice, capsule_alice)
+    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
 
     assert sym_key_2 == sym_key
 
@@ -92,7 +92,7 @@ def test_cheating_Ursula_replays_old_reencryption(N, threshold):
     
     try:
         # This line should always raise an AssertionError ("Generic Umbral Error")
-        sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, capsule_bob, pub_alice, capsule_alice)
+        sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
         assert not sym_key_2 == sym_key
     except AssertionError as e:
         assert str(e) == "Generic Umbral Error"   
@@ -137,7 +137,7 @@ def test_cheating_ursula_sends_gargabe(N, threshold):
     
     try:
         # This line should always raise an AssertionError ("Generic Umbral Error")
-        sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, capsule_bob, pub_alice, capsule_alice)
+        sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
         assert not sym_key_2 == sym_key
     except AssertionError as e:
         assert str(e) == "Generic Umbral Error"

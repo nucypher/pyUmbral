@@ -16,18 +16,18 @@ parameters = [
     ]
 
 
-def test_encrypt_decrypt():
+def test_encapsulation():
     pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    sym_key, ekey = pre.encapsulate(pub_key)
+    sym_key, capsule = pre.encapsulate(pub_key)
     assert len(sym_key) == 32
 
-    # The symmetric key sym_key should be used for block cipher
+    # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
 
-    sym_key_2 = pre.decapsulate_original(priv_key, ekey)
+    sym_key_2 = pre.decapsulate_original(priv_key, capsule)
     assert sym_key_2 == sym_key
 
 

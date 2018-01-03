@@ -13,7 +13,7 @@ parameters = [
     ]
 
 
-def test_encapsulation():
+def test_decapsulation_by_alice():
     pre = umbral.PRE()
 
     priv_key = pre.gen_priv()

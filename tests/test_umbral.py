@@ -39,7 +39,7 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-    sym_key, ekey_alice = pre.encapsulate(pub_alice)
+    sym_key, capsule = pre.encapsulate(pub_alice)
 
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
@@ -48,14 +48,14 @@ def test_m_of_n(N, threshold):
 
     cFrags = []
     for rk in kfrags[:threshold]:
-        cFrag = pre.reencrypt(rk, ekey_alice)
-        ch = pre.challenge(rk, ekey_alice, cFrag)
-        assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
+        cFrag = pre.reencrypt(rk, capsule)
+        ch = pre.challenge(rk, capsule, cFrag)
+        assert pre.check_challenge(capsule, cFrag, ch, pub_alice)
         cFrags.append(cFrag)
 
-    ekey_bob = pre.reconstruct_capsule(cFrags)
+    recapsule = pre.reconstruct_capsule(cFrags)
 
-    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, ekey_bob, pub_alice, ekey_alice)
+    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, recapsule, pub_alice, capsule)
     assert sym_key_2 == sym_key
 
 @pytest.mark.parametrize("N,threshold", parameters)

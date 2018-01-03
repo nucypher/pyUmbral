@@ -41,6 +41,7 @@ def test_m_of_n(N, threshold):
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
     for kfrag in kfrags:
+        assert pre.check_kFrag_signature(kfrag, pub_alice)
         assert pre.check_kFrag_consistency(kfrag, vkeys)
 
     cFrags = []

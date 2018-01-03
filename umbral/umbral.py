@@ -281,18 +281,18 @@ class PRE(object):
 
             return ReconstructedCapsule(e_prime=e, v_prime=v, x=cFrag_0.x)
 
-        else: #if len(reencrypted_keys) == 1:
+        else:  # if len(reencrypted_keys) == 1:
             return ReconstructedCapsule(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.x)
 
-    def decapsulate_reencrypted(self, pub_key, priv_key, ctxt_combined, orig_pk, orig_ciphertext, key_length=32):
+    def decapsulate_reencrypted(self, pub_key, priv_key, capsule, orig_pk, orig_ciphertext, key_length=32):
         """Derive the same symmetric key"""
 
-        xcomp = ctxt_combined.x
+        xcomp = capsule.x
         d = self.hash_to_bn([xcomp, pub_key, xcomp * priv_key])
 
-        e_prime = ctxt_combined.e_prime
-        v_prime = ctxt_combined.v_prime
-        
+        e_prime = capsule.e_prime
+        v_prime = capsule.v_prime
+
         shared_key = (e_prime + v_prime) * d
         key = self.kdf(shared_key, key_length)
 
@@ -304,4 +304,3 @@ class PRE(object):
         assert orig_pk * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"
 
         return key
-        

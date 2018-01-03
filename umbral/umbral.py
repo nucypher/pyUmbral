@@ -10,12 +10,12 @@ from umbral.utils import poly_eval, lambda_coeff
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
-        self.id = id_
-        self.key = key
-        self.x = x
-        self.u1 = u1
-        self.z1 = z1
-        self.z2 = z2
+        self.bn_id = id_
+        self.point_key = key
+        self.point_eph_ni = x
+        self.point_commitment = u1
+        self.bn_sig1 = z1
+        self.bn_sig2 = z2
 
 
 class Capsule(object):
@@ -29,26 +29,26 @@ class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
         self.e1 = e1
         self.v1 = v1
-        self.id = id_
-        self.x = x
+        self.bn_kfrag_id = id_
+        self.point_eph_ni = x
 
 
 class ReconstructedCapsule(object):
     def __init__(self, e_prime, v_prime, x):
         self.e_prime = e_prime
         self.v_prime = v_prime
-        self.x = x
+        self.point_eph_ni = x
 
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):
         self.e2 = e2
         self.v2 = v2
-        self.u1 = u1
-        self.u2 = u2
-        self.z1 = z1
-        self.z2 = z2
-        self.z3 = z3
+        self.point_kfrag_commitment = u1
+        self.point_kfrag_pok = u2
+        self.bn_kfrag_sig1 = z1
+        self.bn_kfrag_sig2 = z2
+        self.bn_sig = z3
 
 
 # minVal = (1 << 256) % self.order   (i.e., 2^256 % order)
@@ -146,22 +146,33 @@ class PRE(object):
 
         # TODO: change this!
         h = self.g
-        lh_exp = h * kFrag.key
+        lh_exp = h * kFrag.point_key
 
         rh_exp = vKeys[0]
-        i_j = kFrag.id
+        i_j = kFrag.bn_id
         for vKey in vKeys[1:]:
             rh_exp = rh_exp + (vKey * i_j)
-            i_j = i_j * kFrag.id
+            i_j = i_j * kFrag.bn_id
 
         return lh_exp == rh_exp
 
+    def check_kFrag_signature(self, kFrag, pub_a):
+
+        u1 = kFrag.point_commitment
+        z1 = kFrag.bn_sig1
+        z2 = kFrag.bn_sig2
+        x  = kFrag.point_eph_ni
+
+        y = (self.g * z2) + (pub_a * z1)
+
+        return z1 == self.hash_to_bn([x, u1, y, kFrag.bn_id])
+
     def reencrypt(self, kFrag, capsule):
 
-        e1 = capsule.point_eph_e * kFrag.key
-        v1 = capsule.point_eph_v * kFrag.key
+        e1 = capsule.point_eph_e * kFrag.point_key
+        v1 = capsule.point_eph_v * kFrag.point_key
 
-        cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.id, x=kFrag.x)
+        cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
 
         # Check correctness of original ciphertext at the end 
         # to avoid timing oracles
@@ -178,7 +189,7 @@ class PRE(object):
 
         # TODO: change this into a public parameter different than g
         u = self.g
-        u1 = rk.u1
+        u1 = rk.point_commitment
 
         t = BigNum.gen_rand(self.curve)
         e2 = e * t
@@ -187,9 +198,9 @@ class PRE(object):
 
         h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
 
-        z3 = t + h * rk.key
+        z3 = t + h * rk.point_key
 
-        ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.z1, z2=rk.z2, z3=z3)
+        ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
@@ -202,20 +213,20 @@ class PRE(object):
 
         e1 = cFrag.e1
         v1 = cFrag.v1
-        xcomp = cFrag.x
-        re_id = cFrag.id
+        xcomp = cFrag.point_eph_ni
+        re_id = cFrag.bn_kfrag_id
 
         e2 = challenge_resp.e2
         v2 = challenge_resp.v2
 
         # TODO: change this into a public parameter different than g
         u = self.g
-        u1 = challenge_resp.u1
-        u2 = challenge_resp.u2
+        u1 = challenge_resp.point_kfrag_commitment
+        u2 = challenge_resp.point_kfrag_pok
 
-        z1 = challenge_resp.z1
-        z2 = challenge_resp.z2
-        z3 = challenge_resp.z3
+        z1 = challenge_resp.bn_kfrag_sig1
+        z2 = challenge_resp.bn_kfrag_sig2
+        z3 = challenge_resp.bn_sig
 
         ycomp = (self.g * z2) + (pub_a * z1)
 
@@ -270,25 +281,24 @@ class PRE(object):
         cFrag_0 = cFrags[0]
 
         if len(cFrags) > 1:
-            ids = [cFrag.id for cFrag in cFrags]
-            lambda_0 = lambda_coeff(cFrag_0.id, ids)
+            ids = [cFrag.bn_kfrag_id for cFrag in cFrags]
+            lambda_0 = lambda_coeff(cFrag_0.bn_kfrag_id, ids)
             e = cFrag_0.e1 * lambda_0
             v = cFrag_0.v1 * lambda_0
             for cFrag in cFrags[1:]:
-                lambda_i = lambda_coeff(cFrag.id, ids)
+                lambda_i = lambda_coeff(cFrag.bn_kfrag_id, ids)
                 e = e + (cFrag.e1 * lambda_i)
                 v = v + (cFrag.v1 * lambda_i)
 
-            return ReconstructedCapsule(e_prime=e, v_prime=v, x=cFrag_0.x)
-
-        else:  # if len(reencrypted_keys) == 1:
-            return ReconstructedCapsule(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.x)
+            return ReconstructedCapsule(e_prime=e, v_prime=v, x=cFrag_0.point_eph_ni)
+        else: #if len(reencrypted_keys) == 1:
+            return ReconstructedCapsule(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.point_eph_ni)
 
     def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, capsule, orig_pub_key: Point,
                                 orig_ciphertext: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        xcomp = capsule.x
+        xcomp = capsule.point_eph_ni
         d = self.hash_to_bn([xcomp, pub_key, xcomp * priv_key])
 
         e_prime = capsule.e_prime

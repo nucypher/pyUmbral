@@ -238,3 +238,6 @@ class BigNum(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(rem, self.curve_nid, self.group, self.order)
+
+    def __hash__(self):
+        return hash(int(self))

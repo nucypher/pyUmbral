@@ -17,6 +17,12 @@ class KFrag(object):
         self.bn_sig1 = z1
         self.bn_sig2 = z2
 
+class CapsuleFrag(object):
+    def __init__(self, e1, v1, id_, x):
+        self.e1 = e1
+        self.v1 = v1
+        self.bn_kfrag_id = id_
+        self.point_eph_ni = x
 
 class Capsule(object):
     def __init__(self, point_eph_e, point_eph_v, bn_sig):
@@ -24,13 +30,30 @@ class Capsule(object):
         self.point_eph_v = point_eph_v
         self.bn_sig = bn_sig
 
+        self.cfrags = {}
 
-class CapsuleFrag(object):
-    def __init__(self, e1, v1, id_, x):
-        self.e1 = e1
-        self.v1 = v1
-        self.bn_kfrag_id = id_
-        self.point_eph_ni = x
+
+    def attach_cfrag(self, cfrag: CapsuleFrag):
+        self.cfrags[cfrag.bn_kfrag_id] = cfrag
+
+    def reconstruct(self):
+        id_cfrag_pairs = list(self.cfrags.items())
+        id_0, cfrag_0 = id_cfrag_pairs[0]
+        if len(id_cfrag_pairs) > 1:
+            ids = self.cfrags.keys() 
+            lambda_0 = lambda_coeff(id_0, ids)
+            e = cfrag_0.e1 * lambda_0
+            v = cfrag_0.v1 * lambda_0
+            
+            for id_i,cfrag in id_cfrag_pairs[1:]:
+                lambda_i = lambda_coeff(id_i, ids)
+                e = e + (cfrag.e1 * lambda_i)
+                v = v + (cfrag.v1 * lambda_i)
+        else:
+            e = cfrag_0.e1
+            v = cfrag_0.v1
+        
+        return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
 
 
 class ReconstructedCapsule(object):
@@ -276,23 +299,6 @@ class PRE(object):
         # to avoid timing oracles
         assert self.check_original(capsule), "Generic Umbral Error"
         return key
-
-    def reconstruct_capsule(self, cFrags):
-        cFrag_0 = cFrags[0]
-
-        if len(cFrags) > 1:
-            ids = [cFrag.bn_kfrag_id for cFrag in cFrags]
-            lambda_0 = lambda_coeff(cFrag_0.bn_kfrag_id, ids)
-            e = cFrag_0.e1 * lambda_0
-            v = cFrag_0.v1 * lambda_0
-            for cFrag in cFrags[1:]:
-                lambda_i = lambda_coeff(cFrag.bn_kfrag_id, ids)
-                e = e + (cFrag.e1 * lambda_i)
-                v = v + (cFrag.v1 * lambda_i)
-
-            return ReconstructedCapsule(e_prime=e, v_prime=v, x=cFrag_0.point_eph_ni)
-        else: #if len(reencrypted_keys) == 1:
-            return ReconstructedCapsule(e_prime=cFrag_0.e1, v_prime=cFrag_0.v1, x=cFrag_0.point_eph_ni)
 
     def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
                                 recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):

@@ -43,7 +43,7 @@ def test_m_of_n(N, threshold):
 
     for kfrag in kfrags:
         assert pre.check_kFrag_signature(kfrag, pub_alice)
-        assert pre.check_kFrag_consistency(kfrag, vkeys)
+        assert kfrag.is_consistent(vkeys, pre.params)
 
     for kfrag in kfrags[:threshold]:
         cfrag = pre.reencrypt(kfrag, capsule_alice)

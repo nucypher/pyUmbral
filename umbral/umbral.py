@@ -5,8 +5,13 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from umbral.bignum import BigNum
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff
+from umbral.utils import poly_eval, lambda_coeff, hash_to_bn
 
+class UmbralParameters(object):
+    def __init__(self):
+        self.curve = ec.SECP256K1()
+        self.g = Point.get_generator_from_curve(self.curve)
+        self.order = Point.get_order_from_curve(self.curve)
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
@@ -16,6 +21,22 @@ class KFrag(object):
         self.point_commitment = u1
         self.bn_sig1 = z1
         self.bn_sig2 = z2
+    
+    def is_consistent(self, vKeys, params: UmbralParameters):
+        if vKeys is None or len(vKeys) == 0:
+            raise ValueError('vKeys must not be empty')
+
+        # TODO: change this!
+        h = params.g
+        lh_exp = h * self.point_key
+
+        rh_exp = vKeys[0]
+        i_j = self.bn_id
+        for vKey in vKeys[1:]:
+            rh_exp = rh_exp + (vKey * i_j)
+            i_j = i_j * self.bn_id
+
+        return lh_exp == rh_exp
 
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
@@ -74,45 +95,15 @@ class ChallengeResponse(object):
         self.bn_sig = z3
 
 
-# minVal = (1 << 256) % self.order   (i.e., 2^256 % order)
-MINVAL_SECP256K1_HASH_256 = 432420386565659656852420866394968145599
-
-
 class PRE(object):
     def __init__(self):
+        self.params = UmbralParameters()
         self.backend = default_backend()
         self.curve = ec.SECP256K1()
         self.g = Point.get_generator_from_curve(self.curve)
         self.order = Point.get_order_from_curve(self.curve)
 
-    def hash_to_bn(self, list):
-
-        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        for x in list:
-            if isinstance(x, Point):
-                bytes = x.to_bytes()
-            elif isinstance(x, BigNum):
-                bytes = int(x).to_bytes(32, byteorder='big')
-            else:
-                # print(type(x))
-                bytes = x
-            digest.update(bytes)
-
-        i = 0
-        h = 0
-        while h < MINVAL_SECP256K1_HASH_256:
-            digest_i = digest.copy()
-            digest_i.update(i.to_bytes(32, byteorder='big'))
-            hash = digest_i.finalize()
-            h = int.from_bytes(hash, byteorder='big', signed=False)
-            i += 1
-        hash_bn = h % int(self.order)
-        # print()
-        # print("hash_bn: ", hash_bn)
-        # print("order: ", int(self.order))
-        res = BigNum.from_int(hash_bn, self.curve)
-        # print("res: ", int(res))
-        return res
+    
 
     def gen_priv(self):
         return BigNum.gen_rand(self.curve)
@@ -136,7 +127,7 @@ class PRE(object):
 
         x = BigNum.gen_rand(self.curve)
         xcomp = self.g * x
-        d = self.hash_to_bn([xcomp, pub_b, pub_b * x])
+        d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
 
         coeffs = [priv_a * (~d)]
         coeffs += [BigNum.gen_rand(self.curve) for _ in range(threshold - 1)]
@@ -155,29 +146,13 @@ class PRE(object):
             u1 = u * rk
             y = BigNum.gen_rand(self.curve)
 
-            z1 = self.hash_to_bn([xcomp, u1, self.g * y, id_])
+            z1 = hash_to_bn([xcomp, u1, self.g * y, id_], self.params)
             z2 = y - priv_a * z1
 
             kFrag = KFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
         return rk_shares, vKeys
-
-    def check_kFrag_consistency(self, kFrag, vKeys):
-        if vKeys is None or len(vKeys) == 0:
-            raise ValueError('vKeys must not be empty')
-
-        # TODO: change this!
-        h = self.g
-        lh_exp = h * kFrag.point_key
-
-        rh_exp = vKeys[0]
-        i_j = kFrag.bn_id
-        for vKey in vKeys[1:]:
-            rh_exp = rh_exp + (vKey * i_j)
-            i_j = i_j * kFrag.bn_id
-
-        return lh_exp == rh_exp
 
     def check_kFrag_signature(self, kFrag, pub_a):
 
@@ -188,18 +163,16 @@ class PRE(object):
 
         y = (self.g * z2) + (pub_a * z1)
 
-        return z1 == self.hash_to_bn([x, u1, y, kFrag.bn_id])
+        return z1 == hash_to_bn([x, u1, y, kFrag.bn_id], self.params)
 
     def reencrypt(self, kFrag, capsule):
-
+        # TODO: Put the assert at the end, but exponentiate by a randon number when false?
+        assert self.check_original(capsule), "Generic Umbral Error"
+        
         e1 = capsule.point_eph_e * kFrag.point_key
         v1 = capsule.point_eph_v * kFrag.point_key
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
-
-        # Check correctness of original ciphertext at the end 
-        # to avoid timing oracles
-        assert self.check_original(capsule), "Generic Umbral Error"
         return cFrag
 
     def challenge(self, rk, capsule, cFrag):
@@ -219,7 +192,7 @@ class PRE(object):
         v2 = v * t
         u2 = u * t
 
-        h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
+        h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
         z3 = t + h * rk.point_key
 
@@ -253,9 +226,9 @@ class PRE(object):
 
         ycomp = (self.g * z2) + (pub_a * z1)
 
-        h = self.hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2])
+        h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
-        check31 = z1 == self.hash_to_bn([xcomp, u1, ycomp, re_id])
+        check31 = z1 == hash_to_bn([xcomp, u1, ycomp, re_id], self.params)
         check32 = e * z3 == e2 + (e1 * h)
         check33 = u * z3 == u2 + (u1 * h)
 
@@ -270,7 +243,7 @@ class PRE(object):
         priv_u = BigNum.gen_rand(self.curve)
         pub_u = self.g * priv_u
 
-        h = self.hash_to_bn([pub_r, pub_u])
+        h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)
 
         shared_key = pub_key * (priv_r + priv_u)
@@ -285,7 +258,7 @@ class PRE(object):
         e = capsule.point_eph_e
         v = capsule.point_eph_v
         s = capsule.bn_sig
-        h = self.hash_to_bn([e, v])
+        h = hash_to_bn([e, v], self.params)
 
         return self.g * s == v + (e * h)
 
@@ -305,7 +278,7 @@ class PRE(object):
         """Derive the same symmetric key"""
 
         xcomp = recapsule.point_eph_ni
-        d = self.hash_to_bn([xcomp, pub_key, xcomp * priv_key])
+        d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
 
         e_prime = recapsule.e_prime
         v_prime = recapsule.v_prime
@@ -316,7 +289,7 @@ class PRE(object):
         e = original_capsule.point_eph_e
         v = original_capsule.point_eph_v
         s = original_capsule.bn_sig
-        h = self.hash_to_bn([e, v])
+        h = hash_to_bn([e, v], self.params)
         inv_d = ~d
         assert orig_pub_key * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"
 

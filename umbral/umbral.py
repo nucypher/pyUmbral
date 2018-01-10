@@ -115,17 +115,17 @@ class ChallengeResponse(object):
 
 
 class PRE(object):
-    def __init__(self):
-        self.params = UmbralParameters()
-        self.backend = default_backend()
-        self.curve = ec.SECP256K1()
-        self.g = Point.get_generator_from_curve(self.curve)
-        self.order = Point.get_order_from_curve(self.curve)
+    def __init__(self, params: UmbralParameters):
+        self.params = params
+        # self.backend = default_backend()
+        # self.curve = ec.SECP256K1()
+        # self.g = Point.get_generator_from_curve(self.curve)
+        # self.order = Point.get_order_from_curve(self.curve)
 
     
 
     def gen_priv(self):
-        return BigNum.gen_rand(self.curve)
+        return BigNum.gen_rand(self.params.curve)
 
     def priv2pub(self, priv):
         g = self.params.g
@@ -133,12 +133,12 @@ class PRE(object):
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
         g = self.params.g
-        x = BigNum.gen_rand(self.curve)
+        x = BigNum.gen_rand(self.params.curve)
         xcomp = g * x
         d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
 
         coeffs = [priv_a * (~d)]
-        coeffs += [BigNum.gen_rand(self.curve) for _ in range(threshold - 1)]
+        coeffs += [BigNum.gen_rand(self.params.curve) for _ in range(threshold - 1)]
 
         # TODO: change this into public parameters different than g
         h = self.params.h
@@ -148,11 +148,11 @@ class PRE(object):
 
         rk_shares = []
         for _ in range(N):
-            id_ = BigNum.gen_rand(self.curve)
+            id_ = BigNum.gen_rand(self.params.curve)
             rk = poly_eval(coeffs, id_)
 
             u1 = u * rk
-            y = BigNum.gen_rand(self.curve)
+            y = BigNum.gen_rand(self.params.curve)
 
             z1 = hash_to_bn([xcomp, u1, g * y, id_], self.params)
             z2 = y - priv_a * z1
@@ -185,7 +185,7 @@ class PRE(object):
         u = self.params.u
         u1 = rk.point_commitment
 
-        t = BigNum.gen_rand(self.curve)
+        t = BigNum.gen_rand(self.params.curve)
         e2 = e * t
         v2 = v * t
         u2 = u * t
@@ -238,10 +238,10 @@ class PRE(object):
         """Generates a symmetric key and its associated KEM ciphertext"""
         g = self.params.g
 
-        priv_r = BigNum.gen_rand(self.curve)
+        priv_r = BigNum.gen_rand(self.params.curve)
         pub_r = g * priv_r
 
-        priv_u = BigNum.gen_rand(self.curve)
+        priv_u = BigNum.gen_rand(self.params.curve)
         pub_u = g * priv_u
 
         h = hash_to_bn([pub_r, pub_u], self.params)

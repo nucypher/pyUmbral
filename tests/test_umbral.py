@@ -14,7 +14,7 @@ parameters = [
 
 
 def test_decapsulation_by_alice():
-    pre = umbral.PRE()
+    pre = umbral.PRE(umbral.UmbralParameters())
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -30,7 +30,7 @@ def test_decapsulation_by_alice():
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_m_of_n(N, threshold):
-    pre = umbral.PRE()
+    pre = umbral.PRE(umbral.UmbralParameters())
     priv_alice = pre.gen_priv()
     pub_alice = pre.priv2pub(priv_alice)
     priv_bob = pre.gen_priv()

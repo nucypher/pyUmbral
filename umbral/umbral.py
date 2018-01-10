@@ -20,7 +20,7 @@ class KFrag(object):
         self.bn_sig1 = z1
         self.bn_sig2 = z2
 
-    def check_signature(self, pub_a, params: UmbralParameters):
+    def verify(self, pub_a, params: UmbralParameters):
 
         u1 = self.point_commitment
         z1 = self.bn_sig1
@@ -62,6 +62,14 @@ class Capsule(object):
 
         self.cfrags = {}
 
+    def verify(self, params: UmbralParameters):
+
+        e = self.point_eph_e
+        v = self.point_eph_v
+        s = self.bn_sig
+        h = hash_to_bn([e, v], params)
+
+        return params.g * s == v + (e * h)
 
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
@@ -120,8 +128,6 @@ class PRE(object):
     def priv2pub(self, priv):
         return self.g * priv
 
-
-
     def split_rekey(self, priv_a, pub_b, threshold, N):
 
         x = BigNum.gen_rand(self.curve)
@@ -155,7 +161,7 @@ class PRE(object):
 
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
-        assert self.check_original(capsule), "Generic Umbral Error"
+        assert capsule.verify(self.params), "Generic Umbral Error"
         
         e1 = capsule.point_eph_e * kFrag.point_key
         v1 = capsule.point_eph_v * kFrag.point_key
@@ -188,7 +194,7 @@ class PRE(object):
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
-        assert self.check_original(capsule), "Generic Umbral Error"
+        assert capsule.verify(self.params), "Generic Umbral Error"
         return ch_resp
 
     def check_challenge(self, capsule, cFrag, challenge_resp, pub_a):
@@ -241,14 +247,6 @@ class PRE(object):
 
         return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-    def check_original(self, capsule):
-
-        e = capsule.point_eph_e
-        v = capsule.point_eph_v
-        s = capsule.bn_sig
-        h = hash_to_bn([e, v], self.params)
-
-        return self.g * s == v + (e * h)
 
     def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
@@ -258,7 +256,7 @@ class PRE(object):
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
-        assert self.check_original(capsule), "Generic Umbral Error"
+        assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
     def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,

@@ -1,7 +1,6 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
-
 from umbral.bignum import BigNum
 from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
@@ -20,6 +19,17 @@ class KFrag(object):
         self.point_commitment = u1
         self.bn_sig1 = z1
         self.bn_sig2 = z2
+
+    def check_signature(self, pub_a, params: UmbralParameters):
+
+        u1 = self.point_commitment
+        z1 = self.bn_sig1
+        z2 = self.bn_sig2
+        x  = self.point_eph_ni
+
+        y = (params.g * z2) + (pub_a * z1)
+
+        return z1 == hash_to_bn([x, u1, y, self.bn_id], params)
     
     def is_consistent(self, vKeys, params: UmbralParameters):
         if vKeys is None or len(vKeys) == 0:
@@ -142,17 +152,6 @@ class PRE(object):
             rk_shares.append(kFrag)
 
         return rk_shares, vKeys
-
-    def check_kFrag_signature(self, kFrag, pub_a):
-
-        u1 = kFrag.point_commitment
-        z1 = kFrag.bn_sig1
-        z2 = kFrag.bn_sig2
-        x  = kFrag.point_eph_ni
-
-        y = (self.g * z2) + (pub_a * z1)
-
-        return z1 == hash_to_bn([x, u1, y, kFrag.bn_id], self.params)
 
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?

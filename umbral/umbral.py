@@ -117,12 +117,6 @@ class ChallengeResponse(object):
 class PRE(object):
     def __init__(self, params: UmbralParameters):
         self.params = params
-        # self.backend = default_backend()
-        # self.curve = ec.SECP256K1()
-        # self.g = Point.get_generator_from_curve(self.curve)
-        # self.order = Point.get_order_from_curve(self.curve)
-
-    
 
     def gen_priv(self):
         return BigNum.gen_rand(self.params.curve)
@@ -140,7 +134,6 @@ class PRE(object):
         coeffs = [priv_a * (~d)]
         coeffs += [BigNum.gen_rand(self.params.curve) for _ in range(threshold - 1)]
 
-        # TODO: change this into public parameters different than g
         h = self.params.h
         u = self.params.u
 
@@ -181,7 +174,6 @@ class PRE(object):
         e = capsule.point_eph_e
         v = capsule.point_eph_v
 
-        # TODO: change this into a public parameter different than g
         u = self.params.u
         u1 = rk.point_commitment
 
@@ -215,7 +207,6 @@ class PRE(object):
 
         g = self.params.g
 
-        # TODO: change this into a public parameter different than g
         u = self.params.u
         u1 = challenge_resp.point_kfrag_commitment
         u2 = challenge_resp.point_kfrag_pok

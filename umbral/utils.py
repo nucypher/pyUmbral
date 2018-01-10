@@ -50,11 +50,9 @@ def hash_to_bn(list, params):
         h = int.from_bytes(hash, byteorder='big', signed=False)
         i += 1
     hash_bn = h % int(params.order)
-    # print()
-    # print("hash_bn: ", hash_bn)
-    # print("order: ", int(self.order))
+ 
     res = BigNum.from_int(hash_bn, params.curve)
-    # print("res: ", int(res))
+ 
     return res
 
 def kdf(ecpoint, key_length):

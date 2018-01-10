@@ -1,11 +1,10 @@
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
 
 from umbral.bignum import BigNum
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff, hash_to_bn
+from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 class UmbralParameters(object):
     def __init__(self):
@@ -111,17 +110,7 @@ class PRE(object):
     def priv2pub(self, priv):
         return self.g * priv
 
-    def kdf(self, ecpoint, key_length):
-        data = ecpoint.to_bytes()
 
-        # TODO: Handle salt somehow
-        return HKDF(
-            algorithm=hashes.SHA512(),
-            length=key_length,
-            salt=None,
-            info=None,
-            backend=default_backend()
-        ).derive(data)
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
 
@@ -249,7 +238,7 @@ class PRE(object):
         shared_key = pub_key * (priv_r + priv_u)
 
         # Key to be used for symmetric encryption
-        key = self.kdf(shared_key, key_length)
+        key = kdf(shared_key, key_length)
 
         return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
@@ -266,7 +255,7 @@ class PRE(object):
         """Derive the same symmetric key"""
 
         shared_key = (capsule.point_eph_e + capsule.point_eph_v) * priv_key
-        key = self.kdf(shared_key, key_length)
+        key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
         # to avoid timing oracles
@@ -284,7 +273,7 @@ class PRE(object):
         v_prime = recapsule.v_prime
 
         shared_key = (e_prime + v_prime) * d
-        key = self.kdf(shared_key, key_length)
+        key = kdf(shared_key, key_length)
 
         e = original_capsule.point_eph_e
         v = original_capsule.point_eph_v

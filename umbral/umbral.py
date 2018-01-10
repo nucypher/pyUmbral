@@ -10,6 +10,8 @@ class UmbralParameters(object):
         self.curve = ec.SECP256K1()
         self.g = Point.get_generator_from_curve(self.curve)
         self.order = Point.get_order_from_curve(self.curve)
+        self.h = Point.gen_rand(self.curve)
+        self.u = Point.gen_rand(self.curve)
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
@@ -36,7 +38,7 @@ class KFrag(object):
             raise ValueError('vKeys must not be empty')
 
         # TODO: change this!
-        h = params.g
+        h = params.h
         lh_exp = h * self.point_key
 
         rh_exp = vKeys[0]
@@ -126,20 +128,21 @@ class PRE(object):
         return BigNum.gen_rand(self.curve)
 
     def priv2pub(self, priv):
-        return self.g * priv
+        g = self.params.g
+        return g * priv
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
-
+        g = self.params.g
         x = BigNum.gen_rand(self.curve)
-        xcomp = self.g * x
+        xcomp = g * x
         d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
 
         coeffs = [priv_a * (~d)]
         coeffs += [BigNum.gen_rand(self.curve) for _ in range(threshold - 1)]
 
         # TODO: change this into public parameters different than g
-        h = self.g
-        u = self.g
+        h = self.params.h
+        u = self.params.u
 
         vKeys = [h * coeff for coeff in coeffs]
 
@@ -151,7 +154,7 @@ class PRE(object):
             u1 = u * rk
             y = BigNum.gen_rand(self.curve)
 
-            z1 = hash_to_bn([xcomp, u1, self.g * y, id_], self.params)
+            z1 = hash_to_bn([xcomp, u1, g * y, id_], self.params)
             z2 = y - priv_a * z1
 
             kFrag = KFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
@@ -171,6 +174,7 @@ class PRE(object):
 
     def challenge(self, rk, capsule, cFrag):
 
+
         e1 = cFrag.e1
         v1 = cFrag.v1
 
@@ -178,7 +182,7 @@ class PRE(object):
         v = capsule.point_eph_v
 
         # TODO: change this into a public parameter different than g
-        u = self.g
+        u = self.params.u
         u1 = rk.point_commitment
 
         t = BigNum.gen_rand(self.curve)
@@ -209,8 +213,10 @@ class PRE(object):
         e2 = challenge_resp.e2
         v2 = challenge_resp.v2
 
+        g = self.params.g
+
         # TODO: change this into a public parameter different than g
-        u = self.g
+        u = self.params.u
         u1 = challenge_resp.point_kfrag_commitment
         u2 = challenge_resp.point_kfrag_pok
 
@@ -218,7 +224,7 @@ class PRE(object):
         z2 = challenge_resp.bn_kfrag_sig2
         z3 = challenge_resp.bn_sig
 
-        ycomp = (self.g * z2) + (pub_a * z1)
+        ycomp = (g * z2) + (pub_a * z1)
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
@@ -230,12 +236,13 @@ class PRE(object):
 
     def encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
+        g = self.params.g
 
         priv_r = BigNum.gen_rand(self.curve)
-        pub_r = self.g * priv_r
+        pub_r = g * priv_r
 
         priv_u = BigNum.gen_rand(self.curve)
-        pub_u = self.g * priv_u
+        pub_u = g * priv_u
 
         h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)

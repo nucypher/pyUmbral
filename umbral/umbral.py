@@ -87,6 +87,33 @@ class CapsuleFrag(object):
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
 
+    @classmethod
+    def from_bytes(cls, data: bytes, curve):
+        """
+        Instantiates a CapsuleFrag object from the serialized data.
+        """
+        e1 = Point.from_bytes(data[0:33], curve)
+        v1 = Point.from_bytes(data[33:66], curve)
+        kfrag_id = BigNum.from_bytes(data[66:98], curve)
+        eph_ni = Point.from_bytes(data[98:131], curve)
+
+        return CapsuleFrag(e1, v1, kfrag_id, eph_ni)
+
+    def to_bytes(self):
+        """
+        Serialize the CapsuleFrag into a bytestring.
+        """
+        e1 = self.e1.to_bytes()
+        v1 = self.v1.to_bytes()
+        kfrag_id = self.bn_kfrag_id.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+
+        return e1 + v1 + kfrag_id + eph_ni
+
+    def __bytes__(self):
+        return self.to_bytes()
+
+
 class Capsule(object):
     def __init__(self, point_eph_e, point_eph_v, bn_sig):
         self.point_eph_e = point_eph_e

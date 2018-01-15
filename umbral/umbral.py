@@ -122,6 +122,27 @@ class Capsule(object):
 
         self.cfrags = {}
 
+    @classmethod
+    def from_bytes(self, data: bytes, curve):
+        """
+        Instantiates a Capsule object from the serialized data.
+        """
+        eph_e = Point.from_bytes(data[0:33], curve)
+        eph_v = Point.from_bytes(data[33:66], curve)
+        sig = BigNum.from_bytes(data[66:98], curve)
+
+        return Capsule(eph_e, eph_v, sig)
+
+    def to_bytes(self):
+        """
+        Serialize the Capsule into a bytestring.
+        """
+        eph_e = self.point_eph_e.to_bytes()
+        eph_v = self.point_eph_v.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        return eph_e + eph_v + sig
+
     def verify(self, params: UmbralParameters):
 
         e = self.point_eph_e
@@ -152,6 +173,9 @@ class Capsule(object):
             v = cfrag_0.v1
         
         return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
+
+    def __bytes__(self):
+        self.to_bytes()
 
 
 class ReconstructedCapsule(object):

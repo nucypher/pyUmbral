@@ -184,6 +184,27 @@ class ReconstructedCapsule(object):
         self.v_prime = v_prime
         self.point_eph_ni = x
 
+    @classmethod
+    def from_bytes(self, data: bytes, curve):
+        """
+        Instantiate ReconstructedCapsule from serialized data.
+        """
+        e_prime = Point.from_bytes(data[0:33], curve)
+        v_prime = Point.from_bytes(data[33:66], curve)
+        eph_ni = Point.from_bytes(data[66:99], curve)
+
+        return ReconstructedCapsule(e_prime, v_prime, eph_ni)
+
+    def to_bytes(self):
+        e_prime = self.e_prime.to_bytes()
+        v_prime = self.v_prime.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+
+        return e_prime + v_prime + eph_ni
+
+    def __bytes__(self):
+        return self.to_bytes()
+
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):

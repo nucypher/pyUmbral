@@ -58,6 +58,26 @@ def test_m_of_n(N, threshold):
     assert sym_key_2 == sym_key
 
 
+def test_kfrag_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    frags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    frag_bytes = frags[0].to_bytes()
+
+    assert len(frag_bytes) == 194
+
+    new_frag = umbral.KFrag.from_bytes(frag_bytes, umbral.UmbralParameters().curve)
+    assert new_frag.bn_id == frags[0].bn_id
+    assert new_frag.point_key == frags[0].point_key
+    assert new_frag.point_eph_ni == frags[0].point_eph_ni
+    assert new_frag.point_commitment == frags[0].point_commitment
+    assert new_frag.bn_sig1 == frags[0].bn_sig1
+    assert new_frag.bn_sig2 == frags[0].bn_sig2
+
+
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_cheating_Ursula_replays_old_reencryption(N, threshold):
 #     pre = umbral.PRE()

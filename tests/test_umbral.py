@@ -101,6 +101,24 @@ def test_cfrag_serialization():
     assert new_cfrag.point_eph_ni == cfrag.point_eph_ni
 
 
+def test_capsule_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    capsule_bytes = capsule.to_bytes()
+
+    assert len(capsule_bytes) == 98
+
+    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
+                                            umbral.UmbralParameters().curve)
+    assert new_capsule.point_eph_e == capsule.point_eph_e
+    assert new_capsule.point_eph_v == capsule.point_eph_v
+    assert new_capsule.bn_sig == capsule.bn_sig
+
+
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_cheating_Ursula_replays_old_reencryption(N, threshold):
 #     pre = umbral.PRE()

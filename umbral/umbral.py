@@ -22,6 +22,33 @@ class KFrag(object):
         self.bn_sig1 = z1
         self.bn_sig2 = z2
 
+    @classmethod
+    def from_bytes(cls, data: bytes, curve):
+        """
+        Instantiate a KFrag object from the serialized data.
+        """
+        id = BigNum.from_bytes(data[0:32], curve)
+        key = BigNum.from_bytes(data[32:64], curve)
+        eph_ni = Point.from_bytes(data[64:97], curve)
+        commitment = Point.from_bytes(data[97:130], curve)
+        sig1 = BigNum.from_bytes(data[130:162], curve)
+        sig2 = BigNum.from_bytes(data[162:194], curve)
+
+        return KFrag(id, key, eph_ni, commitment, sig1, sig2)
+
+    def to_bytes(self):
+        """
+        Serialize the KFrag into a bytestring.
+        """
+        id = self.bn_id.to_bytes()
+        key = self.point_key.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+        commitment = self.point_commitment.to_bytes()
+        sig1 = self.bn_sig1.to_bytes()
+        sig2 = self.bn_sig2.to_bytes()
+
+        return id + key + eph_ni + commitment + sig1 + sig2
+
     def verify(self, pub_a, params: UmbralParameters):
 
         u1 = self.point_commitment
@@ -48,6 +75,10 @@ class KFrag(object):
             i_j = i_j * self.bn_id
 
         return lh_exp == rh_exp
+
+    def __bytes__(self):
+        return self.to_bytes()
+
 
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):

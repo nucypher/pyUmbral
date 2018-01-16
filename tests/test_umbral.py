@@ -144,6 +144,34 @@ def test_reconstructed_capsule_serialization():
     assert new_rec_capsule.v_prime == rec_capsule.v_prime
     assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
 
+
+def test_challenge_response_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+
+    cfrag = pre.reencrypt(kfrags[0], capsule)
+
+    capsule.attach_cfrag(cfrag)
+    ch_resp = pre.challenge(kfrags[0], capsule, cfrag)
+
+    ch_resp_bytes = ch_resp.to_bytes()
+    assert len(ch_resp_bytes) == 228
+
+    new_ch_resp = umbral.ChallengeResponse.from_bytes(
+                            ch_resp_bytes, umbral.UmbralParameters().curve)
+    assert new_ch_resp.e2 == ch_resp.e2
+    assert new_ch_resp.v2 == ch_resp.v2
+    assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment
+    assert new_ch_resp.point_kfrag_pok == ch_resp.point_kfrag_pok
+    assert new_ch_resp.bn_kfrag_sig1 == ch_resp.bn_kfrag_sig1
+    assert new_ch_resp.bn_kfrag_sig2 == ch_resp.bn_kfrag_sig2
+    assert new_ch_resp.bn_sig == ch_resp.bn_sig
+
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_cheating_Ursula_replays_old_reencryption(N, threshold):
 #     pre = umbral.PRE()

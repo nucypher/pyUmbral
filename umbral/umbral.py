@@ -196,6 +196,9 @@ class ReconstructedCapsule(object):
         return ReconstructedCapsule(e_prime, v_prime, eph_ni)
 
     def to_bytes(self):
+        """
+        Serialize the ReconstructedCapsule to a bytestring.
+        """
         e_prime = self.e_prime.to_bytes()
         v_prime = self.v_prime.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
@@ -215,6 +218,40 @@ class ChallengeResponse(object):
         self.bn_kfrag_sig1 = z1
         self.bn_kfrag_sig2 = z2
         self.bn_sig = z3
+
+    @classmethod
+    def from_bytes(self, data: bytes, curve):
+        """
+        Instantiate ChallengeResponse from serialized data.
+        """
+        e2 = Point.from_bytes(data[0:33], curve)
+        v2 = Point.from_bytes(data[33:66], curve)
+        kfrag_commitment = Point.from_bytes(data[66:99], curve)
+        kfrag_pok = Point.from_bytes(data[99:132], curve)
+        kfrag_sig1 = BigNum.from_bytes(data[132:164], curve)
+        kfrag_sig2 = BigNum.from_bytes(data[164:196], curve)
+        sig = BigNum.from_bytes(data[196:228], curve)
+
+        return ChallengeResponse(e2, v2, kfrag_commitment, kfrag_pok,
+                                 kfrag_sig1, kfrag_sig2, sig)
+
+    def to_bytes(self):
+        """
+        Serialize the ChallengeResponse to a bytestring.
+        """
+        e2 = self.e2.to_bytes()
+        v2 = self.v2.to_bytes()
+        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
+        kfrag_pok = self.point_kfrag_pok.to_bytes()
+        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
+        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        return (e2 + v2 + kfrag_commitment + kfrag_pok + kfrag_sig1
+                + kfrag_sig2 + sig)
+
+    def __bytes__(self):
+        return self.to_bytes()
 
 
 class PRE(object):

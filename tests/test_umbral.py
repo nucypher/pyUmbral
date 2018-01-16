@@ -58,6 +58,120 @@ def test_m_of_n(N, threshold):
     assert sym_key_2 == sym_key
 
 
+def test_kfrag_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    frags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    frag_bytes = frags[0].to_bytes()
+
+    assert len(frag_bytes) == 194
+
+    new_frag = umbral.KFrag.from_bytes(frag_bytes,
+                                       umbral.UmbralParameters().curve)
+    assert new_frag.bn_id == frags[0].bn_id
+    assert new_frag.bn_key == frags[0].bn_key
+    assert new_frag.point_eph_ni == frags[0].point_eph_ni
+    assert new_frag.point_commitment == frags[0].point_commitment
+    assert new_frag.bn_sig1 == frags[0].bn_sig1
+    assert new_frag.bn_sig2 == frags[0].bn_sig2
+
+
+def test_cfrag_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+
+    cfrag = pre.reencrypt(kfrags[0], capsule)
+    cfrag_bytes = cfrag.to_bytes()
+
+    assert len(cfrag_bytes) == 131
+
+    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
+                                              umbral.UmbralParameters().curve)
+    assert new_cfrag.e1 == cfrag.e1
+    assert new_cfrag.v1 == cfrag.v1
+    assert new_cfrag.bn_kfrag_id == cfrag.bn_kfrag_id
+    assert new_cfrag.point_eph_ni == cfrag.point_eph_ni
+
+
+def test_capsule_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    capsule_bytes = capsule.to_bytes()
+
+    assert len(capsule_bytes) == 98
+
+    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
+                                            umbral.UmbralParameters().curve)
+    assert new_capsule.point_eph_e == capsule.point_eph_e
+    assert new_capsule.point_eph_v == capsule.point_eph_v
+    assert new_capsule.bn_sig == capsule.bn_sig
+
+
+def test_reconstructed_capsule_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+
+    cfrag = pre.reencrypt(kfrags[0], capsule)
+
+    capsule.attach_cfrag(cfrag)
+
+    rec_capsule = capsule.reconstruct()
+    rec_capsule_bytes = rec_capsule.to_bytes()
+
+    assert len(rec_capsule_bytes) == 99
+
+    new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
+                                rec_capsule_bytes,
+                                umbral.UmbralParameters().curve)
+    assert new_rec_capsule.e_prime == rec_capsule.e_prime
+    assert new_rec_capsule.v_prime == rec_capsule.v_prime
+    assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
+
+
+def test_challenge_response_serialization():
+    pre = umbral.PRE(umbral.UmbralParameters())
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    _, capsule = pre.encapsulate(pub_key)
+    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+
+    cfrag = pre.reencrypt(kfrags[0], capsule)
+
+    capsule.attach_cfrag(cfrag)
+    ch_resp = pre.challenge(kfrags[0], capsule, cfrag)
+
+    ch_resp_bytes = ch_resp.to_bytes()
+    assert len(ch_resp_bytes) == 228
+
+    new_ch_resp = umbral.ChallengeResponse.from_bytes(
+                            ch_resp_bytes, umbral.UmbralParameters().curve)
+    assert new_ch_resp.e2 == ch_resp.e2
+    assert new_ch_resp.v2 == ch_resp.v2
+    assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment
+    assert new_ch_resp.point_kfrag_pok == ch_resp.point_kfrag_pok
+    assert new_ch_resp.bn_kfrag_sig1 == ch_resp.bn_kfrag_sig1
+    assert new_ch_resp.bn_kfrag_sig2 == ch_resp.bn_kfrag_sig2
+    assert new_ch_resp.bn_sig == ch_resp.bn_sig
+
 # @pytest.mark.parametrize("N,threshold", parameters)
 # def test_cheating_Ursula_replays_old_reencryption(N, threshold):
 #     pre = umbral.PRE()

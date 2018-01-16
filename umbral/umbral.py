@@ -16,11 +16,38 @@ class UmbralParameters(object):
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
         self.bn_id = id_
-        self.point_key = key
+        self.bn_key = key
         self.point_eph_ni = x
         self.point_commitment = u1
         self.bn_sig1 = z1
         self.bn_sig2 = z2
+
+    @staticmethod
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiate a KFrag object from the serialized data.
+        """
+        id = BigNum.from_bytes(data[0:32], curve)
+        key = BigNum.from_bytes(data[32:64], curve)
+        eph_ni = Point.from_bytes(data[64:97], curve)
+        commitment = Point.from_bytes(data[97:130], curve)
+        sig1 = BigNum.from_bytes(data[130:162], curve)
+        sig2 = BigNum.from_bytes(data[162:194], curve)
+
+        return KFrag(id, key, eph_ni, commitment, sig1, sig2)
+
+    def to_bytes(self):
+        """
+        Serialize the KFrag into a bytestring.
+        """
+        id = self.bn_id.to_bytes()
+        key = self.bn_key.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+        commitment = self.point_commitment.to_bytes()
+        sig1 = self.bn_sig1.to_bytes()
+        sig2 = self.bn_sig2.to_bytes()
+
+        return id + key + eph_ni + commitment + sig1 + sig2
 
     def verify(self, pub_a, params: UmbralParameters):
 
@@ -39,7 +66,7 @@ class KFrag(object):
 
         # TODO: change this!
         h = params.h
-        lh_exp = h * self.point_key
+        lh_exp = h * self.bn_key
 
         rh_exp = vKeys[0]
         i_j = self.bn_id
@@ -49,12 +76,43 @@ class KFrag(object):
 
         return lh_exp == rh_exp
 
+    def __bytes__(self):
+        return self.to_bytes()
+
+
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
         self.e1 = e1
         self.v1 = v1
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
+
+    @staticmethod
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiates a CapsuleFrag object from the serialized data.
+        """
+        e1 = Point.from_bytes(data[0:33], curve)
+        v1 = Point.from_bytes(data[33:66], curve)
+        kfrag_id = BigNum.from_bytes(data[66:98], curve)
+        eph_ni = Point.from_bytes(data[98:131], curve)
+
+        return CapsuleFrag(e1, v1, kfrag_id, eph_ni)
+
+    def to_bytes(self):
+        """
+        Serialize the CapsuleFrag into a bytestring.
+        """
+        e1 = self.e1.to_bytes()
+        v1 = self.v1.to_bytes()
+        kfrag_id = self.bn_kfrag_id.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+
+        return e1 + v1 + kfrag_id + eph_ni
+
+    def __bytes__(self):
+        return self.to_bytes()
+
 
 class Capsule(object):
     def __init__(self, point_eph_e, point_eph_v, bn_sig):
@@ -63,6 +121,27 @@ class Capsule(object):
         self.bn_sig = bn_sig
 
         self.cfrags = {}
+
+    @staticmethod
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiates a Capsule object from the serialized data.
+        """
+        eph_e = Point.from_bytes(data[0:33], curve)
+        eph_v = Point.from_bytes(data[33:66], curve)
+        sig = BigNum.from_bytes(data[66:98], curve)
+
+        return Capsule(eph_e, eph_v, sig)
+
+    def to_bytes(self):
+        """
+        Serialize the Capsule into a bytestring.
+        """
+        eph_e = self.point_eph_e.to_bytes()
+        eph_v = self.point_eph_v.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        return eph_e + eph_v + sig
 
     def verify(self, params: UmbralParameters):
 
@@ -95,12 +174,39 @@ class Capsule(object):
         
         return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
 
+    def __bytes__(self):
+        self.to_bytes()
+
 
 class ReconstructedCapsule(object):
     def __init__(self, e_prime, v_prime, x):
         self.e_prime = e_prime
         self.v_prime = v_prime
         self.point_eph_ni = x
+
+    @staticmethod
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiate ReconstructedCapsule from serialized data.
+        """
+        e_prime = Point.from_bytes(data[0:33], curve)
+        v_prime = Point.from_bytes(data[33:66], curve)
+        eph_ni = Point.from_bytes(data[66:99], curve)
+
+        return ReconstructedCapsule(e_prime, v_prime, eph_ni)
+
+    def to_bytes(self):
+        """
+        Serialize the ReconstructedCapsule to a bytestring.
+        """
+        e_prime = self.e_prime.to_bytes()
+        v_prime = self.v_prime.to_bytes()
+        eph_ni = self.point_eph_ni.to_bytes()
+
+        return e_prime + v_prime + eph_ni
+
+    def __bytes__(self):
+        return self.to_bytes()
 
 
 class ChallengeResponse(object):
@@ -112,6 +218,40 @@ class ChallengeResponse(object):
         self.bn_kfrag_sig1 = z1
         self.bn_kfrag_sig2 = z2
         self.bn_sig = z3
+
+    @staticmethod
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiate ChallengeResponse from serialized data.
+        """
+        e2 = Point.from_bytes(data[0:33], curve)
+        v2 = Point.from_bytes(data[33:66], curve)
+        kfrag_commitment = Point.from_bytes(data[66:99], curve)
+        kfrag_pok = Point.from_bytes(data[99:132], curve)
+        kfrag_sig1 = BigNum.from_bytes(data[132:164], curve)
+        kfrag_sig2 = BigNum.from_bytes(data[164:196], curve)
+        sig = BigNum.from_bytes(data[196:228], curve)
+
+        return ChallengeResponse(e2, v2, kfrag_commitment, kfrag_pok,
+                                 kfrag_sig1, kfrag_sig2, sig)
+
+    def to_bytes(self):
+        """
+        Serialize the ChallengeResponse to a bytestring.
+        """
+        e2 = self.e2.to_bytes()
+        v2 = self.v2.to_bytes()
+        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
+        kfrag_pok = self.point_kfrag_pok.to_bytes()
+        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
+        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        return (e2 + v2 + kfrag_commitment + kfrag_pok + kfrag_sig1
+                + kfrag_sig2 + sig)
+
+    def __bytes__(self):
+        return self.to_bytes()
 
 
 class PRE(object):
@@ -159,8 +299,8 @@ class PRE(object):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
         assert capsule.verify(self.params), "Generic Umbral Error"
         
-        e1 = capsule.point_eph_e * kFrag.point_key
-        v1 = capsule.point_eph_v * kFrag.point_key
+        e1 = capsule.point_eph_e * kFrag.bn_key
+        v1 = capsule.point_eph_v * kFrag.bn_key
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
         return cFrag
@@ -184,7 +324,7 @@ class PRE(object):
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
-        z3 = t + h * rk.point_key
+        z3 = t + h * rk.bn_key
 
         ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
 

@@ -91,7 +91,8 @@ def test_cfrag_serialization():
     cfrag = pre.reencrypt(kfrags[0], capsule)
     cfrag_bytes = cfrag.to_bytes()
 
-    assert len(cfrag_bytes) == 131
+    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
+    assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
     new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
                                               umbral.UmbralParameters().curve)

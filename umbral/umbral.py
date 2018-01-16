@@ -23,7 +23,7 @@ class KFrag(object):
         self.bn_sig2 = z2
 
     @staticmethod
-    def from_bytes(data: bytes, curve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
         """
         Instantiate a KFrag object from the serialized data.
         """
@@ -88,7 +88,7 @@ class CapsuleFrag(object):
         self.point_eph_ni = x
 
     @staticmethod
-    def from_bytes(data: bytes, curve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
         """
         Instantiates a CapsuleFrag object from the serialized data.
         """
@@ -123,7 +123,7 @@ class Capsule(object):
         self.cfrags = {}
 
     @staticmethod
-    def from_bytes(data: bytes, curve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
         """
         Instantiates a Capsule object from the serialized data.
         """
@@ -185,7 +185,7 @@ class ReconstructedCapsule(object):
         self.point_eph_ni = x
 
     @staticmethod
-    def from_bytes(data: bytes, curve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
         """
         Instantiate ReconstructedCapsule from serialized data.
         """
@@ -220,7 +220,7 @@ class ChallengeResponse(object):
         self.bn_sig = z3
 
     @staticmethod
-    def from_bytes(data: bytes, curve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve):
         """
         Instantiate ChallengeResponse from serialized data.
         """

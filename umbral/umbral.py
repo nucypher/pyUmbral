@@ -16,7 +16,7 @@ class UmbralParameters(object):
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
         self.bn_id = id_
-        self.point_key = key
+        self.bn_key = key
         self.point_eph_ni = x
         self.point_commitment = u1
         self.bn_sig1 = z1
@@ -41,7 +41,7 @@ class KFrag(object):
         Serialize the KFrag into a bytestring.
         """
         id = self.bn_id.to_bytes()
-        key = self.point_key.to_bytes()
+        key = self.bn_key.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
         commitment = self.point_commitment.to_bytes()
         sig1 = self.bn_sig1.to_bytes()
@@ -66,7 +66,7 @@ class KFrag(object):
 
         # TODO: change this!
         h = params.h
-        lh_exp = h * self.point_key
+        lh_exp = h * self.bn_key
 
         rh_exp = vKeys[0]
         i_j = self.bn_id
@@ -299,8 +299,8 @@ class PRE(object):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
         assert capsule.verify(self.params), "Generic Umbral Error"
         
-        e1 = capsule.point_eph_e * kFrag.point_key
-        v1 = capsule.point_eph_v * kFrag.point_key
+        e1 = capsule.point_eph_e * kFrag.bn_key
+        v1 = capsule.point_eph_v * kFrag.bn_key
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
         return cFrag
@@ -324,7 +324,7 @@ class PRE(object):
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
-        z3 = t + h * rk.point_key
+        z3 = t + h * rk.bn_key
 
         ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
 

@@ -72,7 +72,7 @@ def test_kfrag_serialization():
     new_frag = umbral.KFrag.from_bytes(frag_bytes,
                                        umbral.UmbralParameters().curve)
     assert new_frag.bn_id == frags[0].bn_id
-    assert new_frag.point_key == frags[0].point_key
+    assert new_frag.bn_key == frags[0].bn_key
     assert new_frag.point_eph_ni == frags[0].point_eph_ni
     assert new_frag.point_commitment == frags[0].point_commitment
     assert new_frag.bn_sig1 == frags[0].bn_sig1

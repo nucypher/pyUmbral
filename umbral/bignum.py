@@ -26,7 +26,7 @@ class BigNum(object):
 
         order = backend._lib.BN_new()
         backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_free)
+        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
@@ -40,7 +40,7 @@ class BigNum(object):
             rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
 
         new_rand_bn = backend._int_to_bn(rand_num)
-        new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_free)
+        new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_clear_free)
 
         return BigNum(new_rand_bn, curve_nid, group, order)
 
@@ -60,7 +60,7 @@ class BigNum(object):
 
         order = backend._lib.BN_new()
         backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_free)
+        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
@@ -72,7 +72,7 @@ class BigNum(object):
             raise ValueError("Integer provided is not on the given curve.")
 
         bignum = backend._int_to_bn(num)
-        bignum = backend._ffi.gc(bignum, backend._lib.BN_free)
+        bignum = backend._ffi.gc(bignum, backend._lib.BN_clear_free)
 
         return BigNum(bignum, curve_nid, group, order)
 
@@ -106,7 +106,7 @@ class BigNum(object):
         """
         if type(other) == int:
             other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_free)
+            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
 
             other = BigNum(other, None, None, None)
 
@@ -119,13 +119,13 @@ class BigNum(object):
         """
         if type(other) == int:
             other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_free)
+            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
 
             other = BigNum(other, None, None, None)
 
         power = backend._lib.BN_new()
         backend.openssl_assert(power != backend._ffi.NULL)
-        power = backend._ffi.gc(power, backend._lib.BN_free)
+        power = backend._ffi.gc(power, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_exp(
@@ -141,7 +141,7 @@ class BigNum(object):
         """
         product = backend._lib.BN_new()
         backend.openssl_assert(product != backend._ffi.NULL)
-        product = backend._ffi.gc(product, backend._lib.BN_free)
+        product = backend._ffi.gc(product, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_mul(
@@ -157,7 +157,7 @@ class BigNum(object):
         """
         product = backend._lib.BN_new()
         backend.openssl_assert(product != backend._ffi.NULL)
-        product = backend._ffi.gc(product, backend._lib.BN_free)
+        product = backend._ffi.gc(product, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             inv_other = backend._lib.BN_mod_inverse(
@@ -178,7 +178,7 @@ class BigNum(object):
         """
         sum = backend._lib.BN_new()
         backend.openssl_assert(sum != backend._ffi.NULL)
-        sum = backend._ffi.gc(sum, backend._lib.BN_free)
+        sum = backend._ffi.gc(sum, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
@@ -194,7 +194,7 @@ class BigNum(object):
         """
         diff = backend._lib.BN_new()
         backend.openssl_assert(diff != backend._ffi.NULL)
-        diff = backend._ffi.gc(diff, backend._lib.BN_free)
+        diff = backend._ffi.gc(diff, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(
@@ -213,7 +213,7 @@ class BigNum(object):
                 backend._ffi.NULL, self.bignum, self.order, bn_ctx
             )
             backend.openssl_assert(inv != backend._ffi.NULL)
-            inv = backend._ffi.gc(inv, backend._lib.BN_free)
+            inv = backend._ffi.gc(inv, backend._lib.BN_clear_free)
 
         return BigNum(inv, self.curve_nid, self.group, self.order)
 
@@ -223,13 +223,13 @@ class BigNum(object):
         """
         if type(other) == int:
             other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_free)
+            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
 
             other = BigNum(other, None, None, None)
 
         rem = backend._lib.BN_new()
         backend.openssl_assert(rem != backend._ffi.NULL)
-        rem = backend._ffi.gc(rem, backend._lib.BN_free)
+        rem = backend._ffi.gc(rem, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_nnmod(

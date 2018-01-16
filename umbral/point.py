@@ -55,11 +55,11 @@ class Point(object):
         affine_x, affine_y = coords
         if type(affine_x) == int:
             affine_x = backend._int_to_bn(affine_x)
-            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
 
         if type(affine_y) == int:
             affine_y = backend._int_to_bn(affine_y)
-            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
@@ -82,11 +82,11 @@ class Point(object):
         """
         affine_x = backend._lib.BN_new()
         backend.openssl_assert(affine_x != backend._ffi.NULL)
-        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
 
         affine_y = backend._lib.BN_new()
         backend.openssl_assert(affine_y != backend._ffi.NULL)
-        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_get_affine_coordinates_GFp(
@@ -194,7 +194,7 @@ class Point(object):
 
         order = backend._lib.BN_new()
         backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_free)
+        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)

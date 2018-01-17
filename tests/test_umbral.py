@@ -62,19 +62,20 @@ def test_kfrag_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    frags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
-    frag_bytes = frags[0].to_bytes()
+    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrag_bytes = kfrags[0].to_bytes()
 
-    assert len(frag_bytes) == 194
+    # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
+    assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
 
-    new_frag = umbral.KFrag.from_bytes(frag_bytes,
+    new_frag = umbral.KFrag.from_bytes(kfrag_bytes,
                                        umbral.UmbralParameters().curve)
-    assert new_frag.bn_id == frags[0].bn_id
-    assert new_frag.bn_key == frags[0].bn_key
-    assert new_frag.point_eph_ni == frags[0].point_eph_ni
-    assert new_frag.point_commitment == frags[0].point_commitment
-    assert new_frag.bn_sig1 == frags[0].bn_sig1
-    assert new_frag.bn_sig2 == frags[0].bn_sig2
+    assert new_frag.bn_id == kfrags[0].bn_id
+    assert new_frag.bn_key == kfrags[0].bn_key
+    assert new_frag.point_eph_ni == kfrags[0].point_eph_ni
+    assert new_frag.point_commitment == kfrags[0].point_commitment
+    assert new_frag.bn_sig1 == kfrags[0].bn_sig1
+    assert new_frag.bn_sig2 == kfrags[0].bn_sig2
 
 
 def test_cfrag_serialization():

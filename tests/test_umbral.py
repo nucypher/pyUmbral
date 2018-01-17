@@ -42,14 +42,14 @@ def test_m_of_n(N, threshold):
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
     for kfrag in kfrags:
-        assert kfrag.verify(pub_alice, pre.params)
+        assert kfrag.verify(pub_alice, pub_bob, pre.params)
         assert kfrag.is_consistent(vkeys, pre.params)
 
     for kfrag in kfrags[:threshold]:
         cfrag = pre.reencrypt(kfrag, capsule_alice)
         capsule_alice.attach_cfrag(cfrag)
         ch = pre.challenge(kfrag, capsule_alice, cfrag)
-        assert pre.check_challenge(capsule_alice, cfrag, ch, pub_alice)
+        assert pre.check_challenge(capsule_alice, cfrag, ch, pub_alice, pub_bob)
 
     capsule_bob = capsule_alice.reconstruct()
 

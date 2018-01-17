@@ -49,16 +49,16 @@ class KFrag(object):
 
         return id + key + eph_ni + commitment + sig1 + sig2
 
-    def verify(self, pub_a, params: UmbralParameters):
+    def verify(self, pub_a, pub_b, params: UmbralParameters):
 
         u1 = self.point_commitment
         z1 = self.bn_sig1
         z2 = self.bn_sig2
         x  = self.point_eph_ni
 
-        y = (params.g * z2) + (pub_a * z1)
+        g_y = (params.g * z2) + (pub_a * z1)
 
-        return z1 == hash_to_bn([x, u1, y, self.bn_id], params)
+        return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
     
     def is_consistent(self, vKeys, params: UmbralParameters):
         if vKeys is None or len(vKeys) == 0:
@@ -267,6 +267,9 @@ class PRE(object):
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
         g = self.params.g
+
+        pub_a = g * priv_a
+
         x = BigNum.gen_rand(self.params.curve)
         xcomp = g * x
         d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
@@ -281,16 +284,16 @@ class PRE(object):
 
         rk_shares = []
         for _ in range(N):
-            id_ = BigNum.gen_rand(self.params.curve)
-            rk = poly_eval(coeffs, id_)
+            id_kfrag = BigNum.gen_rand(self.params.curve)
+            rk = poly_eval(coeffs, id_kfrag)
 
             u1 = u * rk
             y = BigNum.gen_rand(self.params.curve)
 
-            z1 = hash_to_bn([xcomp, u1, g * y, id_], self.params)
+            z1 = hash_to_bn([g * y, id_kfrag, pub_a, pub_b, u1, xcomp], self.params)
             z2 = y - priv_a * z1
 
-            kFrag = KFrag(id_=id_, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
+            kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
         return rk_shares, vKeys
@@ -333,14 +336,14 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return ch_resp
 
-    def check_challenge(self, capsule, cFrag, challenge_resp, pub_a):
+    def check_challenge(self, capsule, cFrag, challenge_resp, pub_a, pub_b):
         e = capsule.point_eph_e
         v = capsule.point_eph_v
 
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
         xcomp = cFrag.point_eph_ni
-        re_id = cFrag.bn_kfrag_id
+        kfrag_id = cFrag.bn_kfrag_id
 
         e2 = challenge_resp.point_eph_e2
         v2 = challenge_resp.point_eph_v2
@@ -355,11 +358,11 @@ class PRE(object):
         z2 = challenge_resp.bn_kfrag_sig2
         z3 = challenge_resp.bn_sig
 
-        ycomp = (g * z2) + (pub_a * z1)
+        g_y = (g * z2) + (pub_a * z1)
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
-        check31 = z1 == hash_to_bn([xcomp, u1, ycomp, re_id], self.params)
+        check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], self.params)
         check32 = e * z3 == e2 + (e1 * h)
         check33 = u * z3 == u2 + (u1 * h)
 

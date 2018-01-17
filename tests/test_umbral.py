@@ -95,8 +95,8 @@ def test_cfrag_serialization():
 
     new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
                                               umbral.UmbralParameters().curve)
-    assert new_cfrag.e1 == cfrag.e1
-    assert new_cfrag.v1 == cfrag.v1
+    assert new_cfrag.point_eph_e1 == cfrag.point_eph_e1
+    assert new_cfrag.point_eph_v1 == cfrag.point_eph_v1
     assert new_cfrag.bn_kfrag_id == cfrag.bn_kfrag_id
     assert new_cfrag.point_eph_ni == cfrag.point_eph_ni
 
@@ -140,8 +140,8 @@ def test_reconstructed_capsule_serialization():
     new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
                                 rec_capsule_bytes,
                                 umbral.UmbralParameters().curve)
-    assert new_rec_capsule.e_prime == rec_capsule.e_prime
-    assert new_rec_capsule.v_prime == rec_capsule.v_prime
+    assert new_rec_capsule.point_eph_e_prime == rec_capsule.point_eph_e_prime
+    assert new_rec_capsule.point_eph_v_prime == rec_capsule.point_eph_v_prime
     assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
 
 
@@ -164,8 +164,8 @@ def test_challenge_response_serialization():
 
     new_ch_resp = umbral.ChallengeResponse.from_bytes(
                             ch_resp_bytes, umbral.UmbralParameters().curve)
-    assert new_ch_resp.e2 == ch_resp.e2
-    assert new_ch_resp.v2 == ch_resp.v2
+    assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
+    assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment
     assert new_ch_resp.point_kfrag_pok == ch_resp.point_kfrag_pok
     assert new_ch_resp.bn_kfrag_sig1 == ch_resp.bn_kfrag_sig1
@@ -242,8 +242,8 @@ def test_challenge_response_serialization():
 #         challenges.append(challenge)
 
 #     # Let's put a random garbage in one of the cFrags 
-#     cfrags[0].e1 = Point.gen_rand(pre.curve)
-#     cfrags[0].v1 = Point.gen_rand(pre.curve)
+#     cfrags[0].point_eph_e1 = Point.gen_rand(pre.curve)
+#     cfrags[0].point_eph_v1 = Point.gen_rand(pre.curve)
 
 
 #     capsule_bob = pre.reconstruct_capsule(cfrags)

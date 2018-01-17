@@ -82,8 +82,8 @@ class KFrag(object):
 
 class CapsuleFrag(object):
     def __init__(self, e1, v1, id_, x):
-        self.e1 = e1
-        self.v1 = v1
+        self.point_eph_e1 = e1
+        self.point_eph_v1 = v1
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
 
@@ -103,8 +103,8 @@ class CapsuleFrag(object):
         """
         Serialize the CapsuleFrag into a bytestring.
         """
-        e1 = self.e1.to_bytes()
-        v1 = self.v1.to_bytes()
+        e1 = self.point_eph_e1.to_bytes()
+        v1 = self.point_eph_v1.to_bytes()
         kfrag_id = self.bn_kfrag_id.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
 
@@ -161,16 +161,16 @@ class Capsule(object):
         if len(id_cfrag_pairs) > 1:
             ids = self.cfrags.keys() 
             lambda_0 = lambda_coeff(id_0, ids)
-            e = cfrag_0.e1 * lambda_0
-            v = cfrag_0.v1 * lambda_0
+            e = cfrag_0.point_eph_e1 * lambda_0
+            v = cfrag_0.point_eph_v1 * lambda_0
             
             for id_i,cfrag in id_cfrag_pairs[1:]:
                 lambda_i = lambda_coeff(id_i, ids)
-                e = e + (cfrag.e1 * lambda_i)
-                v = v + (cfrag.v1 * lambda_i)
+                e = e + (cfrag.point_eph_e1 * lambda_i)
+                v = v + (cfrag.point_eph_v1 * lambda_i)
         else:
-            e = cfrag_0.e1
-            v = cfrag_0.v1
+            e = cfrag_0.point_eph_e1
+            v = cfrag_0.point_eph_v1
         
         return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
 
@@ -180,8 +180,8 @@ class Capsule(object):
 
 class ReconstructedCapsule(object):
     def __init__(self, e_prime, v_prime, x):
-        self.e_prime = e_prime
-        self.v_prime = v_prime
+        self.point_eph_e_prime = e_prime
+        self.point_eph_v_prime = v_prime
         self.point_eph_ni = x
 
     @staticmethod
@@ -199,8 +199,8 @@ class ReconstructedCapsule(object):
         """
         Serialize the ReconstructedCapsule to a bytestring.
         """
-        e_prime = self.e_prime.to_bytes()
-        v_prime = self.v_prime.to_bytes()
+        e_prime = self.point_eph_e_prime.to_bytes()
+        v_prime = self.point_eph_v_prime.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
 
         return e_prime + v_prime + eph_ni
@@ -211,8 +211,8 @@ class ReconstructedCapsule(object):
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):
-        self.e2 = e2
-        self.v2 = v2
+        self.point_eph_e2 = e2
+        self.point_eph_v2 = v2
         self.point_kfrag_commitment = u1
         self.point_kfrag_pok = u2
         self.bn_kfrag_sig1 = z1
@@ -239,8 +239,8 @@ class ChallengeResponse(object):
         """
         Serialize the ChallengeResponse to a bytestring.
         """
-        e2 = self.e2.to_bytes()
-        v2 = self.v2.to_bytes()
+        e2 = self.point_eph_e2.to_bytes()
+        v2 = self.point_eph_v2.to_bytes()
         kfrag_commitment = self.point_kfrag_commitment.to_bytes()
         kfrag_pok = self.point_kfrag_pok.to_bytes()
         kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
@@ -308,8 +308,8 @@ class PRE(object):
     def challenge(self, rk, capsule, cFrag):
 
 
-        e1 = cFrag.e1
-        v1 = cFrag.v1
+        e1 = cFrag.point_eph_e1
+        v1 = cFrag.point_eph_v1
 
         e = capsule.point_eph_e
         v = capsule.point_eph_v
@@ -337,13 +337,13 @@ class PRE(object):
         e = capsule.point_eph_e
         v = capsule.point_eph_v
 
-        e1 = cFrag.e1
-        v1 = cFrag.v1
+        e1 = cFrag.point_eph_e1
+        v1 = cFrag.point_eph_v1
         xcomp = cFrag.point_eph_ni
         re_id = cFrag.bn_kfrag_id
 
-        e2 = challenge_resp.e2
-        v2 = challenge_resp.v2
+        e2 = challenge_resp.point_eph_e2
+        v2 = challenge_resp.point_eph_v2
 
         g = self.params.g
 
@@ -404,8 +404,8 @@ class PRE(object):
         xcomp = recapsule.point_eph_ni
         d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
 
-        e_prime = recapsule.e_prime
-        v_prime = recapsule.v_prime
+        e_prime = recapsule.point_eph_e_prime
+        v_prime = recapsule.point_eph_v_prime
 
         shared_key = (e_prime + v_prime) * d
         key = kdf(shared_key, key_length)

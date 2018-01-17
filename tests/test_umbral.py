@@ -1,16 +1,15 @@
-from umbral import umbral
 import pytest
-from umbral.bignum import BigNum
-from umbral.point import Point
+
+from umbral import umbral
 
 # (N,threshold)
 parameters = [
     (1, 1),
-    (6,1),
-    (6,4),
-    (6,6),
+    (6, 1),
+    (6, 4),
+    (6, 6),
     (50, 30)
-    ]
+]
 
 
 def test_decapsulation_by_alice():
@@ -35,7 +34,6 @@ def test_m_of_n(N, threshold):
     pub_alice = pre.priv2pub(priv_alice)
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
-
 
     sym_key, capsule_alice = pre.encapsulate(pub_alice)
 
@@ -194,7 +192,7 @@ def test_challenge_response_serialization():
 #     for kFrag in kfrags[:threshold]:
 #         cFrag = pre.reencrypt(kFrag, capsule_alice)
 #         challenge =  pre.challenge(kFrag, capsule_alice, cFrag)
-        
+
 #         #assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
 #         cfrags.append(cFrag)
 #         challenges.append(challenge)
@@ -203,7 +201,7 @@ def test_challenge_response_serialization():
 #     cfrags[0] = pre.reencrypt(kfrags[0], other_capsule_alice)
 
 #     capsule_bob = pre.reconstruct_capsule(cfrags)
-    
+
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
 #         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
@@ -237,7 +235,7 @@ def test_challenge_response_serialization():
 #     for kFrag in kfrags[0:threshold]:
 #         cFrag = pre.reencrypt(kFrag, capsule_alice)
 #         challenge =  pre.challenge(kFrag, capsule_alice, cFrag)
-        
+
 #         #assert pre.check_challenge(ekey_alice, cFrag, ch, pub_alice)
 #         cfrags.append(cFrag)
 #         challenges.append(challenge)
@@ -248,7 +246,7 @@ def test_challenge_response_serialization():
 
 
 #     capsule_bob = pre.reconstruct_capsule(cfrags)
-    
+
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
 #         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)

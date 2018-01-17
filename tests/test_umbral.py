@@ -107,10 +107,12 @@ def test_capsule_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre.encapsulate(pub_key)
+    _symmetric_key, capsule = pre.encapsulate(pub_key)
     capsule_bytes = capsule.to_bytes()
 
-    assert len(capsule_bytes) == 98
+    # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
+    # TODO: Do we want to include the cfrags as well?  See #20.
+    assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
     new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
@@ -135,6 +137,7 @@ def test_reconstructed_capsule_serialization():
     rec_capsule = capsule.reconstruct()
     rec_capsule_bytes = rec_capsule.to_bytes()
 
+    # A reconstructed Capsule is three points, representable as 33 bytes each.
     assert len(rec_capsule_bytes) == 99
 
     new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
@@ -160,7 +163,9 @@ def test_challenge_response_serialization():
     ch_resp = pre.challenge(kfrags[0], capsule, cfrag)
 
     ch_resp_bytes = ch_resp.to_bytes()
-    assert len(ch_resp_bytes) == 228
+
+    # A ChallengeResponse can be represented as the 228 total bytes of four Points (33 each) and three BigNums (32 each).
+    assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
     new_ch_resp = umbral.ChallengeResponse.from_bytes(
                             ch_resp_bytes, umbral.UmbralParameters().curve)

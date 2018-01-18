@@ -146,9 +146,10 @@ def test_capsule_serialization():
 
     new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
-    assert new_capsule.point_eph_e == capsule.point_eph_e
-    assert new_capsule.point_eph_v == capsule.point_eph_v
-    assert new_capsule.bn_sig == capsule.bn_sig
+    # TODO: Have method that gives us these attributes instead of needing to access them directly.
+    assert new_capsule._point_eph_e == capsule._point_eph_e
+    assert new_capsule._point_eph_v == capsule._point_eph_v
+    assert new_capsule._bn_sig == capsule._bn_sig
 
 
 def test_reconstructed_capsule_serialization():
@@ -164,18 +165,19 @@ def test_reconstructed_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    rec_capsule = capsule.reconstruct()
-    rec_capsule_bytes = rec_capsule.to_bytes()
+    capsule._reconstruct(pre=pre)
+    rec_capsule_bytes = capsule._reconstructed_bytes()
 
     # A reconstructed Capsule is three points, representable as 33 bytes each.
     assert len(rec_capsule_bytes) == 99
 
-    new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
+    new_rec_capsule = umbral.Capsule.from_reconstructed_bytes(
                                 rec_capsule_bytes,
                                 umbral.UmbralParameters().curve)
-    assert new_rec_capsule.point_eph_e_prime == rec_capsule.point_eph_e_prime
-    assert new_rec_capsule.point_eph_v_prime == rec_capsule.point_eph_v_prime
-    assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
+    # TODO: Have method that gives us these attributes instead of needing to access them directly.
+    assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
+    assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
+    assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_challenge_response_serialization():

@@ -194,15 +194,34 @@ class Capsule(object):
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
 
-    def reconstruct(self):
+    def original_ephemeral_points(self):
+        return self._point_eph_e + self._point_eph_v
+
+    def reconstructed_ephemeral_points(self):
+        return self._point_eph_e_prime + self._point_eph_v_prime
+
+    def open(self, pub_bob, priv_bob, pub_alice, force_reopen=False, pre=None):
+        # TODO: Raise an error here if Bob has gathered enough cFrags.
+        if self.contents and not force_reopen:
+            newly_opened = True
+        else:
+            self._reconstruct(pre=pre)
+            if not pre:
+                pre = PRE(UmbralParameters())
+            self._contents = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, self)
+            newly_opened = False
+        return self.contents, newly_opened
+
+    def _reconstruct(self, pre):
         id_cfrag_pairs = list(self.cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
-            ids = self.cfrags.keys() 
+            ids = self.cfrags.keys()
             lambda_0 = lambda_coeff(id_0, ids)
+
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
-            
+
             for id_i, cfrag in id_cfrag_pairs[1:]:
                 lambda_i = lambda_coeff(id_i, ids)
                 e = e + (lambda_i * cfrag.point_eph_e1)
@@ -210,42 +229,23 @@ class Capsule(object):
         else:
             e = cfrag_0.point_eph_e1
             v = cfrag_0.point_eph_v1
-        
-        return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
+
+        self._point_eph_e_prime = e
+        self._point_eph_v_prime = v
+        self._point_noninteractive = cfrag_0.point_eph_ni
+
+    def _reconstructed_bytes(self):
+        """
+        Serialize the reconstruction components into a bytestring.
+        """
+        eph_e = self._point_eph_e_prime
+        eph_v = self._point_eph_v_prime
+        point_noninter = self._point_noninteractive
+
+        return eph_e.to_bytes() + eph_v.to_bytes() + point_noninter.to_bytes()
 
     def __bytes__(self):
         self.to_bytes()
-
-
-class ReconstructedCapsule(object):
-    def __init__(self, e_prime, v_prime, x):
-        self.point_eph_e_prime = e_prime
-        self.point_eph_v_prime = v_prime
-        self.point_eph_ni = x
-
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
-        """
-        Instantiate ReconstructedCapsule from serialized data.
-        """
-        e_prime = Point.from_bytes(data[0:33], curve)
-        v_prime = Point.from_bytes(data[33:66], curve)
-        eph_ni = Point.from_bytes(data[66:99], curve)
-
-        return ReconstructedCapsule(e_prime, v_prime, eph_ni)
-
-    def to_bytes(self):
-        """
-        Serialize the ReconstructedCapsule to a bytestring.
-        """
-        e_prime = self.point_eph_e_prime.to_bytes()
-        v_prime = self.point_eph_v_prime.to_bytes()
-        eph_ni = self.point_eph_ni.to_bytes()
-
-        return e_prime + v_prime + eph_ni
-
-    def __bytes__(self):
-        return self.to_bytes()
 
 
 class ChallengeResponse(object):
@@ -354,7 +354,6 @@ class PRE(object):
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
         assert capsule.verify(self.params), "Generic Umbral Error"
-
         e1 = kFrag.bn_key * capsule.point_eph_e
         v1 = kFrag.bn_key * capsule.point_eph_v
 
@@ -365,8 +364,8 @@ class PRE(object):
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
 
-        e = capsule.point_eph_e
-        v = capsule.point_eph_v
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
 
         u = self.params.u
         u1 = rk.point_commitment
@@ -388,8 +387,8 @@ class PRE(object):
         return ch_resp
 
     def check_challenge(self, capsule, cFrag, challenge_resp, pub_a, pub_b):
-        e = capsule.point_eph_e
-        v = capsule.point_eph_v
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
 
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
@@ -451,7 +450,7 @@ class PRE(object):
         return key
 
     def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
-                                recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):
+                                recapsule, original_capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
         xcomp = recapsule.point_eph_ni

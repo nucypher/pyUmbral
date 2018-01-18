@@ -5,6 +5,7 @@ from umbral.bignum import BigNum
 from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
+
 class UmbralParameters(object):
     def __init__(self):
         self.curve = ec.SECP256K1()
@@ -12,6 +13,7 @@ class UmbralParameters(object):
         self.order = Point.get_order_from_curve(self.curve)
         self.h = Point.gen_rand(self.curve)
         self.u = Point.gen_rand(self.curve)
+
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
@@ -56,7 +58,7 @@ class KFrag(object):
         z2 = self.bn_sig2
         x  = self.point_eph_ni
 
-        g_y = (params.g * z2) + (pub_a * z1)
+        g_y = (z2 * params.g) + (z1 * pub_a)
 
         return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
     
@@ -66,12 +68,12 @@ class KFrag(object):
 
         # TODO: change this!
         h = params.h
-        lh_exp = h * self.bn_key
+        lh_exp = self.bn_key * h
 
         rh_exp = vKeys[0]
         i_j = self.bn_id
         for vKey in vKeys[1:]:
-            rh_exp = rh_exp + (vKey * i_j)
+            rh_exp = rh_exp + (i_j * vKey)
             i_j = i_j * self.bn_id
 
         return lh_exp == rh_exp
@@ -150,7 +152,7 @@ class Capsule(object):
         s = self.bn_sig
         h = hash_to_bn([e, v], params)
 
-        return params.g * s == v + (e * h)
+        return s * params.g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
@@ -161,13 +163,13 @@ class Capsule(object):
         if len(id_cfrag_pairs) > 1:
             ids = self.cfrags.keys() 
             lambda_0 = lambda_coeff(id_0, ids)
-            e = cfrag_0.point_eph_e1 * lambda_0
-            v = cfrag_0.point_eph_v1 * lambda_0
+            e = lambda_0 * cfrag_0.point_eph_e1
+            v = lambda_0 * cfrag_0.point_eph_v1
             
-            for id_i,cfrag in id_cfrag_pairs[1:]:
+            for id_i, cfrag in id_cfrag_pairs[1:]:
                 lambda_i = lambda_coeff(id_i, ids)
-                e = e + (cfrag.point_eph_e1 * lambda_i)
-                v = v + (cfrag.point_eph_v1 * lambda_i)
+                e = e + (lambda_i * cfrag.point_eph_e1)
+                v = v + (lambda_i * cfrag.point_eph_v1)
         else:
             e = cfrag_0.point_eph_e1
             v = cfrag_0.point_eph_v1
@@ -263,15 +265,15 @@ class PRE(object):
 
     def priv2pub(self, priv):
         g = self.params.g
-        return g * priv
+        return priv * g
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
         g = self.params.g
 
-        pub_a = g * priv_a
+        pub_a = priv_a * g
 
         x = BigNum.gen_rand(self.params.curve)
-        xcomp = g * x
+        xcomp = x * g
         d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
 
         coeffs = [priv_a * (~d)]
@@ -280,17 +282,17 @@ class PRE(object):
         h = self.params.h
         u = self.params.u
 
-        vKeys = [h * coeff for coeff in coeffs]
+        vKeys = [coeff * h for coeff in coeffs]
 
         rk_shares = []
         for _ in range(N):
             id_kfrag = BigNum.gen_rand(self.params.curve)
             rk = poly_eval(coeffs, id_kfrag)
 
-            u1 = u * rk
+            u1 = rk * u
             y = BigNum.gen_rand(self.params.curve)
 
-            z1 = hash_to_bn([g * y, id_kfrag, pub_a, pub_b, u1, xcomp], self.params)
+            z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], self.params)
             z2 = y - priv_a * z1
 
             kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
@@ -301,16 +303,14 @@ class PRE(object):
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
         assert capsule.verify(self.params), "Generic Umbral Error"
-        
-        e1 = capsule.point_eph_e * kFrag.bn_key
-        v1 = capsule.point_eph_v * kFrag.bn_key
+
+        e1 = kFrag.bn_key * capsule.point_eph_e
+        v1 = kFrag.bn_key * capsule.point_eph_v
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
         return cFrag
 
     def challenge(self, rk, capsule, cFrag):
-
-
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
 
@@ -321,9 +321,9 @@ class PRE(object):
         u1 = rk.point_commitment
 
         t = BigNum.gen_rand(self.params.curve)
-        e2 = e * t
-        v2 = v * t
-        u2 = u * t
+        e2 = t * e
+        v2 = t * v
+        u2 = t * u
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
@@ -331,7 +331,7 @@ class PRE(object):
 
         ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
 
-        # Check correctness of original ciphertext (check nº 2) at the end 
+        # Check correctness of original ciphertext (check nº 2) at the end
         # to avoid timing oracles
         assert capsule.verify(self.params), "Generic Umbral Error"
         return ch_resp
@@ -358,13 +358,13 @@ class PRE(object):
         z2 = challenge_resp.bn_kfrag_sig2
         z3 = challenge_resp.bn_sig
 
-        g_y = (g * z2) + (pub_a * z1)
+        g_y = (z2 * g) + (z1 * pub_a)
 
         h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
 
         check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], self.params)
-        check32 = e * z3 == e2 + (e1 * h)
-        check33 = u * z3 == u2 + (u1 * h)
+        check32 = z3 * e == e2 + (h * e1)
+        check33 = z3 * u == u2 + (h * u1)
 
         return check31 & check32 & check33
 
@@ -373,29 +373,27 @@ class PRE(object):
         g = self.params.g
 
         priv_r = BigNum.gen_rand(self.params.curve)
-        pub_r = g * priv_r
+        pub_r = priv_r * g
 
         priv_u = BigNum.gen_rand(self.params.curve)
-        pub_u = g * priv_u
+        pub_u = priv_u * g
 
         h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)
 
-        shared_key = pub_key * (priv_r + priv_u)
-
+        shared_key = (priv_r + priv_u) * pub_key
         # Key to be used for symmetric encryption
         key = kdf(shared_key, key_length)
 
         return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-
     def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        shared_key = (capsule.point_eph_e + capsule.point_eph_v) * priv_key
+        shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
         key = kdf(shared_key, key_length)
 
-        # Check correctness of original ciphertext (check nº 2) at the end 
+        # Check correctness of original ciphertext (check nº 2) at the end
         # to avoid timing oracles
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
@@ -410,7 +408,7 @@ class PRE(object):
         e_prime = recapsule.point_eph_e_prime
         v_prime = recapsule.point_eph_v_prime
 
-        shared_key = (e_prime + v_prime) * d
+        shared_key = d * (e_prime + v_prime)
         key = kdf(shared_key, key_length)
 
         e = original_capsule.point_eph_e
@@ -418,6 +416,6 @@ class PRE(object):
         s = original_capsule.bn_sig
         h = hash_to_bn([e, v], self.params)
         inv_d = ~d
-        assert orig_pub_key * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"
+        assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
 
         return key

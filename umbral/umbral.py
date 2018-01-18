@@ -13,6 +13,7 @@ class UmbralParameters(object):
         self.h = Point.gen_rand(self.curve)
         self.u = Point.gen_rand(self.curve)
 
+
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
         self.bn_id = id_
@@ -54,12 +55,12 @@ class KFrag(object):
         u1 = self.point_commitment
         z1 = self.bn_sig1
         z2 = self.bn_sig2
-        x  = self.point_eph_ni
+        x = self.point_eph_ni
 
         g_y = (params.g * z2) + (pub_a * z1)
 
         return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
-    
+
     def is_consistent(self, vKeys, params: UmbralParameters):
         if vKeys is None or len(vKeys) == 0:
             raise ValueError('vKeys must not be empty')

@@ -96,7 +96,7 @@ class Point(object):
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
     @classmethod
-    def from_bytes(self, data, curve):
+    def from_bytes(cls, data, curve):
         """
         Returns a Point object from the given byte data on the curve provided.
         """
@@ -125,7 +125,7 @@ class Point(object):
                 )
                 backend.openssl_assert(res == 1)
 
-            return Point(ec_point, curve_nid, affine_x.group)
+            return cls(ec_point, curve_nid, affine_x.group)
 
         # Handle uncompressed point
         elif data[0] == 4:
@@ -176,7 +176,7 @@ class Point(object):
         generator = backend._lib.EC_GROUP_get0_generator(group)
         backend.openssl_assert(generator != backend._ffi.NULL)
 
-        return Point(generator, curve_nid, group)
+        return cls(generator, curve_nid, group)
 
     @classmethod
     def get_order_from_curve(cls, curve):

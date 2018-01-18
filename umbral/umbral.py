@@ -140,8 +140,8 @@ class Capsule(object):
         self.cfrags = {}
         self._contents = None
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+    @classmethod
+    def from_original_bytes(cls, data: bytes, curve: ec.EllipticCurve):
         """
         Instantiates a Capsule object from the serialized data.
         """
@@ -149,7 +149,25 @@ class Capsule(object):
         eph_v = Point.from_bytes(data[33:66], curve)
         sig = BigNum.from_bytes(data[66:98], curve)
 
-        return Capsule(eph_e, eph_v, sig)
+        return cls(eph_e, eph_v, sig)
+
+    @classmethod
+    def from_reconstructed_bytes(cls, data: bytes, curve: ec.EllipticCurve):
+        """
+        Instantiate a Capsule from serialized data after reconstruction has occurred.
+
+        The most obvious use case is Bob affixing at least m cFrags and then serializing the Capsule.
+        """
+        # TODO: Seems like a job for BytestringSplitter ?
+        e_prime = Point.from_bytes(data[0:33], curve)
+        v_prime = Point.from_bytes(data[33:66], curve)
+        eph_ni = Point.from_bytes(data[66:99], curve)
+
+        return cls(e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
+
+    @property
+    def contents(self):
+        return self._contents
 
     def to_bytes(self):
         """

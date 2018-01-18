@@ -1,9 +1,9 @@
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
 from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
+
 
 class UmbralParameters(object):
     def __init__(self):

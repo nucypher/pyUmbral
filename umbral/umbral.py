@@ -212,6 +212,9 @@ class Capsule(object):
             newly_opened = False
         return self.contents, newly_opened
 
+    def original_components(self):
+        return self._point_eph_e, self._point_eph_v, self._bn_sig
+
     def _reconstruct(self, pre):
         id_cfrag_pairs = list(self.cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]

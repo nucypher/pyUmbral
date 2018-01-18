@@ -147,10 +147,7 @@ def test_capsule_serialization():
     new_capsule = umbral.Capsule.from_original_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
     # TODO: Have method that gives us these attributes instead of needing to access them directly.
-    assert new_capsule._point_eph_e == capsule._point_eph_e
-    assert new_capsule._point_eph_v == capsule._point_eph_v
-    assert new_capsule._bn_sig == capsule._bn_sig
-
+    assert new_capsule.original_components() == capsule.original_components()
 
 def test_reconstructed_capsule_serialization():
     pre = umbral.PRE(umbral.UmbralParameters())

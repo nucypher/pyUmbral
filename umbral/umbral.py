@@ -173,17 +173,17 @@ class Capsule(object):
         """
         Serialize the Capsule into a bytestring.
         """
-        eph_e = self.point_eph_e.to_bytes()
-        eph_v = self.point_eph_v.to_bytes()
-        sig = self.bn_sig.to_bytes()
+        eph_e = self._point_eph_e.to_bytes()
+        eph_v = self._point_eph_v.to_bytes()
+        sig = self._bn_sig.to_bytes()
 
         return eph_e + eph_v + sig
 
     def verify(self, params: UmbralParameters):
 
-        e = self.point_eph_e
-        v = self.point_eph_v
-        s = self.bn_sig
+        e = self._point_eph_e
+        v = self._point_eph_v
+        s = self._bn_sig
         h = hash_to_bn([e, v], params)
 
         return params.g * s == v + (e * h)

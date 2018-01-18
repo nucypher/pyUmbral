@@ -432,24 +432,24 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
-                                recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):
+    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+                                 capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        xcomp = recapsule.point_eph_ni
+        xcomp = capsule._point_noninteractive
+
         d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
+        shared_key = capsule.reconstructed_ephemeral_points() * d
+        key_bytes = kdf(shared_key, key_length)
 
-        e_prime = recapsule.point_eph_e_prime
-        v_prime = recapsule.point_eph_v_prime
+        if capsule._point_eph_e:
+            # TODO: So, here, we have Alice's data too.  What's actually going on here?
+            e = capsule._point_eph_e
+            v = capsule._point_eph_v
+            s = capsule._bn_sig
+            h = hash_to_bn([e, v], self.params)
+            inv_d = ~d
+            assert orig_pub_key * (s * inv_d) == capsule._point_eph_v_prime + (
+                capsule._point_eph_e_prime * h), "Generic Umbral Error"
 
-        shared_key = (e_prime + v_prime) * d
-        key = kdf(shared_key, key_length)
-
-        e = original_capsule.point_eph_e
-        v = original_capsule.point_eph_v
-        s = original_capsule.bn_sig
-        h = hash_to_bn([e, v], self.params)
-        inv_d = ~d
-        assert orig_pub_key * (s * inv_d) == v_prime + (e_prime * h), "Generic Umbral Error"
-
-        return key
+        return key_bytes

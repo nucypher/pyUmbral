@@ -64,8 +64,8 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-    sym_key, capsule_alice = pre._encapsulate(pub_alice)
 
+    sym_key, capsule = pre._encapsulate(pub_alice)
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
     for kfrag in kfrags:
@@ -73,16 +73,17 @@ def test_m_of_n(N, threshold):
         assert kfrag.is_consistent(vkeys, pre.params)
 
     for kfrag in kfrags[:threshold]:
-        cfrag = pre.reencrypt(kfrag, capsule_alice)
-        capsule_alice.attach_cfrag(cfrag)
-        ch = pre.challenge(kfrag, capsule_alice, cfrag)
-        assert pre.check_challenge(capsule_alice, cfrag, ch, pub_alice, pub_bob)
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+        ch = pre.challenge(kfrag, capsule, cfrag)
+        assert pre.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
 
-    capsule_bob = capsule_alice.reconstruct()
+    # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
+    capsule.open(pub_bob, priv_bob, pub_alice)
 
-    sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
 
-    assert sym_key_2 == sym_key
+    sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
+    assert sym_key == capsule.contents
 
 
 def test_kfrag_serialization():

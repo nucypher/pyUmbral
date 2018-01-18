@@ -113,7 +113,7 @@ def test_capsule_serialization():
     # TODO: Do we want to include the cfrags as well?  See #20.
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
-    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
+    new_capsule = umbral.Capsule.from_original_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
     # TODO: Have method that gives us these attributes instead of needing to access them directly.
     assert new_capsule._point_eph_e == capsule._point_eph_e

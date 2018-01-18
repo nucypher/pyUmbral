@@ -441,7 +441,6 @@ class PRE(object):
     def _decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
         shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
-
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end

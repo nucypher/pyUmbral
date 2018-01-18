@@ -139,6 +139,9 @@ class BigNum(object):
         """
         Performs a BN_mod_mul between two BIGNUMS.
         """
+        if type(other) != BigNum:
+            return NotImplemented
+
         product = backend._lib.BN_new()
         backend.openssl_assert(product != backend._ffi.NULL)
         product = backend._ffi.gc(product, backend._lib.BN_free)

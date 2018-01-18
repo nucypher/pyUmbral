@@ -119,12 +119,29 @@ class CapsuleFrag(object):
 
 
 class Capsule(object):
-    def __init__(self, point_eph_e, point_eph_v, bn_sig):
-        self.point_eph_e = point_eph_e
-        self.point_eph_v = point_eph_v
-        self.bn_sig = bn_sig
+    def __init__(self,
+                 point_eph_e=None,
+                 point_eph_v=None,
+                 bn_sig=None,
+                 e_prime=None,
+                 v_prime=None,
+                 noninteractive_point=None):
+
+        if not point_eph_e and not e_prime:
+            raise ValueError(
+                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                Passing both is also fine.")
+
+        self._point_eph_e = point_eph_e
+        self._point_eph_v = point_eph_v
+        self._bn_sig = bn_sig
+
+        self._point_eph_e_prime = e_prime
+        self._point_eph_v_prime = v_prime
+        self._point_noninteractive = noninteractive_point
 
         self.cfrags = {}
+        self._contents = None
 
     @staticmethod
     def from_bytes(data: bytes, curve: ec.EllipticCurve):

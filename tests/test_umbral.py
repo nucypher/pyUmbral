@@ -116,7 +116,7 @@ def test_cfrag_serialization():
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
     assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
-    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
+    new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes,
                                               umbral.UmbralParameters().curve)
     assert new_cfrag.point_eph_e1 == cfrag.point_eph_e1
     assert new_cfrag.point_eph_v1 == cfrag.point_eph_v1
@@ -162,7 +162,7 @@ def test_reconstructed_capsule_serialization():
     # The components of a reconstructed Capsule are three points, representable as 33 bytes each.
     assert len(rec_capsule_bytes) == 99
 
-    new_rec_capsule = umbral.Capsule.from_reconstructed_bytes(
+    new_rec_capsule = Capsule.from_reconstructed_bytes(
         rec_capsule_bytes,
         umbral.UmbralParameters().curve)
     # TODO: Have method that gives us these attributes instead of needing to access them directly.

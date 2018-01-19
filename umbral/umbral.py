@@ -381,7 +381,11 @@ class PRE(object):
         h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)
 
-        shared_key = (priv_r + priv_u) * pub_key
+        dh_point = pub_key * (priv_r + priv_u)
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         # Key to be used for symmetric encryption
         key = kdf(shared_key, key_length)
 
@@ -390,7 +394,11 @@ class PRE(object):
     def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
+        dh_point = (capsule.point_eph_e + capsule.point_eph_v) * priv_key
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end
@@ -408,7 +416,11 @@ class PRE(object):
         e_prime = recapsule.point_eph_e_prime
         v_prime = recapsule.point_eph_v_prime
 
-        shared_key = d * (e_prime + v_prime)
+        dh_point = (e_prime + v_prime) * d
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         key = kdf(shared_key, key_length)
 
         e = original_capsule.point_eph_e

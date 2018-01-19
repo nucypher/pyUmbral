@@ -191,21 +191,15 @@ class Capsule(object):
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
 
-    def original_ephemeral_points(self):
-        return self._point_eph_e + self._point_eph_v
-
-    def reconstructed_ephemeral_points(self):
-        return self._point_eph_e_prime + self._point_eph_v_prime
-
     def open(self, pub_bob, priv_bob, pub_alice, force_reopen=False, pre=None):
-        # TODO: Raise an error here if Bob has gathered enough cFrags.
+        # TODO: Raise an error here if Bob hasn't gathered enough cFrags.
         if self.contents and not force_reopen:
             newly_opened = True
         else:
             self._reconstruct(pre=pre)
             if not pre:
                 pre = PRE(UmbralParameters())
-            self._contents = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, self)
+            self._contents = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, self)
             newly_opened = False
         return self.contents, newly_opened
 
@@ -427,7 +421,7 @@ class PRE(object):
     def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        shared_key = capsule.original_ephemeral_points() * priv_key
+        shared_key = (capsule._point_eph_e + capsule._point_eph_v) * priv_key
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end 
@@ -435,14 +429,14 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
                                  capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
         xcomp = capsule._point_noninteractive
 
         d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
-        shared_key = capsule.reconstructed_ephemeral_points() * d
+        shared_key = (capsule._point_eph_e_prime + capsule._point_eph_v_prime) * d
         key_bytes = kdf(shared_key, key_length)
 
         if capsule._point_eph_e:

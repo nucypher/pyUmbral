@@ -35,7 +35,7 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-    sym_key, capsule_alice = pre.encapsulate(pub_alice)
+    sym_key, capsule = pre.encapsulate(pub_alice)
 
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
@@ -44,16 +44,15 @@ def test_m_of_n(N, threshold):
         assert kfrag.is_consistent(vkeys, pre.params)
 
     for kfrag in kfrags[:threshold]:
-        cfrag = pre.reencrypt(kfrag, capsule_alice)
-        capsule_alice.attach_cfrag(cfrag)
-        ch = pre.challenge(kfrag, capsule_alice, cfrag)
-        assert pre.check_challenge(capsule_alice, cfrag, ch, pub_alice, pub_bob)
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+        ch = pre.challenge(kfrag, capsule, cfrag)
+        assert pre.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
 
-    capsule_bob = capsule_alice.reconstruct()
+    # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
+    capsule.open(pub_bob, priv_bob, pub_alice)
 
-    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
-
-    assert sym_key_2 == sym_key
+    assert sym_key == capsule.contents
 
 
 def test_kfrag_serialization():
@@ -114,12 +113,10 @@ def test_capsule_serialization():
     # TODO: Do we want to include the cfrags as well?  See #20.
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
-    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
+    new_capsule = umbral.Capsule.from_original_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
-    assert new_capsule.point_eph_e == capsule.point_eph_e
-    assert new_capsule.point_eph_v == capsule.point_eph_v
-    assert new_capsule.bn_sig == capsule.bn_sig
-
+    # TODO: Have method that gives us these attributes instead of needing to access them directly.
+    assert new_capsule.original_components() == capsule.original_components()
 
 def test_reconstructed_capsule_serialization():
     pre = umbral.PRE(umbral.UmbralParameters())
@@ -134,18 +131,19 @@ def test_reconstructed_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    rec_capsule = capsule.reconstruct()
-    rec_capsule_bytes = rec_capsule.to_bytes()
+    capsule._reconstruct(pre=pre)
+    rec_capsule_bytes = capsule._reconstructed_bytes()
 
     # A reconstructed Capsule is three points, representable as 33 bytes each.
     assert len(rec_capsule_bytes) == 99
 
-    new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
+    new_rec_capsule = umbral.Capsule.from_reconstructed_bytes(
                                 rec_capsule_bytes,
                                 umbral.UmbralParameters().curve)
-    assert new_rec_capsule.point_eph_e_prime == rec_capsule.point_eph_e_prime
-    assert new_rec_capsule.point_eph_v_prime == rec_capsule.point_eph_v_prime
-    assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
+    # TODO: Have method that gives us these attributes instead of needing to access them directly.
+    assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
+    assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
+    assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_challenge_response_serialization():

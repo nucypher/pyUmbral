@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-INSTALL_REQUIRES = ['msgpack-python', 'cryptography'] #'pysha3', 
+INSTALL_REQUIRES = ['msgpack-python', 'cryptography', 'pynacl'] #'pysha3', 
 
 TESTS_REQUIRE = [
     'pytest',

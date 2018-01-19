@@ -232,6 +232,8 @@ class Point(object):
 
         return Point(prod, self.curve_nid, self.group)
 
+    __rmul__ = __mul__
+
     def __add__(self, other):
         """
         Performs an EC_POINT_add on two EC_POINTS.

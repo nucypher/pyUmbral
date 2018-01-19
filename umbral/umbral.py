@@ -1,4 +1,3 @@
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
@@ -56,12 +55,12 @@ class KFrag(object):
         u1 = self.point_commitment
         z1 = self.bn_sig1
         z2 = self.bn_sig2
-        x  = self.point_eph_ni
+        x = self.point_eph_ni
 
         g_y = (z2 * params.g) + (z1 * pub_a)
 
         return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
-    
+
     def is_consistent(self, vKeys, params: UmbralParameters):
         if vKeys is None or len(vKeys) == 0:
             raise ValueError('vKeys must not be empty')
@@ -161,11 +160,11 @@ class Capsule(object):
         id_cfrag_pairs = list(self.cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
-            ids = self.cfrags.keys() 
+            ids = self.cfrags.keys()
             lambda_0 = lambda_coeff(id_0, ids)
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
-            
+
             for id_i, cfrag in id_cfrag_pairs[1:]:
                 lambda_i = lambda_coeff(id_i, ids)
                 e = e + (lambda_i * cfrag.point_eph_e1)
@@ -173,7 +172,7 @@ class Capsule(object):
         else:
             e = cfrag_0.point_eph_e1
             v = cfrag_0.point_eph_v1
-        
+
         return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
 
     def __bytes__(self):
@@ -381,7 +380,11 @@ class PRE(object):
         h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)
 
-        shared_key = (priv_r + priv_u) * pub_key
+        dh_point = pub_key * (priv_r + priv_u)
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         # Key to be used for symmetric encryption
         key = kdf(shared_key, key_length)
 
@@ -390,7 +393,11 @@ class PRE(object):
     def decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
+        dh_point = (capsule.point_eph_e + capsule.point_eph_v) * priv_key
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end
@@ -408,7 +415,11 @@ class PRE(object):
         e_prime = recapsule.point_eph_e_prime
         v_prime = recapsule.point_eph_v_prime
 
-        shared_key = d * (e_prime + v_prime)
+        dh_point = (e_prime + v_prime) * d
+
+        shared_key_x, _ = dh_point.to_affine()
+        shared_key = int.to_bytes(shared_key_x, key_length, 'big')
+
         key = kdf(shared_key, key_length)
 
         e = original_capsule.point_eph_e

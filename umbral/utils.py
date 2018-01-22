@@ -55,7 +55,9 @@ def hash_to_bn(list, params):
  
     return res
 
-def kdf(data, key_length):
+def kdf(ecpoint, key_length):
+    data = ecpoint.to_bytes(is_compressed=True)
+
     return HKDF(
         algorithm=hashes.SHA512(),
         length=key_length,

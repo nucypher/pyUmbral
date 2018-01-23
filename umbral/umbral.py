@@ -1,8 +1,11 @@
+from nacl.secret import SecretBox
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
 from umbral.point import Point
+from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.dem import UmbralDEM
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
@@ -268,6 +271,12 @@ class PRE(object):
         return priv * g
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
+        if type(priv_a) == UmbralPrivateKey:
+            priv_a = priv_a.bn_key
+
+        if type(pub_b) == UmbralPublicKey:
+            pub_b = pub_b.point_key
+
         g = self.params.g
 
         pub_a = priv_a * g
@@ -298,7 +307,9 @@ class PRE(object):
             kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
-        return rk_shares, vKeys
+        # TODO: Handle vKeys
+        #return rk_shares, vKeys
+        return rk_shares
 
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
@@ -421,3 +432,55 @@ class PRE(object):
         assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
 
         return key
+
+    def encrypt(self, pub_key: UmbralPublicKey, data: bytes):
+        """
+        Performs an encryption using the UmbralDEM object and encapsulates a key
+        for the sender using the public key provided.
+
+        Returns the ciphertext and the KEM Capsule.
+        """
+        key, capsule = self.encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+
+        dem = UmbralDEM(key)
+        enc_data = dem.encrypt(data)
+
+        return enc_data, capsule
+
+    def decrypt(self, priv_key: UmbralPrivateKey, capsule: Capsule, enc_data: bytes):
+        """
+        Decrypts the data provided by decapsulating the provided capsule.
+
+        Returns the plaintext of the data.
+        """
+        key = self.decapsulate_original(
+            priv_key.bn_key, capsule, SecretBox.KEY_SIZE
+        )
+
+        dem = UmbralDEM(key)
+        plaintext = dem.decrypt(enc_data)
+
+        return plaintext
+
+    def decrypt_reencrypted(self, recp_priv_key: UmbralPrivateKey,
+                            recp_pub_key: UmbralPublicKey,
+                            sender_pub_key: UmbralPublicKey,
+                            capsule: Capsule, enc_data: bytes):
+        """
+        Decrypts the data provided by reconstructing and decapsulating the
+        capsule.
+
+        Returns the plaintext of the data.
+        """
+        # TODO: Do we take only the recipient's private key and form pubkey?
+        new_capsule = capsule.reconstruct()
+
+        key = self.decapsulate_reencrypted(
+            recp_pub_key.point_key, recp_priv_key.bn_key,
+            sender_pub_key, new_capsule, capsule
+        )
+
+        dem = UmbralDEM(key)
+        plaintext = dem.decrypt(enc_data)
+
+        return plaintext

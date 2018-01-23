@@ -7,9 +7,7 @@ class UmbralDEM(object):
         Initializes an UmbralDEM object. Requires a key to perform
         Salsa20-Poly1305.
         """
-        self.KEYSIZE = SecretBox.KEY_SIZE
-
-        if len(symm_key) != self.KEYSIZE
+        if len(symm_key) != SecretBox.KEY_SIZE:
             raise ValueError(
                 "Invalid key size, must be {} bytes".format(SecretBox.KEY_SIZE)
             )

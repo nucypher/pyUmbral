@@ -271,6 +271,12 @@ class PRE(object):
         return priv * g
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
+        """
+        Creates a re-encryption key and splits it using Shamir's Secret Sharing.
+        Requires a threshold number of fragments out of N to rebuild rekey.
+
+        Returns rekeys and the vKeys.
+        """
         if type(priv_a) == UmbralPrivateKey:
             priv_a = priv_a.bn_key
 
@@ -307,9 +313,7 @@ class PRE(object):
             kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
             rk_shares.append(kFrag)
 
-        # TODO: Handle vKeys
-        #return rk_shares, vKeys
-        return rk_shares
+        return rk_shares, vKeys
 
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
@@ -379,7 +383,7 @@ class PRE(object):
 
         return check31 & check32 & check33
 
-    def encapsulate(self, pub_key, key_length=32):
+    def _encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
         g = self.params.g
 
@@ -399,7 +403,7 @@ class PRE(object):
 
         return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-    def decapsulate_original(self, priv_key, capsule, key_length=32):
+    def _decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
         shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
 
@@ -410,7 +414,7 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
                                 recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
@@ -440,7 +444,7 @@ class PRE(object):
 
         Returns the ciphertext and the KEM Capsule.
         """
-        key, capsule = self.encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+        key, capsule = self._encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
 
         dem = UmbralDEM(key)
         enc_data = dem.encrypt(data)
@@ -453,8 +457,8 @@ class PRE(object):
 
         Returns the plaintext of the data.
         """
-        key = self.decapsulate_original(
-            priv_key.bn_key, capsule, SecretBox.KEY_SIZE
+        key = self._decapsulate_original(
+            priv_key.bn_key, capsule
         )
 
         dem = UmbralDEM(key)
@@ -475,9 +479,9 @@ class PRE(object):
         # TODO: Do we take only the recipient's private key and form pubkey?
         new_capsule = capsule.reconstruct()
 
-        key = self.decapsulate_reencrypted(
+        key = self._decapsulate_reencrypted(
             recp_pub_key.point_key, recp_priv_key.bn_key,
-            sender_pub_key, new_capsule, capsule
+            sender_pub_key.point_key, new_capsule, capsule
         )
 
         dem = UmbralDEM(key)

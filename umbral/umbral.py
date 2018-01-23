@@ -467,7 +467,6 @@ class PRE(object):
         return plaintext
 
     def decrypt_reencrypted(self, recp_priv_key: UmbralPrivateKey,
-                            recp_pub_key: UmbralPublicKey,
                             sender_pub_key: UmbralPublicKey,
                             capsule: Capsule, enc_data: bytes):
         """
@@ -476,7 +475,7 @@ class PRE(object):
 
         Returns the plaintext of the data.
         """
-        # TODO: Do we take only the recipient's private key and form pubkey?
+        recp_pub_key = recp_priv_key.get_pub_key(self.params)
         new_capsule = capsule.reconstruct()
 
         key = self._decapsulate_reencrypted(

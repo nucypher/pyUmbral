@@ -51,7 +51,7 @@ def test_simple_api(N, threshold):
         capsule.attach_cfrag(cFrag)
 
     reenc_dec_data = pre.decrypt_reencrypted(
-        priv_key_bob, pub_key_bob, pub_key_alice, capsule, enc_data
+        priv_key_bob, pub_key_alice, capsule, enc_data
     )
     assert reenc_dec_data == plain_data
 

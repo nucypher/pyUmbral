@@ -17,6 +17,14 @@ class UmbralPrivateKey(object):
         self.bn_key = bn_key
 
     @classmethod
+    def gen_key(cls, params: UmbralParameters):
+        """
+        Generates a private key and returns it.
+        """
+        bn_key = BigNum.gen_rand(params.curve)
+        return cls(bn_key)
+
+    @classmethod
     def load_key(cls, key_data: str, params: UmbralParameters,
                  password: bytes=None, _scrypt_cost: int=20):
         """
@@ -87,6 +95,14 @@ class UmbralPublicKey(object):
         Initializes an Umbral public key.
         """
         self.point_key = point_key
+
+    @classmethod
+    def gen_key(cls, params: UmbralParameters):
+        """
+        Generates a public key and returns it.
+        """
+        point_key = Point.gen_rand(params.curve)
+        return cls(point_key)
 
     @classmethod
     def load_key(cls, key_data: str, params: UmbralParameters):

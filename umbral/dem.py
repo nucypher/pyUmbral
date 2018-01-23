@@ -1,26 +1,31 @@
-from umbral.umbral import UmbralParameters
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from nacl.secret import SecretBox
 
 
 class UmbralDEM(object):
-    def __init__(self, params: UmbralParameters, recp_pub_key: UmbralPublicKey):
-        self.params = params
-        self.recp_pub_key = recp_pub_key
+    def __init__(self, symm_key: bytes):
+        """
+        Initializes an UmbralDEM object. Requires a key to perform
+        Salsa20-Poly1305.
+        """
+        self.KEYSIZE = SecretBox.KEY_SIZE
 
-    def encrypt(self):
-        pass
+        if len(symm_key) != self.KEYSIZE
+            raise ValueError(
+                "Invalid key size, must be {} bytes".format(SecretBox.KEY_SIZE)
+            )
 
-    def decrypt(self):
-        pass
+        self.cipher = SecretBox(symm_key)
 
-    def decrypt_reencrypted(self):
-        pass
+    def encrypt(self, data: bytes):
+        """
+        Encrypts data using NaCl's Salsa20-Poly1305 secret box symmetric cipher.
+        """
+        enc_data = self.cipher.encrypt(data)
+        return enc_data
 
-    def split_rekey(self):
-        pass
-
-    def reencrypt(self):
-        pass
-
-    def reconstruct(self):
-        pass
+    def decrypt(self, enc_data: bytes):
+        """
+        Decrypts data using NaCl's Salsa20-Poly1305 secret box symmetric cipher.
+        """
+        plaintext = self.cipher.decrypt(enc_data)
+        return plaintext

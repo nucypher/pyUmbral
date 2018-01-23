@@ -3,6 +3,14 @@ import pytest
 from umbral import umbral, keys
 
 
+def test_gen_key():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key(umbral.UmbralParameters())
+    assert type(umbral_priv_key) == keys.UmbralPrivateKey
+
+    umbral_pub_key = keys.UmbralPublicKey.gen_key(umbral.UmbralParameters())
+    assert type(umbral_pub_key) == keys.UmbralPublicKey
+
+
 def test_private_key_serialization():
     pre = umbral.PRE(umbral.UmbralParameters())
 

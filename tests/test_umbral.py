@@ -33,25 +33,25 @@ def test_simple_api(N, threshold):
     params = umbral.UmbralParameters()
     pre = umbral.PRE(params)
 
-    priv_key = keys.UmbralPrivateKey.gen_key(params)
-    pub_key = priv_key.get_pub_key(params)
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
+    pub_key_alice = priv_key_alice.get_pub_key(params)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
     pub_key_bob = priv_key_bob.get_pub_key(params)
 
     plain_data = b'attack at dawn'
-    enc_data, capsule = pre.encrypt(pub_key, plain_data)
+    enc_data, capsule = pre.encrypt(pub_key_alice, plain_data)
 
-    dec_data = pre.decrypt(priv_key, capsule, enc_data)
+    dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
     assert dec_data == plain_data
 
-    rekeys, _ = pre.split_rekey(priv_key, pub_key_bob, threshold, N)
+    rekeys, _ = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
     for rekey in rekeys:
         cFrag = pre.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
 
     reenc_dec_data = pre.decrypt_reencrypted(
-        priv_key_bob, pub_key_bob, pub_key, capsule, enc_data
+        priv_key_bob, pub_key_bob, pub_key_alice, capsule, enc_data
     )
     assert reenc_dec_data == plain_data
 

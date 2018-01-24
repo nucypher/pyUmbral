@@ -1,8 +1,11 @@
+from nacl.secret import SecretBox
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
 from umbral.point import Point
+from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.dem import UmbralDEM
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
@@ -268,6 +271,18 @@ class PRE(object):
         return priv * g
 
     def split_rekey(self, priv_a, pub_b, threshold, N):
+        """
+        Creates a re-encryption key and splits it using Shamir's Secret Sharing.
+        Requires a threshold number of fragments out of N to rebuild rekey.
+
+        Returns rekeys and the vKeys.
+        """
+        if type(priv_a) == UmbralPrivateKey:
+            priv_a = priv_a.bn_key
+
+        if type(pub_b) == UmbralPublicKey:
+            pub_b = pub_b.point_key
+
         g = self.params.g
 
         pub_a = priv_a * g
@@ -368,7 +383,7 @@ class PRE(object):
 
         return check31 & check32 & check33
 
-    def encapsulate(self, pub_key, key_length=32):
+    def _encapsulate(self, pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
         g = self.params.g
 
@@ -388,7 +403,7 @@ class PRE(object):
 
         return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-    def decapsulate_original(self, priv_key, capsule, key_length=32):
+    def _decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
         shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
 
@@ -399,7 +414,7 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
                                 recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
@@ -421,3 +436,54 @@ class PRE(object):
         assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
 
         return key
+
+    def encrypt(self, pub_key: UmbralPublicKey, data: bytes):
+        """
+        Performs an encryption using the UmbralDEM object and encapsulates a key
+        for the sender using the public key provided.
+
+        Returns the ciphertext and the KEM Capsule.
+        """
+        key, capsule = self._encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+
+        dem = UmbralDEM(key)
+        enc_data = dem.encrypt(data)
+
+        return enc_data, capsule
+
+    def decrypt(self, priv_key: UmbralPrivateKey, capsule: Capsule, enc_data: bytes):
+        """
+        Decrypts the data provided by decapsulating the provided capsule.
+
+        Returns the plaintext of the data.
+        """
+        key = self._decapsulate_original(
+            priv_key.bn_key, capsule
+        )
+
+        dem = UmbralDEM(key)
+        plaintext = dem.decrypt(enc_data)
+
+        return plaintext
+
+    def decrypt_reencrypted(self, recp_priv_key: UmbralPrivateKey,
+                            sender_pub_key: UmbralPublicKey,
+                            capsule: Capsule, enc_data: bytes):
+        """
+        Decrypts the data provided by reconstructing and decapsulating the
+        capsule.
+
+        Returns the plaintext of the data.
+        """
+        recp_pub_key = recp_priv_key.get_pub_key(self.params)
+        new_capsule = capsule.reconstruct()
+
+        key = self._decapsulate_reencrypted(
+            recp_pub_key.point_key, recp_priv_key.bn_key,
+            sender_pub_key.point_key, new_capsule, capsule
+        )
+
+        dem = UmbralDEM(key)
+        plaintext = dem.decrypt(enc_data)
+
+        return plaintext

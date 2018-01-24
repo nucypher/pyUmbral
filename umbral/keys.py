@@ -5,7 +5,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
 from nacl.secret import SecretBox
-from umbral.umbral import UmbralParameters
 from umbral.point import Point, BigNum
 
 
@@ -17,7 +16,15 @@ class UmbralPrivateKey(object):
         self.bn_key = bn_key
 
     @classmethod
-    def load_key(cls, key_data: str, params: UmbralParameters,
+    def gen_key(cls, params):
+        """
+        Generates a private key and returns it.
+        """
+        bn_key = BigNum.gen_rand(params.curve)
+        return cls(bn_key)
+
+    @classmethod
+    def load_key(cls, key_data: str, params,
                  password: bytes=None, _scrypt_cost: int=20):
         """
         Loads an Umbral private key from a urlsafe base64 encoded string.
@@ -80,6 +87,12 @@ class UmbralPrivateKey(object):
         encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
         return encoded_key
 
+    def get_pub_key(self, params):
+        """
+        Calculates and returns the public key of the private key.
+        """
+        return UmbralPublicKey(self.bn_key * params.g)
+
 
 class UmbralPublicKey(object):
     def __init__(self, point_key):
@@ -89,7 +102,7 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def load_key(cls, key_data: str, params: UmbralParameters):
+    def load_key(cls, key_data: str, params):
         """
         Loads an Umbral public key from a urlsafe base64 encoded string.
         """

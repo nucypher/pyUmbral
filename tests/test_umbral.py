@@ -1,6 +1,7 @@
 import pytest
 
-from umbral import umbral
+from umbral import umbral, keys
+
 
 # (N,threshold)
 parameters = [
@@ -18,13 +19,41 @@ def test_decapsulation_by_alice():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    sym_key, capsule = pre.encapsulate(pub_key)
+    sym_key, capsule = pre._encapsulate(pub_key)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
 
-    sym_key_2 = pre.decapsulate_original(priv_key, capsule)
+    sym_key_2 = pre._decapsulate_original(priv_key, capsule)
     assert sym_key_2 == sym_key
+
+
+@pytest.mark.parametrize("N,threshold", parameters)
+def test_simple_api(N, threshold):
+    params = umbral.UmbralParameters()
+    pre = umbral.PRE(params)
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
+    pub_key_alice = priv_key_alice.get_pub_key(params)
+
+    priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
+    pub_key_bob = priv_key_bob.get_pub_key(params)
+
+    plain_data = b'attack at dawn'
+    enc_data, capsule = pre.encrypt(pub_key_alice, plain_data)
+
+    dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
+    assert dec_data == plain_data
+
+    rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
+    for rekey in rekeys:
+        cFrag = pre.reencrypt(rekey, capsule)
+        capsule.attach_cfrag(cFrag)
+
+    reenc_dec_data = pre.decrypt_reencrypted(
+        priv_key_bob, pub_key_alice, capsule, enc_data
+    )
+    assert reenc_dec_data == plain_data
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
@@ -35,7 +64,7 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-    sym_key, capsule_alice = pre.encapsulate(pub_alice)
+    sym_key, capsule_alice = pre._encapsulate(pub_alice)
 
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
@@ -51,7 +80,7 @@ def test_m_of_n(N, threshold):
 
     capsule_bob = capsule_alice.reconstruct()
 
-    sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
+    sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
 
     assert sym_key_2 == sym_key
 
@@ -62,7 +91,7 @@ def test_kfrag_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
@@ -84,8 +113,8 @@ def test_cfrag_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre.encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
     cfrag_bytes = cfrag.to_bytes()
@@ -107,7 +136,7 @@ def test_capsule_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _symmetric_key, capsule = pre.encapsulate(pub_key)
+    _symmetric_key, capsule = pre._encapsulate(pub_key)
     capsule_bytes = capsule.to_bytes()
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
@@ -127,8 +156,8 @@ def test_reconstructed_capsule_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre.encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -154,8 +183,8 @@ def test_challenge_response_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre.encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -185,8 +214,8 @@ def test_challenge_response_serialization():
 #     priv_bob = pre.gen_priv()
 #     pub_bob = pre.priv2pub(priv_bob)
 
-#     sym_key, capsule_alice = pre.encapsulate(pub_alice)
-#     _, other_capsule_alice = pre.encapsulate(pub_alice)
+#     sym_key, capsule_alice = pre._encapsulate(pub_alice)
+#     _, other_capsule_alice = pre._encapsulate(pub_alice)
 
 #     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
@@ -210,7 +239,7 @@ def test_challenge_response_serialization():
 
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
-#         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
+#         sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
 #         assert not sym_key_2 == sym_key
 #     except AssertionError as e:
 #         assert str(e) == "Generic Umbral Error"   
@@ -229,7 +258,7 @@ def test_challenge_response_serialization():
 #     priv_bob = pre.gen_priv()
 #     pub_bob = pre.priv2pub(priv_bob)
 
-#     sym_key, capsule_alice = pre.encapsulate(pub_alice)
+#     sym_key, capsule_alice = pre._encapsulate(pub_alice)
 
 #     kfrags, vkeys = pre.split_rekey(priv_alice, priv_bob, threshold, N)
 
@@ -255,7 +284,7 @@ def test_challenge_response_serialization():
 
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
-#         sym_key_2 = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
+#         sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
 #         assert not sym_key_2 == sym_key
 #     except AssertionError as e:
 #         assert str(e) == "Generic Umbral Error"
@@ -273,7 +302,7 @@ def test_challenge_response_serialization():
 #     pub_alice = pre.priv2pub(priv_alice)
 #     priv_bob = pre.gen_priv()
 
-#     sym_key, capsule_alice = pre.encapsulate(pub_alice)
+#     sym_key, capsule_alice = pre._encapsulate(pub_alice)
 
 #     kfrags, vkeys = pre.split_rekey(priv_alice, priv_bob, threshold, N)
 

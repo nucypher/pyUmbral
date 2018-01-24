@@ -45,7 +45,7 @@ def test_simple_api(N, threshold):
     dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
     assert dec_data == plain_data
 
-    rekeys, _ = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
+    rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
     for rekey in rekeys:
         cFrag = pre.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
@@ -91,7 +91,7 @@ def test_kfrag_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
@@ -113,8 +113,8 @@ def test_cfrag_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre._encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
     cfrag_bytes = cfrag.to_bytes()
@@ -156,8 +156,8 @@ def test_reconstructed_capsule_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre._encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -183,8 +183,8 @@ def test_challenge_response_serialization():
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
 
-    _, capsule = pre._encapsulate(pub_key)
-    kfrags, _ = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key)
+    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 

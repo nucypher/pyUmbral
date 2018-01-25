@@ -260,7 +260,9 @@ class ChallengeResponse(object):
 
 
 class PRE(object):
-    def __init__(self, params: UmbralParameters=UmbralParameters()):
+    def __init__(self, params: UmbralParameters=None):
+        if params is None:
+            params = UmbralParameters()
         self.params = params
 
     def gen_priv(self):

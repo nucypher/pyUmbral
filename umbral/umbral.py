@@ -14,8 +14,8 @@ class UmbralParameters(object):
         self.curve = ec.SECP256K1()
         self.g = Point.get_generator_from_curve(self.curve)
         self.order = Point.get_order_from_curve(self.curve)
-        self.h = Point.gen_rand(self.curve)
-        self.u = Point.gen_rand(self.curve)
+        self.h = self.g
+        self.u = self.g
 
 
 class KFrag(object):
@@ -260,7 +260,7 @@ class ChallengeResponse(object):
 
 
 class PRE(object):
-    def __init__(self, params: UmbralParameters):
+    def __init__(self, params: UmbralParameters=UmbralParameters()):
         self.params = params
 
     def gen_priv(self):

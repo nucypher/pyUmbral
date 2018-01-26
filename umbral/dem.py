@@ -1,29 +1,39 @@
-from nacl.secret import SecretBox
+import os
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+
+
+DEM_KEYSIZE = 32
+DEM_NONCE_SIZE = 12
 
 
 class UmbralDEM(object):
     def __init__(self, symm_key: bytes):
         """
         Initializes an UmbralDEM object. Requires a key to perform
-        Salsa20-Poly1305.
+        ChaCha20-Poly1305.
         """
-        if len(symm_key) != SecretBox.KEY_SIZE:
+        if len(symm_key) != DEM_KEYSIZE:
             raise ValueError(
-                "Invalid key size, must be {} bytes".format(SecretBox.KEY_SIZE)
+                "Invalid key size, must be {} bytes".format(DEM_KEYSIZE)
             )
 
-        self.cipher = SecretBox(symm_key)
+        self.cipher = ChaCha20Poly1305(symm_key)
 
-    def encrypt(self, data: bytes):
+    def encrypt(self, data: bytes, authenticated_data: bytes=None):
         """
-        Encrypts data using NaCl's Salsa20-Poly1305 secret box symmetric cipher.
+        Encrypts data using ChaCha20-Poly1305 with optional authenticated data.
         """
-        enc_data = self.cipher.encrypt(data)
-        return enc_data
+        nonce = os.urandom(DEM_NONCE_SIZE)
+        enc_data = self.cipher.encrypt(nonce, data, authenticated_data)
+        # Ciphertext will be a 12 byte nonce, the ciphertext, and a 16 byte tag.
+        return nonce + enc_data
 
-    def decrypt(self, enc_data: bytes):
+    def decrypt(self, enc_data: bytes, authenticated_data: bytes=None):
         """
-        Decrypts data using NaCl's Salsa20-Poly1305 secret box symmetric cipher.
+        Decrypts data using ChaCha20-Poly1305 and validates the provided
+        authenticated data.
         """
-        plaintext = self.cipher.decrypt(enc_data)
+        nonce = enc_data[:DEM_NONCE_SIZE]
+        ciphertext = enc_data[DEM_NONCE_SIZE:]
+        plaintext = self.cipher.decrypt(nonce, ciphertext, authenticated_data)
         return plaintext

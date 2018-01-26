@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from umbral.dem import UmbralDEM
+from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
 from cryptography.exceptions import InvalidTag
 
 
@@ -22,7 +22,7 @@ def test_encrypt_decrypt():
     assert ciphertext0 != ciphertext1
 
     # Nonce should be different
-    assert ciphertext0[:12] != ciphertext1[:12]
+    assert ciphertext0[:DEM_NONCE_SIZE] != ciphertext1[:DEM_NONCE_SIZE]
 
     cleartext0 = dem.decrypt(ciphertext0)
     cleartext1 = dem.decrypt(ciphertext1)
@@ -47,7 +47,7 @@ def test_encrypt_decrypt_associated_data():
 
     assert ciphertext0 != ciphertext1
 
-    assert ciphertext0[:12] != ciphertext1[:12]
+    assert ciphertext0[:DEM_NONCE_SIZE] != ciphertext1[:DEM_NONCE_SIZE]
 
     cleartext0 = dem.decrypt(ciphertext0, authenticated_data=aad)
     cleartext1 = dem.decrypt(ciphertext1, authenticated_data=aad)

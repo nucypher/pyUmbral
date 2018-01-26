@@ -25,6 +25,7 @@ class UmbralDEM(object):
         """
         nonce = os.urandom(DEM_NONCE_SIZE)
         enc_data = self.cipher.encrypt(nonce, data, authenticated_data)
+        # Ciphertext will be a 12 byte nonce, the ciphertext, and a 16 byte tag.
         return nonce + enc_data
 
     def decrypt(self, enc_data: bytes, authenticated_data: bytes=None):

@@ -512,11 +512,11 @@ class PRE(object):
         Returns the plaintext of the data.
         """
         recp_pub_key = recp_priv_key.get_pub_key(self.params)
-        new_capsule = capsule.reconstruct()
+        capsule._reconstruct()
 
         key = self._decapsulate_reencrypted(
             recp_pub_key.point_key, recp_priv_key.bn_key,
-            sender_pub_key.point_key, new_capsule, capsule
+            sender_pub_key.point_key, capsule
         )
 
         dem = UmbralDEM(key)

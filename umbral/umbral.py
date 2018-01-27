@@ -194,12 +194,6 @@ class Capsule(object):
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
 
-    def original_ephemeral_points(self):
-        return self._point_eph_e + self._point_eph_v
-
-    def reconstructed_ephemeral_points(self):
-        return self._point_eph_e_prime + self._point_eph_v_prime
-
     def open(self, pub_bob, priv_bob, pub_alice, force_reopen=False, pre=None):
         # TODO: Raise an error here if Bob has gathered enough cFrags.
         if self.contents and not force_reopen:

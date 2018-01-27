@@ -165,15 +165,22 @@ class Capsule(object):
     def contents(self):
         return self._contents
 
-    def to_bytes(self):
+    def to_bytes(self, reconstructed_components=False):
         """
         Serialize the Capsule into a bytestring.
         """
-        eph_e = self._point_eph_e.to_bytes()
-        eph_v = self._point_eph_v.to_bytes()
-        sig = self._bn_sig.to_bytes()
+        if reconstructed_components:
+            eph_e = self._point_eph_e_prime
+            eph_v = self._point_eph_v_prime
+            point_noninter = self._point_noninteractive
 
-        return eph_e + eph_v + sig
+            return eph_e.to_bytes() + eph_v.to_bytes() + point_noninter.to_bytes()
+        else:
+            eph_e = self._point_eph_e.to_bytes()
+            eph_v = self._point_eph_v.to_bytes()
+            sig = self._bn_sig.to_bytes()
+
+            return eph_e + eph_v + sig
 
     def verify(self, params: UmbralParameters):
 
@@ -222,16 +229,6 @@ class Capsule(object):
         self._point_eph_e_prime = e
         self._point_eph_v_prime = v
         self._point_noninteractive = cfrag_0.point_eph_ni
-
-    def _reconstructed_bytes(self):
-        """
-        Serialize the reconstruction components into a bytestring.
-        """
-        eph_e = self._point_eph_e_prime
-        eph_v = self._point_eph_v_prime
-        point_noninter = self._point_noninteractive
-
-        return eph_e.to_bytes() + eph_v.to_bytes() + point_noninter.to_bytes()
 
     def __bytes__(self):
         self.to_bytes()

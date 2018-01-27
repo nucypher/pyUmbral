@@ -161,7 +161,7 @@ def test_reconstructed_capsule_serialization():
     capsule.attach_cfrag(cfrag)
 
     capsule._reconstruct()
-    rec_capsule_bytes = capsule._reconstructed_bytes()
+    rec_capsule_bytes = capsule.to_bytes(reconstructed_components=True)
 
     # A reconstructed Capsule is three points, representable as 33 bytes each.
     assert len(rec_capsule_bytes) == 99

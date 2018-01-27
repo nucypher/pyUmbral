@@ -141,12 +141,10 @@ def test_capsule_serialization():
     capsule_bytes = capsule.to_bytes()
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
-    # TODO: Do we want to include the cfrags as well?  See #20.
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
     new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
-    # TODO: Have method that gives us these attributes instead of needing to access them directly.
     assert new_capsule.original_components() == capsule.original_components()
 
 def test_reconstructed_capsule_serialization():
@@ -171,7 +169,6 @@ def test_reconstructed_capsule_serialization():
     new_rec_capsule = umbral.Capsule.from_bytes(
                                 rec_capsule_bytes,
                                 umbral.UmbralParameters().curve, is_reconstructed=True)
-    # TODO: Have method that gives us these attributes instead of needing to access them directly.
     assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
     assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
     assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive

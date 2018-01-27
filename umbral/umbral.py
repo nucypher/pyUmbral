@@ -188,7 +188,7 @@ class Capsule(object):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
 
     def open(self, pub_bob, priv_bob, pub_alice, force_reopen=False, pre=None):
-        # TODO: Raise an error here if Bob has gathered enough cFrags.
+        # TODO: Raise an error here if Bob has gathered enough cFrags?  See #22.
         if self.contents and not force_reopen:
             newly_opened = True
         else:
@@ -341,7 +341,7 @@ class PRE(object):
         return rk_shares, vKeys
 
     def reencrypt(self, kFrag, capsule):
-        # TODO: Put the assert at the end, but exponentiate by a randon number when false?
+        # TODO: Put the assert at the end, but exponentiate by a randon number when false?  See #39.
         assert capsule.verify(self.params), "Generic Umbral Error"
         e1 = kFrag.bn_key * capsule._point_eph_e
         v1 = kFrag.bn_key * capsule._point_eph_v

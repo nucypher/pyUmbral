@@ -350,8 +350,8 @@ class PRE(object):
     def reencrypt(self, kFrag, capsule):
         # TODO: Put the assert at the end, but exponentiate by a randon number when false?
         assert capsule.verify(self.params), "Generic Umbral Error"
-        e1 = kFrag.bn_key * capsule.point_eph_e
-        v1 = kFrag.bn_key * capsule.point_eph_v
+        e1 = kFrag.bn_key * capsule._point_eph_e
+        v1 = kFrag.bn_key * capsule._point_eph_v
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
         return cFrag
@@ -436,7 +436,7 @@ class PRE(object):
 
     def _decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
-        shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
+        shared_key = priv_key * (capsule._point_eph_e + capsule._point_eph_v)
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end
@@ -445,14 +445,14 @@ class PRE(object):
         return key
 
     def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
-                                recapsule, original_capsule: Capsule, key_length=32):
+                                capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        xcomp = recapsule.point_eph_ni
+        xcomp = capsule._point_noninteractive
         d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
 
-        e_prime = recapsule.point_eph_e_prime
-        v_prime = recapsule.point_eph_v_prime
+        e_prime = capsule._point_eph_e_prime
+        v_prime = capsule._point_eph_v_prime
 
         shared_key = d * (e_prime + v_prime)
 

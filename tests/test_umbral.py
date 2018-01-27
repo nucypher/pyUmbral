@@ -162,7 +162,7 @@ def test_reconstructed_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    capsule._reconstruct(pre=pre)
+    capsule._reconstruct()
     rec_capsule_bytes = capsule._reconstructed_bytes()
 
     # A reconstructed Capsule is three points, representable as 33 bytes each.

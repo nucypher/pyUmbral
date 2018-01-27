@@ -205,7 +205,7 @@ class Capsule(object):
         if self.contents and not force_reopen:
             newly_opened = True
         else:
-            self._reconstruct(pre=pre)
+            self._reconstruct()
             if not pre:
                 pre = PRE(UmbralParameters())
             self._contents = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, self)
@@ -215,13 +215,12 @@ class Capsule(object):
     def original_components(self):
         return self._point_eph_e, self._point_eph_v, self._bn_sig
 
-    def _reconstruct(self, pre):
+    def _reconstruct(self):
         id_cfrag_pairs = list(self.cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
             ids = self.cfrags.keys()
             lambda_0 = lambda_coeff(id_0, ids)
-
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
 

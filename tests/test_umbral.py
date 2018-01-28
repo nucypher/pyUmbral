@@ -1,14 +1,12 @@
 import pytest
 
 from umbral import umbral, keys
-import random
-
-# (N,threshold)
-from umbral.umbral import Capsule
-from umbral.point import Point
 from umbral.bignum import BigNum
+from umbral.point import Point
+from umbral.umbral import Capsule
 
 parameters = [
+    # (N,threshold)
     (1, 1),
     (6, 1),
     (6, 4),
@@ -84,7 +82,6 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-
     sym_key, capsule = pre._encapsulate(pub_alice)
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
@@ -100,7 +97,6 @@ def test_m_of_n(N, threshold):
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     capsule.open(pub_bob, priv_bob, pub_alice)
-
 
     sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
     assert sym_key == capsule.contents
@@ -167,6 +163,7 @@ def test_capsule_serialization():
                                             umbral.UmbralParameters().curve)
     assert new_capsule.original_components() == capsule.original_components()
 
+
 def test_reconstructed_capsule_serialization():
     pre = umbral.PRE(umbral.UmbralParameters())
 
@@ -187,8 +184,8 @@ def test_reconstructed_capsule_serialization():
     assert len(rec_capsule_bytes) == 99
 
     new_rec_capsule = umbral.Capsule.from_bytes(
-                                rec_capsule_bytes,
-                                umbral.UmbralParameters().curve, is_reconstructed=True)
+        rec_capsule_bytes,
+        umbral.UmbralParameters().curve, is_reconstructed=True)
     assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
     assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
     assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
@@ -214,7 +211,7 @@ def test_challenge_response_serialization():
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
     new_ch_resp = umbral.ChallengeResponse.from_bytes(
-                            ch_resp_bytes, umbral.UmbralParameters().curve)
+        ch_resp_bytes, umbral.UmbralParameters().curve)
     assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
     assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment

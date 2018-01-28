@@ -198,6 +198,12 @@ def test_reconstructed_capsule_serialization():
     new_rec_capsule = umbral.Capsule.from_bytes(
         rec_capsule_bytes,
         umbral.UmbralParameters().curve, is_reconstructed=True)
+
+    # Again, the same three perspectives on equality. 
+    new_rec_capsule == capsule
+
+    assert new_rec_capsule.reconstructed_components() == capsule.reconstructed_components()
+
     assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
     assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
     assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive

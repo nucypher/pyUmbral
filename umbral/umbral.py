@@ -448,20 +448,15 @@ class PRE(object):
 
         key = kdf(shared_key, key_length)
 
-        if capsule._point_eph_e:
-        # TODO: So, here, we have Alice's data too.  What's actually going on here?
-            e = capsule._point_eph_e
-            v = capsule._point_eph_v
-            s = capsule._bn_sig
-            h = hash_to_bn([e, v], self.params)
-            inv_d = ~d
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
+        s = capsule._bn_sig
+        h = hash_to_bn([e, v], self.params)
+        inv_d = ~d
 
-            assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
+        assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
 
-            return key
-        else:
-            # what do we do here?
-            return
+        return key
 
     def encrypt(self, pub_key: UmbralPublicKey, data: bytes):
         """

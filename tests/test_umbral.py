@@ -74,6 +74,25 @@ def test_bad_capsule_fails_reencryption():
         pre.reencrypt(k_frags[0], bollocks_capsule)
 
 
+def test_two_unequal_capsules():
+    pre = umbral.PRE()
+    one_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    another_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                          point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                          bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    assert one_capsule != another_capsule
+
+    reconstructed_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
+                                    v_prime=Point.gen_rand(curve=pre.params.curve),
+                                    noninteractive_point=Point.gen_rand(curve=pre.params.curve))
+
+    assert reconstructed_capsule != one_capsule
+
+
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_m_of_n(N, threshold):
     pre = umbral.PRE(umbral.UmbralParameters())

@@ -1,9 +1,13 @@
 import pytest
 
 from umbral import umbral, keys
-
+import random
 
 # (N,threshold)
+from umbral.umbral import Capsule
+from umbral.point import Point
+from umbral.bignum import BigNum
+
 parameters = [
     (1, 1),
     (6, 1),
@@ -54,6 +58,22 @@ def test_simple_api(N, threshold):
         priv_key_bob, pub_key_alice, capsule, enc_data
     )
     assert reenc_dec_data == plain_data
+
+
+def test_bad_capsule_fails_reencryption():
+    pre = umbral.PRE()
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(pre.params)
+    pub_key_alice = priv_key_alice.get_pub_key(pre.params)
+
+    k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+
+    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    with pytest.raises(Capsule.NotValid):
+        pre.reencrypt(k_frags[0], bollocks_capsule)
 
 
 @pytest.mark.parametrize("N,threshold", parameters)

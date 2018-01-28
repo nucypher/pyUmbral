@@ -198,6 +198,9 @@ class Capsule(object):
     def original_components(self):
         return self._point_eph_e, self._point_eph_v, self._bn_sig
 
+    def reconstructed_components(self):
+        return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
+
     def _reconstruct(self):
         id_cfrag_pairs = list(self.cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
@@ -255,6 +258,16 @@ class Capsule(object):
 
 def __bytes__(self):
     self.to_bytes()
+
+    def __eq__(self, other):
+        if all(self.reconstructed_components() + other.reconstructed_components()):
+            reconstructed_match = self.reconstructed_components() == other.reconstructed_components()
+            return reconstructed_match
+        elif all(self.original_components() + other.original_components()):
+            original_match = self.original_components() == other.original_components()
+            return original_match
+        else:
+            return False
 
 
 class ChallengeResponse(object):

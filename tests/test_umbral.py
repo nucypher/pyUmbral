@@ -162,7 +162,18 @@ def test_capsule_serialization():
 
     new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
+
+    # Three ways to think about equality.
+    # First, the public approach for the Capsule.  Simply:
+    new_capsule == capsule
+
+    # Second, we show that the original components (which is all we have here since we haven't reconstructed) are the same:
     assert new_capsule.original_components() == capsule.original_components()
+
+    # Third, we can directly compare the private original component attributes (though this is not a supported approach):
+    assert new_capsule._point_eph_e == capsule._point_eph_e
+    assert new_capsule._point_eph_v == capsule._point_eph_v
+    assert new_capsule._bn_sig == capsule._bn_sig
 
 
 def test_reconstructed_capsule_serialization():

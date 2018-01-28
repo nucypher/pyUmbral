@@ -143,6 +143,11 @@ class Capsule(object):
         self.cfrags = {}
         self._contents = None
 
+    class NotValid(ValueError):
+        """
+        raised if the capusle does not pass verification.
+        """
+
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve, is_reconstructed=False):
         """
@@ -338,8 +343,9 @@ class PRE(object):
         return rk_shares, vKeys
 
     def reencrypt(self, kFrag, capsule):
-        # TODO: Put the assert at the end, but exponentiate by a randon number when false?  See #39.
-        assert capsule.verify(self.params), "Generic Umbral Error"
+        if not capsule.verify(self.params):
+            raise capsule.NotValid
+
         e1 = kFrag.bn_key * capsule._point_eph_e
         v1 = kFrag.bn_key * capsule._point_eph_v
 

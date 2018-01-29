@@ -226,7 +226,7 @@ class Capsule(object):
         Reconstructs the Capsule contents from the attached CFrags,
         opens the Capsule and returns what is inside.
 
-        This will often by a symmetric key.
+        This will often be a symmetric key.
         """
         recp_pub_key = recp_priv_key.get_pub_key(pre.params)
         self._reconstruct()

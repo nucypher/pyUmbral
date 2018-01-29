@@ -96,10 +96,11 @@ def test_m_of_n(N, threshold):
         assert pre.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
-    capsule.open(pub_bob, priv_bob, pub_alice)
+    # capsule.open(pub_bob, priv_bob, pub_alice)
 
-    sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
-    assert sym_key == capsule.contents
+    capsule._reconstruct()
+    sym_key_from_capsule = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
+    assert sym_key == sym_key_from_capsule
 
 
 def test_kfrag_serialization():

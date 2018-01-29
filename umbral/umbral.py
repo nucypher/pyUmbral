@@ -440,7 +440,7 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
                                 capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
@@ -505,7 +505,7 @@ class PRE(object):
         recp_pub_key = recp_priv_key.get_pub_key(self.params)
         capsule._reconstruct()
 
-        key = self._decapsulate_reencrypted(
+        key = self.decapsulate_reencrypted(
             recp_pub_key.point_key, recp_priv_key.bn_key,
             sender_pub_key.point_key, capsule
         )

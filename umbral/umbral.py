@@ -1,10 +1,10 @@
-from nacl.secret import SecretBox
 from cryptography.hazmat.primitives.asymmetric import ec
+from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum
-from umbral.point import Point
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.dem import UmbralDEM
+from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
@@ -234,6 +234,30 @@ class Capsule(object):
         self._point_eph_e_prime = e
         self._point_eph_v_prime = v
         self._point_noninteractive = cfrag_0.point_eph_ni
+
+    def get_contents(self, recp_priv_key: UmbralPrivateKey,
+                            sender_pub_key: UmbralPublicKey,
+                     pre, enc_data: bytes):
+        """
+        Opens the capsule, gets what's inside, decrypts it, and returns it.
+
+        Decrypts the data provided by reconstructing and decapsulating the
+        capsule.
+
+        Returns the plaintext of the data.
+        """
+        recp_pub_key = recp_priv_key.get_pub_key(pre.params)
+        self._reconstruct()
+
+        key = pre.decapsulate_reencrypted(
+            recp_pub_key.point_key, recp_priv_key.bn_key,
+            sender_pub_key.point_key, self
+        )
+
+        dem = UmbralDEM(key)
+        plaintext = dem.decrypt(enc_data)
+
+        return plaintext
 
     def __bytes__(self):
         self.to_bytes()
@@ -493,24 +517,3 @@ class PRE(object):
 
         return plaintext
 
-    def decrypt_reencrypted(self, recp_priv_key: UmbralPrivateKey,
-                            sender_pub_key: UmbralPublicKey,
-                            capsule: Capsule, enc_data: bytes):
-        """
-        Decrypts the data provided by reconstructing and decapsulating the
-        capsule.
-
-        Returns the plaintext of the data.
-        """
-        recp_pub_key = recp_priv_key.get_pub_key(self.params)
-        capsule._reconstruct()
-
-        key = self.decapsulate_reencrypted(
-            recp_pub_key.point_key, recp_priv_key.bn_key,
-            sender_pub_key.point_key, capsule
-        )
-
-        dem = UmbralDEM(key)
-        plaintext = dem.decrypt(enc_data)
-
-        return plaintext

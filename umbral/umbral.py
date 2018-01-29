@@ -199,18 +199,6 @@ class Capsule(object):
     def attach_cfrag(self, cfrag: CapsuleFrag):
         self.cfrags[cfrag.bn_kfrag_id] = cfrag
 
-    def open(self, pub_bob, priv_bob, pub_alice, force_reopen=False, pre=None):
-        # TODO: Raise an error here if Bob has gathered enough cFrags?  See #22.
-        if self.contents and not force_reopen:
-            newly_opened = True
-        else:
-            self._reconstruct()
-            if not pre:
-                pre = PRE(UmbralParameters())
-            self._contents = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, self)
-            newly_opened = False
-        return self.contents, newly_opened
-
     def original_components(self):
         return self._point_eph_e, self._point_eph_v, self._bn_sig
 

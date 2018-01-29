@@ -166,10 +166,6 @@ class Capsule(object):
 
             return cls(eph_e, eph_v, sig)
 
-    @property
-    def contents(self):
-        return self._contents
-
     def to_bytes(self, reconstructed_components=False):
         """
         Serialize the Capsule into a bytestring.

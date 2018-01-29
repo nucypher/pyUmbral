@@ -219,16 +219,14 @@ class Capsule(object):
         self._point_eph_v_prime = v
         self._point_noninteractive = cfrag_0.point_eph_ni
 
-    def get_contents(self, recp_priv_key: UmbralPrivateKey,
-                            sender_pub_key: UmbralPublicKey,
-                     pre, enc_data: bytes):
+    def _get_contents(self, recp_priv_key: UmbralPrivateKey,
+                      sender_pub_key: UmbralPublicKey,
+                      pre):
         """
-        Opens the capsule, gets what's inside, decrypts it, and returns it.
+        Reconstructs the Capsule contents from the attached CFrags,
+        opens the Capsule and returns what is inside.
 
-        Decrypts the data provided by reconstructing and decapsulating the
-        capsule.
-
-        Returns the plaintext of the data.
+        This will often by a symmetric key.
         """
         recp_pub_key = recp_priv_key.get_pub_key(pre.params)
         self._reconstruct()
@@ -236,15 +234,27 @@ class Capsule(object):
         key = pre.decapsulate_reencrypted(
             recp_pub_key.point_key, recp_priv_key.bn_key,
             sender_pub_key.point_key, self
+
         )
+        return key
 
+    def decrypt(self, recp_priv_key: UmbralPrivateKey,
+                sender_pub_key: UmbralPublicKey,
+                ciphertext: bytes, pre):
+        """
+        Opens the capsule and gets what's inside.
+        
+        We hope that's a symmetric key, which we use to decrypt the ciphertext
+        and return the resulting cleartext.
+        """
+        key = self._get_contents(recp_priv_key, sender_pub_key, pre)
         dem = UmbralDEM(key)
-        plaintext = dem.decrypt(enc_data)
+        cleartext = dem.decrypt(ciphertext)
+        return cleartext
 
-        return plaintext
 
-    def __bytes__(self):
-        self.to_bytes()
+def __bytes__(self):
+    self.to_bytes()
 
 
 class ChallengeResponse(object):
@@ -293,7 +303,7 @@ class ChallengeResponse(object):
 
 
 class PRE(object):
-    def __init__(self, params: UmbralParameters=None):
+    def __init__(self, params: UmbralParameters = None):
         if params is None:
             params = UmbralParameters()
         self.params = params
@@ -500,4 +510,3 @@ class PRE(object):
         plaintext = dem.decrypt(enc_data)
 
         return plaintext
-

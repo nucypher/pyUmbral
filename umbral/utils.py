@@ -89,7 +89,7 @@ def hash_to_point(curve, data, constant=None):
         i+=1
 
     # Only happens with probability 2^(-32)
-    raise ValueError('Could not find %c in %s' % (ch,str))
+    raise ValueError('Could not hash input into the curve')
 
 def kdf(ecpoint, key_length):
     data = ecpoint.to_bytes(is_compressed=True)

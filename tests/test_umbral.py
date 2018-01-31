@@ -44,18 +44,18 @@ def test_simple_api(N, threshold):
     plain_data = b'attack at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
-    dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
-    assert dec_data == plain_data
+    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext, pre)
+    assert cleartext == plain_data
 
     rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
     for rekey in rekeys:
         cFrag = pre.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
 
-    reenc_dec_data = capsule.decrypt(
-        priv_key_bob, pub_key_alice, enc_data, pre
+    reenc_cleartext = pre.decrypt(
+        capsule, priv_key_bob, ciphertext, pre, pub_key_alice
     )
-    assert reenc_dec_data == plain_data
+    assert reenc_cleartext == plain_data
 
 
 def test_bad_capsule_fails_reencryption():

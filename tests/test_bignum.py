@@ -6,10 +6,7 @@ def test_from_to_int():
     x = BigNum.gen_rand(curve)
 
     xint = x.__int__()
-    print()
-    print("xint: ", xint)
     
     y = BigNum.from_int(xint, curve)
-    print("yint: ", y.__int__())
 
     assert x == y

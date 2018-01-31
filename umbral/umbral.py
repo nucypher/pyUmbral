@@ -5,7 +5,7 @@ from umbral.bignum import BigNum
 from umbral.dem import UmbralDEM
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf, hash_to_point
+from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
 class UmbralParameters(object):

@@ -55,7 +55,7 @@ def hash_to_bn(list, params):
  
     return res
 
-def hash_to_point(curve, data, constant=None):
+def unsafe_hash_to_point(curve, data, constant=None):
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.

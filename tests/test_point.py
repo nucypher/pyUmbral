@@ -1,6 +1,7 @@
 from umbral.point import Point
 from umbral.bignum import BigNum
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.exceptions import InternalError
 
 def test_from_to_bytes():
     curve = ec.SECP256K1()
@@ -27,9 +28,16 @@ def test_invalid_points():
 
     try:
     	q = Point.from_bytes(pbytes, curve)
-    	assert False
-    except:
-    	pass
+    except InternalError as e:
+        # We want to catch a specific InternalException: point not in the curve
+        # That's reason 107 in OpenSSL
+        # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
+        if e.err_code[0].reason == 107:
+            pass
+        else:
+            assert False
+    else:
+        assert False
 
 def test_generator():
     curve = ec.SECP256K1()

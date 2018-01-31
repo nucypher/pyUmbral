@@ -211,8 +211,10 @@ def test_reconstructed_capsule_serialization():
     capsule._reconstruct()
     rec_capsule_bytes = capsule.to_bytes(reconstructed_components=True)
 
-    # A reconstructed Capsule is three points, representable as 33 bytes each.
-    assert len(rec_capsule_bytes) == 99
+    # A reconstructed Capsule is:
+    # three points, representable as 33 bytes each (the original), and
+    # two points and a bignum (32 bytes) (the activated components), for 197 total.
+    assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
 
     new_rec_capsule = umbral.Capsule.from_bytes(
         rec_capsule_bytes,

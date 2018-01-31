@@ -149,39 +149,35 @@ class Capsule(object):
         """
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve, is_reconstructed=False):
+    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve, is_reconstructed=False):
         """
         Instantiates a Capsule object from the serialized data.
         """
-        if is_reconstructed:
-            e_prime = Point.from_bytes(data[0:33], curve)
-            v_prime = Point.from_bytes(data[33:66], curve)
-            eph_ni = Point.from_bytes(data[66:99], curve)
-
-            return cls(e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
+        # TODO: This has gotten utterly unwieldy.  We need a programmatic splitting facility (let's just use BytestringSplitter?)
+        if len(capsule_bytes) == 197:
+            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
+            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
+            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
+            e_prime = Point.from_bytes(capsule_bytes[98:131], curve)
+            v_prime = Point.from_bytes(capsule_bytes[131:164], curve)
+            eph_ni = Point.from_bytes(capsule_bytes[164:197], curve)
         else:
-            eph_e = Point.from_bytes(data[0:33], curve)
-            eph_v = Point.from_bytes(data[33:66], curve)
-            sig = BigNum.from_bytes(data[66:98], curve)
+            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
+            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
+            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
+            e_prime = v_prime = eph_ni = None
 
-            return cls(eph_e, eph_v, sig)
+        return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
+                   e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
 
     def to_bytes(self, reconstructed_components=False):
         """
         Serialize the Capsule into a bytestring.
         """
-        if reconstructed_components:
-            eph_e = self._point_eph_e_prime
-            eph_v = self._point_eph_v_prime
-            point_noninter = self._point_noninteractive
-
-            return eph_e.to_bytes() + eph_v.to_bytes() + point_noninter.to_bytes()
-        else:
-            eph_e = self._point_eph_e.to_bytes()
-            eph_v = self._point_eph_v.to_bytes()
-            sig = self._bn_sig.to_bytes()
-
-            return eph_e + eph_v + sig
+        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
+        if all(self.reconstructed_components()):
+            bytes_representation += bytes().join(c.to_bytes() for c in self.reconstructed_components())
+        return bytes_representation
 
     def verify(self, params: UmbralParameters):
 

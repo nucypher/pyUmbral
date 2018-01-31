@@ -28,12 +28,12 @@ class UmbralDEM(object):
         # Ciphertext will be a 12 byte nonce, the ciphertext, and a 16 byte tag.
         return nonce + enc_data
 
-    def decrypt(self, enc_data: bytes, authenticated_data: bytes=None):
+    def decrypt(self, ciphertext: bytes, authenticated_data: bytes=None):
         """
         Decrypts data using ChaCha20-Poly1305 and validates the provided
         authenticated data.
         """
-        nonce = enc_data[:DEM_NONCE_SIZE]
-        ciphertext = enc_data[DEM_NONCE_SIZE:]
-        plaintext = self.cipher.decrypt(nonce, ciphertext, authenticated_data)
-        return plaintext
+        nonce = ciphertext[:DEM_NONCE_SIZE]
+        ciphertext = ciphertext[DEM_NONCE_SIZE:]
+        cleartext = self.cipher.decrypt(nonce, ciphertext, authenticated_data)
+        return cleartext

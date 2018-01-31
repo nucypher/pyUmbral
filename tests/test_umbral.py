@@ -1,10 +1,12 @@
 import pytest
 
 from umbral import umbral, keys
+from umbral.bignum import BigNum
+from umbral.point import Point
+from umbral.umbral import Capsule
 
-
-# (N,threshold)
 parameters = [
+    # (N,threshold)
     (1, 1),
     (6, 1),
     (6, 4),
@@ -40,20 +42,55 @@ def test_simple_api(N, threshold):
     pub_key_bob = priv_key_bob.get_pub_key(params)
 
     plain_data = b'attack at dawn'
-    enc_data, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
-    dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
-    assert dec_data == plain_data
+    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext, pre)
+    assert cleartext == plain_data
 
     rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
     for rekey in rekeys:
         cFrag = pre.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
 
-    reenc_dec_data = pre.decrypt_reencrypted(
-        priv_key_bob, pub_key_alice, capsule, enc_data
+    reenc_cleartext = pre.decrypt(
+        capsule, priv_key_bob, ciphertext, pre, pub_key_alice
     )
-    assert reenc_dec_data == plain_data
+    assert reenc_cleartext == plain_data
+
+
+def test_bad_capsule_fails_reencryption():
+    pre = umbral.PRE()
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(pre.params)
+    pub_key_alice = priv_key_alice.get_pub_key(pre.params)
+
+    k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+
+    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    with pytest.raises(Capsule.NotValid):
+        pre.reencrypt(k_frags[0], bollocks_capsule)
+
+
+def test_two_unequal_capsules():
+    pre = umbral.PRE()
+    one_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    another_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
+                          point_eph_v=Point.gen_rand(curve=pre.params.curve),
+                          bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+
+    assert one_capsule != another_capsule
+
+    reconstructed_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
+                                    v_prime=Point.gen_rand(curve=pre.params.curve),
+                                    noninteractive_point=Point.gen_rand(curve=pre.params.curve))
+
+    assert reconstructed_capsule != one_capsule
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
@@ -64,8 +101,7 @@ def test_m_of_n(N, threshold):
     priv_bob = pre.gen_priv()
     pub_bob = pre.priv2pub(priv_bob)
 
-    sym_key, capsule_alice = pre._encapsulate(pub_alice)
-
+    sym_key, capsule = pre._encapsulate(pub_alice)
     kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
 
     for kfrag in kfrags:
@@ -73,16 +109,17 @@ def test_m_of_n(N, threshold):
         assert kfrag.is_consistent(vkeys, pre.params)
 
     for kfrag in kfrags[:threshold]:
-        cfrag = pre.reencrypt(kfrag, capsule_alice)
-        capsule_alice.attach_cfrag(cfrag)
-        ch = pre.challenge(kfrag, capsule_alice, cfrag)
-        assert pre.check_challenge(capsule_alice, cfrag, ch, pub_alice, pub_bob)
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+        ch = pre.challenge(kfrag, capsule, cfrag)
+        assert pre.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
 
-    capsule_bob = capsule_alice.reconstruct()
+    # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
+    # capsule.open(pub_bob, priv_bob, pub_alice)
 
-    sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
-
-    assert sym_key_2 == sym_key
+    capsule._reconstruct()
+    sym_key_from_capsule = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
+    assert sym_key == sym_key_from_capsule
 
 
 def test_kfrag_serialization():
@@ -140,14 +177,22 @@ def test_capsule_serialization():
     capsule_bytes = capsule.to_bytes()
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
-    # TODO: Do we want to include the cfrags as well?  See #20.
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
     new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
                                             umbral.UmbralParameters().curve)
-    assert new_capsule.point_eph_e == capsule.point_eph_e
-    assert new_capsule.point_eph_v == capsule.point_eph_v
-    assert new_capsule.bn_sig == capsule.bn_sig
+
+    # Three ways to think about equality.
+    # First, the public approach for the Capsule.  Simply:
+    new_capsule == capsule
+
+    # Second, we show that the original components (which is all we have here since we haven't reconstructed) are the same:
+    assert new_capsule.original_components() == capsule.original_components()
+
+    # Third, we can directly compare the private original component attributes (though this is not a supported approach):
+    assert new_capsule._point_eph_e == capsule._point_eph_e
+    assert new_capsule._point_eph_v == capsule._point_eph_v
+    assert new_capsule._bn_sig == capsule._bn_sig
 
 
 def test_reconstructed_capsule_serialization():
@@ -163,18 +208,26 @@ def test_reconstructed_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    rec_capsule = capsule.reconstruct()
-    rec_capsule_bytes = rec_capsule.to_bytes()
+    capsule._reconstruct()
+    rec_capsule_bytes = capsule.to_bytes()
 
-    # A reconstructed Capsule is three points, representable as 33 bytes each.
-    assert len(rec_capsule_bytes) == 99
+    # A reconstructed Capsule is:
+    # three points, representable as 33 bytes each (the original), and
+    # two points and a bignum (32 bytes) (the activated components), for 197 total.
+    assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
 
-    new_rec_capsule = umbral.ReconstructedCapsule.from_bytes(
-                                rec_capsule_bytes,
-                                umbral.UmbralParameters().curve)
-    assert new_rec_capsule.point_eph_e_prime == rec_capsule.point_eph_e_prime
-    assert new_rec_capsule.point_eph_v_prime == rec_capsule.point_eph_v_prime
-    assert new_rec_capsule.point_eph_ni == rec_capsule.point_eph_ni
+    new_rec_capsule = umbral.Capsule.from_bytes(
+        rec_capsule_bytes,
+        umbral.UmbralParameters().curve)
+
+    # Again, the same three perspectives on equality. 
+    new_rec_capsule == capsule
+
+    assert new_rec_capsule.reconstructed_components() == capsule.reconstructed_components()
+
+    assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
+    assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
+    assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_challenge_response_serialization():
@@ -197,7 +250,7 @@ def test_challenge_response_serialization():
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
     new_ch_resp = umbral.ChallengeResponse.from_bytes(
-                            ch_resp_bytes, umbral.UmbralParameters().curve)
+        ch_resp_bytes, umbral.UmbralParameters().curve)
     assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
     assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment

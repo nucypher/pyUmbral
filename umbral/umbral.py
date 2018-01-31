@@ -1,11 +1,10 @@
-from nacl.secret import SecretBox
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum
-from umbral.point import Point
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.dem import UmbralDEM
+from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
@@ -59,12 +58,12 @@ class KFrag(object):
         u1 = self.point_commitment
         z1 = self.bn_sig1
         z2 = self.bn_sig2
-        x  = self.point_eph_ni
+        x = self.point_eph_ni
 
         g_y = (z2 * params.g) + (z1 * pub_a)
 
         return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
-    
+
     def is_consistent(self, vKeys, params: UmbralParameters):
         if vKeys is None or len(vKeys) == 0:
             raise ValueError('vKeys must not be empty')
@@ -120,55 +119,93 @@ class CapsuleFrag(object):
 
 
 class Capsule(object):
-    def __init__(self, point_eph_e, point_eph_v, bn_sig):
-        self.point_eph_e = point_eph_e
-        self.point_eph_v = point_eph_v
-        self.bn_sig = bn_sig
+    def __init__(self,
+                 point_eph_e=None,
+                 point_eph_v=None,
+                 bn_sig=None,
+                 e_prime=None,
+                 v_prime=None,
+                 noninteractive_point=None):
 
-        self.cfrags = {}
+        if not point_eph_e and not e_prime:
+            raise ValueError(
+                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                Passing both is also fine.")
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+        self._point_eph_e = point_eph_e
+        self._point_eph_v = point_eph_v
+        self._bn_sig = bn_sig
+
+        self._point_eph_e_prime = e_prime
+        self._point_eph_v_prime = v_prime
+        self._point_noninteractive = noninteractive_point
+
+        self._attached_cfrags = {}
+        self._contents = None
+
+    class NotValid(ValueError):
+        """
+        raised if the capusle does not pass verification.
+        """
+
+    @classmethod
+    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve):
         """
         Instantiates a Capsule object from the serialized data.
         """
-        eph_e = Point.from_bytes(data[0:33], curve)
-        eph_v = Point.from_bytes(data[33:66], curve)
-        sig = BigNum.from_bytes(data[66:98], curve)
+        # TODO: This has gotten utterly unwieldy.  We need a programmatic splitting facility (let's just use BytestringSplitter?)
+        if len(capsule_bytes) == 197:
+            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
+            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
+            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
+            e_prime = Point.from_bytes(capsule_bytes[98:131], curve)
+            v_prime = Point.from_bytes(capsule_bytes[131:164], curve)
+            eph_ni = Point.from_bytes(capsule_bytes[164:197], curve)
+        else:
+            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
+            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
+            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
+            e_prime = v_prime = eph_ni = None
 
-        return Capsule(eph_e, eph_v, sig)
+        return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
+                   e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
 
     def to_bytes(self):
         """
         Serialize the Capsule into a bytestring.
         """
-        eph_e = self.point_eph_e.to_bytes()
-        eph_v = self.point_eph_v.to_bytes()
-        sig = self.bn_sig.to_bytes()
-
-        return eph_e + eph_v + sig
+        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
+        if all(self.reconstructed_components()):
+            bytes_representation += bytes().join(c.to_bytes() for c in self.reconstructed_components())
+        return bytes_representation
 
     def verify(self, params: UmbralParameters):
 
-        e = self.point_eph_e
-        v = self.point_eph_v
-        s = self.bn_sig
+        e = self._point_eph_e
+        v = self._point_eph_v
+        s = self._bn_sig
         h = hash_to_bn([e, v], params)
 
         return s * params.g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag):
-        self.cfrags[cfrag.bn_kfrag_id] = cfrag
+        self._attached_cfrags[cfrag.bn_kfrag_id] = cfrag
 
-    def reconstruct(self):
-        id_cfrag_pairs = list(self.cfrags.items())
+    def original_components(self):
+        return self._point_eph_e, self._point_eph_v, self._bn_sig
+
+    def reconstructed_components(self):
+        return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
+
+    def _reconstruct(self):
+        id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
-            ids = self.cfrags.keys() 
+            ids = self._attached_cfrags.keys()
             lambda_0 = lambda_coeff(id_0, ids)
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
-            
+
             for id_i, cfrag in id_cfrag_pairs[1:]:
                 lambda_i = lambda_coeff(id_i, ids)
                 e = e + (lambda_i * cfrag.point_eph_e1)
@@ -176,42 +213,23 @@ class Capsule(object):
         else:
             e = cfrag_0.point_eph_e1
             v = cfrag_0.point_eph_v1
-        
-        return ReconstructedCapsule(e_prime=e, v_prime=v, x=cfrag_0.point_eph_ni)
+
+        self._point_eph_e_prime = e
+        self._point_eph_v_prime = v
+        self._point_noninteractive = cfrag_0.point_eph_ni
 
     def __bytes__(self):
         self.to_bytes()
 
-
-class ReconstructedCapsule(object):
-    def __init__(self, e_prime, v_prime, x):
-        self.point_eph_e_prime = e_prime
-        self.point_eph_v_prime = v_prime
-        self.point_eph_ni = x
-
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
-        """
-        Instantiate ReconstructedCapsule from serialized data.
-        """
-        e_prime = Point.from_bytes(data[0:33], curve)
-        v_prime = Point.from_bytes(data[33:66], curve)
-        eph_ni = Point.from_bytes(data[66:99], curve)
-
-        return ReconstructedCapsule(e_prime, v_prime, eph_ni)
-
-    def to_bytes(self):
-        """
-        Serialize the ReconstructedCapsule to a bytestring.
-        """
-        e_prime = self.point_eph_e_prime.to_bytes()
-        v_prime = self.point_eph_v_prime.to_bytes()
-        eph_ni = self.point_eph_ni.to_bytes()
-
-        return e_prime + v_prime + eph_ni
-
-    def __bytes__(self):
-        return self.to_bytes()
+    def __eq__(self, other):
+        if all(self.reconstructed_components() + other.reconstructed_components()):
+            reconstructed_match = self.reconstructed_components() == other.reconstructed_components()
+            return reconstructed_match
+        elif all(self.original_components() + other.original_components()):
+            original_match = self.original_components() == other.original_components()
+            return original_match
+        else:
+            return False
 
 
 class ChallengeResponse(object):
@@ -260,7 +278,7 @@ class ChallengeResponse(object):
 
 
 class PRE(object):
-    def __init__(self, params: UmbralParameters=None):
+    def __init__(self, params: UmbralParameters = None):
         if params is None:
             params = UmbralParameters()
         self.params = params
@@ -318,11 +336,11 @@ class PRE(object):
         return rk_shares, vKeys
 
     def reencrypt(self, kFrag, capsule):
-        # TODO: Put the assert at the end, but exponentiate by a randon number when false?
-        assert capsule.verify(self.params), "Generic Umbral Error"
+        if not capsule.verify(self.params):
+            raise capsule.NotValid
 
-        e1 = kFrag.bn_key * capsule.point_eph_e
-        v1 = kFrag.bn_key * capsule.point_eph_v
+        e1 = kFrag.bn_key * capsule._point_eph_e
+        v1 = kFrag.bn_key * capsule._point_eph_v
 
         cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
         return cFrag
@@ -331,8 +349,8 @@ class PRE(object):
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
 
-        e = capsule.point_eph_e
-        v = capsule.point_eph_v
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
 
         u = self.params.u
         u1 = rk.point_commitment
@@ -354,8 +372,8 @@ class PRE(object):
         return ch_resp
 
     def check_challenge(self, capsule, cFrag, challenge_resp, pub_a, pub_b):
-        e = capsule.point_eph_e
-        v = capsule.point_eph_v
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
 
         e1 = cFrag.point_eph_e1
         v1 = cFrag.point_eph_v1
@@ -407,8 +425,7 @@ class PRE(object):
 
     def _decapsulate_original(self, priv_key, capsule, key_length=32):
         """Derive the same symmetric key"""
-        shared_key = priv_key * (capsule.point_eph_e + capsule.point_eph_v)
-
+        shared_key = priv_key * (capsule._point_eph_e + capsule._point_eph_v)
         key = kdf(shared_key, key_length)
 
         # Check correctness of original ciphertext (check nº 2) at the end
@@ -416,25 +433,26 @@ class PRE(object):
         assert capsule.verify(self.params), "Generic Umbral Error"
         return key
 
-    def _decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
-                                recapsule: ReconstructedCapsule, original_capsule: Capsule, key_length=32):
+    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
+                                capsule: Capsule, key_length=32):
         """Derive the same symmetric key"""
 
-        xcomp = recapsule.point_eph_ni
+        xcomp = capsule._point_noninteractive
         d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
 
-        e_prime = recapsule.point_eph_e_prime
-        v_prime = recapsule.point_eph_v_prime
+        e_prime = capsule._point_eph_e_prime
+        v_prime = capsule._point_eph_v_prime
 
         shared_key = d * (e_prime + v_prime)
 
         key = kdf(shared_key, key_length)
 
-        e = original_capsule.point_eph_e
-        v = original_capsule.point_eph_v
-        s = original_capsule.bn_sig
+        e = capsule._point_eph_e
+        v = capsule._point_eph_v
+        s = capsule._bn_sig
         h = hash_to_bn([e, v], self.params)
         inv_d = ~d
+
         assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
 
         return key
@@ -453,39 +471,41 @@ class PRE(object):
 
         return enc_data, capsule
 
-    def decrypt(self, priv_key: UmbralPrivateKey, capsule: Capsule, enc_data: bytes):
+    def _open_capsule(self,
+                      capsule: Capsule,
+                      opener_private_key: UmbralPrivateKey,
+                      capsule_maker_pub_key: UmbralPublicKey,
+                      pre):
         """
-        Decrypts the data provided by decapsulating the provided capsule.
+        Activates the Capsule from the attached CFrags,
+        opens the Capsule and returns what is inside.
 
-        Returns the plaintext of the data.
+        This will often be a symmetric key.
         """
-        key = self._decapsulate_original(
-            priv_key.bn_key, capsule
+        recp_pub_key = opener_private_key.get_pub_key(pre.params)
+        capsule._reconstruct()
+
+        key = pre.decapsulate_reencrypted(
+            recp_pub_key.point_key, opener_private_key.bn_key,
+            capsule_maker_pub_key.point_key, capsule
         )
+        return key
 
-        dem = UmbralDEM(key)
-        plaintext = dem.decrypt(enc_data)
-
-        return plaintext
-
-    def decrypt_reencrypted(self, recp_priv_key: UmbralPrivateKey,
-                            sender_pub_key: UmbralPublicKey,
-                            capsule: Capsule, enc_data: bytes):
+    def decrypt(self, capsule, opener_priv_key: UmbralPrivateKey,
+                ciphertext: bytes, pre, capsule_maker_pub_key: UmbralPublicKey=None):
         """
-        Decrypts the data provided by reconstructing and decapsulating the
-        capsule.
+        Opens the capsule and gets what's inside.
 
-        Returns the plaintext of the data.
+        We hope that's a symmetric key, which we use to decrypt the ciphertext
+        and return the resulting cleartext.
         """
-        recp_pub_key = recp_priv_key.get_pub_key(self.params)
-        new_capsule = capsule.reconstruct()
-
-        key = self._decapsulate_reencrypted(
-            recp_pub_key.point_key, recp_priv_key.bn_key,
-            sender_pub_key.point_key, new_capsule, capsule
-        )
-
-        dem = UmbralDEM(key)
-        plaintext = dem.decrypt(enc_data)
-
-        return plaintext
+        if capsule._attached_cfrags:
+            key = self._open_capsule(capsule, opener_priv_key, capsule_maker_pub_key, pre)
+            dem = UmbralDEM(key)
+            cleartext = dem.decrypt(ciphertext)
+            return cleartext
+        else:
+            key = self._decapsulate_original(opener_priv_key.bn_key, capsule)
+            dem = UmbralDEM(key)
+            cleartext = dem.decrypt(ciphertext)
+            return cleartext

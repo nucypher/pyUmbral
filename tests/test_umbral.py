@@ -42,7 +42,7 @@ def test_simple_api(N, threshold):
     pub_key_bob = priv_key_bob.get_pub_key(params)
 
     plain_data = b'attack at dawn'
-    enc_data, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
     dec_data = pre.decrypt(priv_key_alice, capsule, enc_data)
     assert dec_data == plain_data

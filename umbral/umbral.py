@@ -140,7 +140,7 @@ class Capsule(object):
         self._point_eph_v_prime = v_prime
         self._point_noninteractive = noninteractive_point
 
-        self.cfrags = {}
+        self._attached_cfrags = {}
         self._contents = None
 
     class NotValid(ValueError):
@@ -189,7 +189,7 @@ class Capsule(object):
         return s * params.g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag):
-        self.cfrags[cfrag.bn_kfrag_id] = cfrag
+        self._attached_cfrags[cfrag.bn_kfrag_id] = cfrag
 
     def original_components(self):
         return self._point_eph_e, self._point_eph_v, self._bn_sig
@@ -198,10 +198,10 @@ class Capsule(object):
         return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
 
     def _reconstruct(self):
-        id_cfrag_pairs = list(self.cfrags.items())
+        id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
-            ids = self.cfrags.keys()
+            ids = self._attached_cfrags.keys()
             lambda_0 = lambda_coeff(id_0, ids)
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1

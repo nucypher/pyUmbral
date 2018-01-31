@@ -56,34 +56,35 @@ def hash_to_bn(list, params):
  
     return res
 
-def unsafe_hash_to_point(curve, data, constant=None):
+def unsafe_hash_to_point(curve, data, label=None):
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
-    It admits an optional constant as an additional input to the hash function.
+    It admits an optional label as an additional input to the hash function.
     It uses SHA256 as the internal hash function. 
 
     WARNING: Do not use when the input data is secret, as this implementation is not 
-    in constant time, and hence, it is not safe with respect to timing attacks.
+    in label time, and hence, it is not safe with respect to timing attacks.
 
     TODO: Check how to uniformly generate ycoords. Currently, it only outputs points 
     where ycoord is even (i.e., starting with 0x02 in compressed notation)
     """
-    if constant is None:
-        constant = []
+    if label is None:
+        label = []
 
     # We use a 32-bit counter as additional input
     i = 1
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        digest.update(constant + ibytes + data)
+        digest.update(label + ibytes + data)
         hash = digest.finalize()
 
         compressed02 = b"\x02"+hash
 
         try:
             h = Point.from_bytes(compressed02, curve)
+            print(i)
             return h
         except InternalError as e:
             # We want to catch specific InternalExceptions: 

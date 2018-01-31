@@ -84,7 +84,6 @@ def unsafe_hash_to_point(curve, data, label=None):
 
         try:
             h = Point.from_bytes(compressed02, curve)
-            print(i)
             return h
         except InternalError as e:
             # We want to catch specific InternalExceptions: 

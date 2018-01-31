@@ -16,11 +16,10 @@ class UmbralParameters(object):
         
         g_bytes = self.g.to_bytes(is_compressed=True)
 
-        constant_u = b'NuCypherKMS/UmbralParameters/u'
-        constant_h = b'NuCypherKMS/UmbralParameters/h'
+        domain_seed = b'NuCypherKMS/UmbralParameters/'
 
-        self.h = unsafe_hash_to_point(self.curve, g_bytes, constant_h)
-        self.u = unsafe_hash_to_point(self.curve, g_bytes, constant_u)
+        self.h = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'h')
+        self.u = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'u')
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):

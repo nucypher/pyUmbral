@@ -1,11 +1,10 @@
-from nacl.secret import SecretBox
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum
-from umbral.point import Point
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.dem import UmbralDEM
+from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf, hash_to_point
 
 

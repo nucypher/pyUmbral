@@ -29,10 +29,11 @@ def test_invalid_points():
     try:
     	q = Point.from_bytes(pbytes, curve)
     except InternalError as e:
-        # We want to catch a specific InternalException: point not in the curve
-        # That's reason 107 in OpenSSL
+        # We want to catch specific InternalExceptions: 
+        # - Point not in the curve (code 107)
+        # - Invalid compressed point (code 110)
         # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
-        if e.err_code[0].reason == 107:
+        if e.err_code[0].reason in (107, 110):
             pass
         else:
             assert False

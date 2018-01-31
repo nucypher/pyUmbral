@@ -209,7 +209,7 @@ def test_reconstructed_capsule_serialization():
     capsule.attach_cfrag(cfrag)
 
     capsule._reconstruct()
-    rec_capsule_bytes = capsule.to_bytes(reconstructed_components=True)
+    rec_capsule_bytes = capsule.to_bytes()
 
     # A reconstructed Capsule is:
     # three points, representable as 33 bytes each (the original), and
@@ -218,7 +218,7 @@ def test_reconstructed_capsule_serialization():
 
     new_rec_capsule = umbral.Capsule.from_bytes(
         rec_capsule_bytes,
-        umbral.UmbralParameters().curve, is_reconstructed=True)
+        umbral.UmbralParameters().curve)
 
     # Again, the same three perspectives on equality. 
     new_rec_capsule == capsule

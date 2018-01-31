@@ -149,7 +149,7 @@ class Capsule(object):
         """
 
     @classmethod
-    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve, is_reconstructed=False):
+    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve):
         """
         Instantiates a Capsule object from the serialized data.
         """
@@ -170,7 +170,7 @@ class Capsule(object):
         return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
                    e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
 
-    def to_bytes(self, reconstructed_components=False):
+    def to_bytes(self):
         """
         Serialize the Capsule into a bytestring.
         """

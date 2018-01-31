@@ -218,42 +218,8 @@ class Capsule(object):
         self._point_eph_v_prime = v
         self._point_noninteractive = cfrag_0.point_eph_ni
 
-    def _get_contents(self, recp_priv_key: UmbralPrivateKey,
-                      sender_pub_key: UmbralPublicKey,
-                      pre):
-        """
-        Reconstructs the Capsule contents from the attached CFrags,
-        opens the Capsule and returns what is inside.
-
-        This will often be a symmetric key.
-        """
-        recp_pub_key = recp_priv_key.get_pub_key(pre.params)
-        self._reconstruct()
-
-        key = pre.decapsulate_reencrypted(
-            recp_pub_key.point_key, recp_priv_key.bn_key,
-            sender_pub_key.point_key, self
-
-        )
-        return key
-
-    def decrypt(self, recp_priv_key: UmbralPrivateKey,
-                sender_pub_key: UmbralPublicKey,
-                ciphertext: bytes, pre):
-        """
-        Opens the capsule and gets what's inside.
-        
-        We hope that's a symmetric key, which we use to decrypt the ciphertext
-        and return the resulting cleartext.
-        """
-        key = self._get_contents(recp_priv_key, sender_pub_key, pre)
-        dem = UmbralDEM(key)
-        cleartext = dem.decrypt(ciphertext)
-        return cleartext
-
-
-def __bytes__(self):
-    self.to_bytes()
+    def __bytes__(self):
+        self.to_bytes()
 
     def __eq__(self, other):
         if all(self.reconstructed_components() + other.reconstructed_components()):
@@ -505,17 +471,41 @@ class PRE(object):
 
         return enc_data, capsule
 
-    def decrypt(self, priv_key: UmbralPrivateKey, capsule: Capsule, enc_data: bytes):
+    def _open_capsule(self,
+                      capsule: Capsule,
+                      opener_private_key: UmbralPrivateKey,
+                      capsule_maker_pub_key: UmbralPublicKey,
+                      pre):
         """
-        Decrypts the data provided by decapsulating the provided capsule.
+        Activates the Capsule from the attached CFrags,
+        opens the Capsule and returns what is inside.
 
-        Returns the plaintext of the data.
+        This will often be a symmetric key.
         """
-        key = self._decapsulate_original(
-            priv_key.bn_key, capsule
+        recp_pub_key = opener_private_key.get_pub_key(pre.params)
+        capsule._reconstruct()
+
+        key = pre.decapsulate_reencrypted(
+            recp_pub_key.point_key, opener_private_key.bn_key,
+            capsule_maker_pub_key.point_key, capsule
         )
+        return key
 
-        dem = UmbralDEM(key)
-        plaintext = dem.decrypt(enc_data)
+    def decrypt(self, capsule, opener_priv_key: UmbralPrivateKey,
+                ciphertext: bytes, pre, capsule_maker_pub_key: UmbralPublicKey=None):
+        """
+        Opens the capsule and gets what's inside.
 
-        return plaintext
+        We hope that's a symmetric key, which we use to decrypt the ciphertext
+        and return the resulting cleartext.
+        """
+        if capsule._attached_cfrags:
+            key = self._open_capsule(capsule, opener_priv_key, capsule_maker_pub_key, pre)
+            dem = UmbralDEM(key)
+            cleartext = dem.decrypt(ciphertext)
+            return cleartext
+        else:
+            key = self._decapsulate_original(opener_priv_key.bn_key, capsule)
+            dem = UmbralDEM(key)
+            cleartext = dem.decrypt(ciphertext)
+            return cleartext

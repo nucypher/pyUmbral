@@ -1,6 +1,7 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.exceptions import InternalError
 
 from umbral.bignum import BigNum
 from umbral.point import Point
@@ -80,13 +81,22 @@ def unsafe_hash_to_point(curve, data, constant=None):
         hash = digest.finalize()
 
         compressed02 = b"\x02"+hash
+
         try:
             h = Point.from_bytes(compressed02, curve)
             return h
-        except:
-            pass
-
-        i+=1
+        except InternalError as e:
+            # We want to catch specific InternalExceptions: 
+            # - Point not in the curve (code 107)
+            # - Invalid compressed point (code 110)
+            # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
+            if e.err_code[0].reason in (107, 110):
+                pass
+            else:
+                # Any other exception, we raise it
+                raise e
+        
+        i += 1
 
     # Only happens with probability 2^(-32)
     raise ValueError('Could not hash input into the curve')

@@ -4,8 +4,8 @@ from nacl.secret import SecretBox
 from umbral.bignum import BigNum
 from umbral.dem import UmbralDEM
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from umbral.point import Point
 from umbral.params import UmbralParameters
+from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
 
@@ -467,7 +467,7 @@ class PRE(object):
                       capsule: Capsule,
                       opener_private_key: UmbralPrivateKey,
                       capsule_maker_pub_key: UmbralPublicKey,
-                      pre):
+                      ):
         """
         Activates the Capsule from the attached CFrags,
         opens the Capsule and returns what is inside.
@@ -477,14 +477,14 @@ class PRE(object):
         recp_pub_key = opener_private_key.get_pub_key()
         capsule._reconstruct()
 
-        key = pre.decapsulate_reencrypted(
+        key = self.decapsulate_reencrypted(
             recp_pub_key.point_key, opener_private_key.bn_key,
             capsule_maker_pub_key.point_key, capsule
         )
         return key
 
     def decrypt(self, capsule, opener_priv_key: UmbralPrivateKey,
-                ciphertext: bytes, pre, capsule_maker_pub_key: UmbralPublicKey=None):
+                ciphertext: bytes, capsule_maker_pub_key: UmbralPublicKey=None):
         """
         Opens the capsule and gets what's inside.
 
@@ -492,7 +492,7 @@ class PRE(object):
         and return the resulting cleartext.
         """
         if capsule._attached_cfrags:
-            key = self._open_capsule(capsule, opener_priv_key, capsule_maker_pub_key, pre)
+            key = self._open_capsule(capsule, opener_priv_key, capsule_maker_pub_key)
             dem = UmbralDEM(key)
             cleartext = dem.decrypt(ciphertext)
             return cleartext

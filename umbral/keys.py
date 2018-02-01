@@ -6,25 +6,33 @@ from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
 from nacl.secret import SecretBox
 from umbral.point import Point, BigNum
+from umbral.params import UmbralParameters
 
 
 class UmbralPrivateKey(object):
-    def __init__(self, bn_key: BigNum):
+    def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.
         """
+        if params is None:
+            params = UmbralParameters()
+
+        self.params = params
         self.bn_key = bn_key
 
     @classmethod
-    def gen_key(cls, params):
+    def gen_key(cls, params: UmbralParameters=None):
         """
         Generates a private key and returns it.
         """
+        if params is None:
+            params = UmbralParameters()
+
         bn_key = BigNum.gen_rand(params.curve)
-        return cls(bn_key)
+        return cls(bn_key, params)
 
     @classmethod
-    def load_key(cls, key_data: str, params,
+    def load_key(cls, key_data: str, params: UmbralParameters=None,
                  password: bytes=None, _scrypt_cost: int=20):
         """
         Loads an Umbral private key from a urlsafe base64 encoded string.
@@ -36,6 +44,9 @@ class UmbralPrivateKey(object):
         not change it here. It is NOT recommended to change the `_scrypt_cost`
         value unless you know what you're doing.
         """
+        if params is None:
+            params = UmbralParameters()
+
         key_bytes = base64.urlsafe_b64decode(key_data)
 
         if password:
@@ -54,7 +65,7 @@ class UmbralPrivateKey(object):
             key_bytes = SecretBox(key).decrypt(key_bytes)
 
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
-        return cls(bn_key)
+        return cls(bn_key, params)
 
     def save_key(self, password: bytes=None, _scrypt_cost: int=20):
         """
@@ -87,29 +98,36 @@ class UmbralPrivateKey(object):
         encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
         return encoded_key
 
-    def get_pub_key(self, params):
+    def get_pub_key(self):
         """
         Calculates and returns the public key of the private key.
         """
-        return UmbralPublicKey(self.bn_key * params.g)
+        return UmbralPublicKey(self.bn_key * self.params.g)
 
 
 class UmbralPublicKey(object):
-    def __init__(self, point_key):
+    def __init__(self, point_key, params: UmbralParameters=None):
         """
         Initializes an Umbral public key.
         """
+        if params is None:
+            params = UmbralParameters()
+
+        self.params = params
         self.point_key = point_key
 
     @classmethod
-    def load_key(cls, key_data: str, params):
+    def load_key(cls, key_data: str, params: UmbralParameters=None):
         """
         Loads an Umbral public key from a urlsafe base64 encoded string.
         """
+        if params is None:
+            params = UmbralParameters()
+
         key_bytes = base64.urlsafe_b64decode(key_data)
 
         point_key = Point.from_bytes(key_bytes, params.curve)
-        return cls(point_key)
+        return cls(point_key, params)
 
     def save_key(self):
         """

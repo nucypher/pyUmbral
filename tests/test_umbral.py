@@ -35,11 +35,11 @@ def test_simple_api(N, threshold):
     params = umbral.UmbralParameters()
     pre = umbral.PRE(params)
 
-    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_alice = priv_key_alice.get_pub_key(params)
+    priv_key_alice = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice = priv_key_alice.get_pub_key()
 
-    priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_bob = priv_key_bob.get_pub_key(params)
+    priv_key_bob = keys.UmbralPrivateKey.gen_key()
+    pub_key_bob = priv_key_bob.get_pub_key()
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
@@ -61,8 +61,8 @@ def test_simple_api(N, threshold):
 def test_bad_capsule_fails_reencryption():
     pre = umbral.PRE()
 
-    priv_key_alice = keys.UmbralPrivateKey.gen_key(pre.params)
-    pub_key_alice = priv_key_alice.get_pub_key(pre.params)
+    priv_key_alice = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice = priv_key_alice.get_pub_key()
 
     k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 

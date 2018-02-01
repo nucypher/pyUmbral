@@ -9,7 +9,7 @@ def test_gen_key():
     umbral_priv_key = keys.UmbralPrivateKey.gen_key(UmbralParameters())
     assert type(umbral_priv_key) == keys.UmbralPrivateKey
 
-    umbral_pub_key = umbral_priv_key.get_pub_key(UmbralParameters())
+    umbral_pub_key = umbral_priv_key.get_pub_key()
     assert type(umbral_pub_key) == keys.UmbralPublicKey
 
 

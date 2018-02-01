@@ -44,7 +44,7 @@ def test_simple_api(N, threshold):
     plain_data = b'attack at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
-    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext, pre)
+    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
     rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
@@ -53,7 +53,7 @@ def test_simple_api(N, threshold):
         capsule.attach_cfrag(cFrag)
 
     reenc_cleartext = pre.decrypt(
-        capsule, priv_key_bob, ciphertext, pre, pub_key_alice
+        capsule, priv_key_bob, ciphertext, pub_key_alice
     )
     assert reenc_cleartext == plain_data
 

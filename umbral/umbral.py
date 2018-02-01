@@ -5,21 +5,9 @@ from umbral.bignum import BigNum
 from umbral.dem import UmbralDEM
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf, unsafe_hash_to_point
+from umbral.params import UmbralParameters
+from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
-
-class UmbralParameters(object):
-    def __init__(self):
-        self.curve = ec.SECP256K1()
-        self.g = Point.get_generator_from_curve(self.curve)
-        self.order = Point.get_order_from_curve(self.curve)
-        
-        g_bytes = self.g.to_bytes(is_compressed=True)
-
-        domain_seed = b'NuCypherKMS/UmbralParameters/'
-
-        self.h = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'h')
-        self.u = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'u')
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):

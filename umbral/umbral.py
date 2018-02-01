@@ -395,7 +395,7 @@ class PRE(object):
 
         return check31 & check32 & check33
 
-    def _encapsulate(self, pub_key, key_length=32):
+    def _encapsulate(self, alice_pub_key, key_length=32):
         """Generates a symmetric key and its associated KEM ciphertext"""
         g = self.params.g
 
@@ -408,7 +408,7 @@ class PRE(object):
         h = hash_to_bn([pub_r, pub_u], self.params)
         s = priv_u + (priv_r * h)
 
-        shared_key = (priv_r + priv_u) * pub_key
+        shared_key = (priv_r + priv_u) * alice_pub_key
 
         # Key to be used for symmetric encryption
         key = kdf(shared_key, key_length)
@@ -465,8 +465,8 @@ class PRE(object):
 
     def _open_capsule(self,
                       capsule: Capsule,
-                      opener_private_key: UmbralPrivateKey,
-                      capsule_maker_pub_key: UmbralPublicKey,
+                      bob_private_key: UmbralPrivateKey,
+                      alice_pub_key: UmbralPublicKey,
                       ):
         """
         Activates the Capsule from the attached CFrags,
@@ -474,17 +474,17 @@ class PRE(object):
 
         This will often be a symmetric key.
         """
-        recp_pub_key = opener_private_key.get_pub_key()
+        recp_pub_key = bob_private_key.get_pub_key()
         capsule._reconstruct()
 
         key = self.decapsulate_reencrypted(
-            recp_pub_key.point_key, opener_private_key.bn_key,
-            capsule_maker_pub_key.point_key, capsule
+            recp_pub_key.point_key, bob_private_key.bn_key,
+            alice_pub_key.point_key, capsule
         )
         return key
 
-    def decrypt(self, capsule, opener_priv_key: UmbralPrivateKey,
-                ciphertext: bytes, capsule_maker_pub_key: UmbralPublicKey=None):
+    def decrypt(self, capsule, bob_priv_key: UmbralPrivateKey,
+                ciphertext: bytes, alice_pub_key: UmbralPublicKey=None):
         """
         Opens the capsule and gets what's inside.
 
@@ -492,12 +492,12 @@ class PRE(object):
         and return the resulting cleartext.
         """
         if capsule._attached_cfrags:
-            key = self._open_capsule(capsule, opener_priv_key, capsule_maker_pub_key)
+            key = self._open_capsule(capsule, bob_priv_key, alice_pub_key)
             dem = UmbralDEM(key)
             cleartext = dem.decrypt(ciphertext)
             return cleartext
         else:
-            key = self._decapsulate_original(opener_priv_key.bn_key, capsule)
+            key = self._decapsulate_original(bob_priv_key.bn_key, capsule)
             dem = UmbralDEM(key)
             cleartext = dem.decrypt(ciphertext)
             return cleartext

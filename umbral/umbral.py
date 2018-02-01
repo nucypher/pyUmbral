@@ -474,7 +474,7 @@ class PRE(object):
 
         This will often be a symmetric key.
         """
-        recp_pub_key = opener_private_key.get_pub_key(pre.params)
+        recp_pub_key = opener_private_key.get_pub_key()
         capsule._reconstruct()
 
         key = pre.decapsulate_reencrypted(

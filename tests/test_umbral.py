@@ -86,11 +86,11 @@ def test_two_unequal_capsules():
 
     assert one_capsule != another_capsule
 
-    reconstructed_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
+    activated_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
                                     v_prime=Point.gen_rand(curve=pre.params.curve),
                                     noninteractive_point=Point.gen_rand(curve=pre.params.curve))
 
-    assert reconstructed_capsule != one_capsule
+    assert activated_capsule != one_capsule
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
@@ -117,7 +117,7 @@ def test_m_of_n(N, threshold):
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
-    capsule._reconstruct()
+    capsule._activate()
     sym_key_from_capsule = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
     assert sym_key == sym_key_from_capsule
 
@@ -186,7 +186,7 @@ def test_capsule_serialization():
     # First, the public approach for the Capsule.  Simply:
     new_capsule == capsule
 
-    # Second, we show that the original components (which is all we have here since we haven't reconstructed) are the same:
+    # Second, we show that the original components (which is all we have here since we haven't activated) are the same:
     assert new_capsule.original_components() == capsule.original_components()
 
     # Third, we can directly compare the private original component attributes (though this is not a supported approach):
@@ -195,7 +195,7 @@ def test_capsule_serialization():
     assert new_capsule._bn_sig == capsule._bn_sig
 
 
-def test_reconstructed_capsule_serialization():
+def test_activated_capsule_serialization():
     pre = umbral.PRE(umbral.UmbralParameters())
 
     priv_key = pre.gen_priv()
@@ -208,10 +208,10 @@ def test_reconstructed_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    capsule._reconstruct()
+    capsule._activate()
     rec_capsule_bytes = capsule.to_bytes()
 
-    # A reconstructed Capsule is:
+    # An activated Capsule is:
     # three points, representable as 33 bytes each (the original), and
     # two points and a bignum (32 bytes) (the activated components), for 197 total.
     assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
@@ -223,7 +223,7 @@ def test_reconstructed_capsule_serialization():
     # Again, the same three perspectives on equality. 
     new_rec_capsule == capsule
 
-    assert new_rec_capsule.reconstructed_components() == capsule.reconstructed_components()
+    assert new_rec_capsule.activated_components() == capsule.activated_components()
 
     assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
     assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
@@ -288,7 +288,7 @@ def test_challenge_response_serialization():
 #     # Let's put the re-encryption of a different Alice ciphertext
 #     cfrags[0] = pre.reencrypt(kfrags[0], other_capsule_alice)
 
-#     capsule_bob = pre.reconstruct_capsule(cfrags)
+#     capsule_bob = pre.activate_capsule(cfrags)
 
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")
@@ -333,7 +333,7 @@ def test_challenge_response_serialization():
 #     cfrags[0].point_eph_v1 = Point.gen_rand(pre.curve)
 
 
-#     capsule_bob = pre.reconstruct_capsule(cfrags)
+#     capsule_bob = pre.activate_capsule(cfrags)
 
 #     try:
 #         # This line should always raise an AssertionError ("Generic Umbral Error")

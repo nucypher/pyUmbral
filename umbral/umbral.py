@@ -167,8 +167,8 @@ class Capsule(object):
         Serialize the Capsule into a bytestring.
         """
         bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
-        if all(self.reconstructed_components()):
-            bytes_representation += bytes().join(c.to_bytes() for c in self.reconstructed_components())
+        if all(self.activated_components()):
+            bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
         return bytes_representation
 
     def verify(self, params: UmbralParameters):
@@ -186,10 +186,10 @@ class Capsule(object):
     def original_components(self):
         return self._point_eph_e, self._point_eph_v, self._bn_sig
 
-    def reconstructed_components(self):
+    def activated_components(self):
         return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
 
-    def _reconstruct(self):
+    def _activate(self):
         id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
@@ -214,9 +214,9 @@ class Capsule(object):
         self.to_bytes()
 
     def __eq__(self, other):
-        if all(self.reconstructed_components() + other.reconstructed_components()):
-            reconstructed_match = self.reconstructed_components() == other.reconstructed_components()
-            return reconstructed_match
+        if all(self.activated_components() + other.activated_components()):
+            activated_match = self.activated_components() == other.activated_components()
+            return activated_match
         elif all(self.original_components() + other.original_components()):
             original_match = self.original_components() == other.original_components()
             return original_match
@@ -475,7 +475,7 @@ class PRE(object):
         This will often be a symmetric key.
         """
         recp_pub_key = bob_private_key.get_pub_key()
-        capsule._reconstruct()
+        capsule._activate()
 
         key = self.decapsulate_reencrypted(
             recp_pub_key.point_key, bob_private_key.bn_key,

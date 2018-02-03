@@ -117,7 +117,7 @@ def test_m_of_n(N, threshold):
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
-    capsule._activate()
+    capsule._recontruct_shamirs_secret()
     sym_key_from_capsule = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
     assert sym_key == sym_key_from_capsule
 
@@ -208,7 +208,7 @@ def test_activated_capsule_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    capsule._activate()
+    capsule._recontruct_shamirs_secret()
     rec_capsule_bytes = capsule.to_bytes()
 
     # An activated Capsule is:

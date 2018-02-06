@@ -483,7 +483,7 @@ class PRE(object):
         )
         return key
 
-    def decrypt(self, capsule, bob_priv_key: UmbralPrivateKey,
+    def decrypt(self, capsule, priv_key: UmbralPrivateKey,
                 ciphertext: bytes, alice_pub_key: UmbralPublicKey=None):
         """
         Opens the capsule and gets what's inside.
@@ -492,12 +492,16 @@ class PRE(object):
         and return the resulting cleartext.
         """
         if capsule._attached_cfrags:
+            # Since there are cfrags attached, we assume this is Bob opening the Capsule.
+            bob_priv_key = priv_key
             key = self._open_capsule(capsule, bob_priv_key, alice_pub_key)
             dem = UmbralDEM(key)
             cleartext = dem.decrypt(ciphertext)
             return cleartext
         else:
-            key = self._decapsulate_original(bob_priv_key.bn_key, capsule)
+            # Without cfrags, only Alice can open this Capsule.
+            alice_priv_key = priv_key
+            key = self._decapsulate_original(alice_priv_key.bn_key, capsule)
             dem = UmbralDEM(key)
             cleartext = dem.decrypt(ciphertext)
             return cleartext

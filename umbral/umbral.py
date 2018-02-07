@@ -189,7 +189,7 @@ class Capsule(object):
     def activated_components(self):
         return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
 
-    def _recontruct_shamirs_secret(self):
+    def _reconstruct_shamirs_secret(self):
         id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
         if len(id_cfrag_pairs) > 1:
@@ -475,7 +475,7 @@ class PRE(object):
         This will often be a symmetric key.
         """
         recp_pub_key = bob_private_key.get_pub_key()
-        capsule._recontruct_shamirs_secret()
+        capsule._reconstruct_shamirs_secret()
 
         key = self.decapsulate_reencrypted(
             recp_pub_key.point_key, bob_private_key.bn_key,

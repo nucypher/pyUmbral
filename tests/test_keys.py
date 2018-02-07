@@ -52,3 +52,15 @@ def test_public_key_serialization():
     decoded_key = keys.UmbralPublicKey.load_key(encoded_key)
 
     assert pub_key == decoded_key.point_key
+
+
+def test_public_key_to_bytes():
+    pre = umbral.PRE()
+
+    priv_key = pre.gen_priv()
+    pub_key = pre.priv2pub(priv_key)
+
+    umbral_key = keys.UmbralPublicKey(pub_key)
+    key_bytes = bytes(umbral_key)
+
+    assert type(key_bytes) == bytes

@@ -137,3 +137,9 @@ class UmbralPublicKey(object):
 
         encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
         return encoded_key
+
+    def __bytes__(self):
+        """
+        Returns an Umbral Public key as a bytestring.
+        """
+        return self.point_key.to_bytes()

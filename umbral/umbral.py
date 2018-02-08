@@ -13,176 +13,6 @@ from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
 from io import BytesIO
 
 
-class Capsule(object):
-    def __init__(self,
-                 point_eph_e=None,
-                 point_eph_v=None,
-                 bn_sig=None,
-                 e_prime=None,
-                 v_prime=None,
-                 noninteractive_point=None):
-
-        if not point_eph_e and not e_prime:
-            raise ValueError(
-                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
-                Passing both is also fine.")
-
-        self._point_eph_e = point_eph_e
-        self._point_eph_v = point_eph_v
-        self._bn_sig = bn_sig
-
-        self._point_eph_e_prime = e_prime
-        self._point_eph_v_prime = v_prime
-        self._point_noninteractive = noninteractive_point
-
-        self._attached_cfrags = {}
-        self._contents = None
-
-    class NotValid(ValueError):
-        """
-        raised if the capusle does not pass verification.
-        """
-
-    @classmethod
-    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve = None):
-        """
-        Instantiates a Capsule object from the serialized data.
-        """
-        curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
-        capsule_buff = BytesIO(capsule_bytes)
-
-        # BigNums are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        if len(capsule_bytes) == 197:
-            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
-            e_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            v_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            eph_ni = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-        else:
-            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
-            e_prime = v_prime = eph_ni = None
-
-        return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
-                   e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
-
-    def to_bytes(self):
-        """
-        Serialize the Capsule into a bytestring.
-        """
-        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
-        if all(self.activated_components()):
-            bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
-        return bytes_representation
-
-    def verify(self, params: UmbralParameters=None):
-        params = params if params is not None else default_params()
-
-        e = self._point_eph_e
-        v = self._point_eph_v
-        s = self._bn_sig
-        h = hash_to_bn([e, v], params)
-
-        return s * params.g == v + (h * e)
-
-    def attach_cfrag(self, cfrag: CapsuleFrag):
-        self._attached_cfrags[cfrag.bn_kfrag_id] = cfrag
-
-    def original_components(self):
-        return self._point_eph_e, self._point_eph_v, self._bn_sig
-
-    def activated_components(self):
-        return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
-
-    def _reconstruct_shamirs_secret(self):
-        id_cfrag_pairs = list(self._attached_cfrags.items())
-        id_0, cfrag_0 = id_cfrag_pairs[0]
-        if len(id_cfrag_pairs) > 1:
-            ids = self._attached_cfrags.keys()
-            lambda_0 = lambda_coeff(id_0, ids)
-            e = lambda_0 * cfrag_0.point_eph_e1
-            v = lambda_0 * cfrag_0.point_eph_v1
-
-            for id_i, cfrag in id_cfrag_pairs[1:]:
-                lambda_i = lambda_coeff(id_i, ids)
-                e = e + (lambda_i * cfrag.point_eph_e1)
-                v = v + (lambda_i * cfrag.point_eph_v1)
-        else:
-            e = cfrag_0.point_eph_e1
-            v = cfrag_0.point_eph_v1
-
-        self._point_eph_e_prime = e
-        self._point_eph_v_prime = v
-        self._point_noninteractive = cfrag_0.point_eph_ni
-
-    def __bytes__(self):
-        self.to_bytes()
-
-    def __eq__(self, other):
-        if all(self.activated_components() + other.activated_components()):
-            activated_match = self.activated_components() == other.activated_components()
-            return activated_match
-        elif all(self.original_components() + other.original_components()):
-            original_match = self.original_components() == other.original_components()
-            return original_match
-        else:
-            return False
-
-
-class ChallengeResponse(object):
-    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
-        self.point_eph_e2 = e2
-        self.point_eph_v2 = v2
-        self.point_kfrag_commitment = u1
-        self.point_kfrag_pok = u2
-        self.bn_kfrag_sig1 = z1
-        self.bn_kfrag_sig2 = z2
-        self.bn_sig = z3
-
-    @classmethod
-    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
-        """
-        Instantiate ChallengeResponse from serialized data.
-        """
-        curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
-        data = BytesIO(data)
-
-        # BigNums are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        e2 = Point.from_bytes(data.read(key_size + 1), curve)
-        v2 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
-        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
-        sig = BigNum.from_bytes(data.read(key_size), curve)
-
-        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
-
-    def to_bytes(self):
-        """
-        Serialize the ChallengeResponse to a bytestring.
-        """
-        e2 = self.point_eph_e2.to_bytes()
-        v2 = self.point_eph_v2.to_bytes()
-        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
-        kfrag_pok = self.point_kfrag_pok.to_bytes()
-        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
-        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
-        sig = self.bn_sig.to_bytes()
-
-        return (e2 + v2 + kfrag_commitment + kfrag_pok + kfrag_sig1
-                + kfrag_sig2 + sig)
-
-    def __bytes__(self):
-        return self.to_bytes()
-
-
 def gen_priv(curve: ec.EllipticCurve=None):
     curve = curve if curve is not None else default_curve()
     return BigNum.gen_rand(curve)
@@ -435,3 +265,173 @@ def decrypt(capsule, priv_key: UmbralPrivateKey,
         dem = UmbralDEM(key)
         cleartext = dem.decrypt(ciphertext)
         return cleartext
+
+
+class Capsule(object):
+    def __init__(self,
+                 point_eph_e=None,
+                 point_eph_v=None,
+                 bn_sig=None,
+                 e_prime=None,
+                 v_prime=None,
+                 noninteractive_point=None):
+
+        if not point_eph_e and not e_prime:
+            raise ValueError(
+                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                Passing both is also fine.")
+
+        self._point_eph_e = point_eph_e
+        self._point_eph_v = point_eph_v
+        self._bn_sig = bn_sig
+
+        self._point_eph_e_prime = e_prime
+        self._point_eph_v_prime = v_prime
+        self._point_noninteractive = noninteractive_point
+
+        self._attached_cfrags = {}
+        self._contents = None
+
+    class NotValid(ValueError):
+        """
+        raised if the capusle does not pass verification.
+        """
+
+    @classmethod
+    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve = None):
+        """
+        Instantiates a Capsule object from the serialized data.
+        """
+        curve = curve if curve is not None else default_curve()
+        key_size = get_curve_keysize_bytes(curve)
+        capsule_buff = BytesIO(capsule_bytes)
+
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        if len(capsule_bytes) == 197:
+            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
+            e_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            v_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_ni = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+        else:
+            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
+            e_prime = v_prime = eph_ni = None
+
+        return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
+                   e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
+
+    def to_bytes(self):
+        """
+        Serialize the Capsule into a bytestring.
+        """
+        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
+        if all(self.activated_components()):
+            bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
+        return bytes_representation
+
+    def verify(self, params: UmbralParameters=None):
+        params = params if params is not None else default_params()
+
+        e = self._point_eph_e
+        v = self._point_eph_v
+        s = self._bn_sig
+        h = hash_to_bn([e, v], params)
+
+        return s * params.g == v + (h * e)
+
+    def attach_cfrag(self, cfrag: CapsuleFrag):
+        self._attached_cfrags[cfrag.bn_kfrag_id] = cfrag
+
+    def original_components(self):
+        return self._point_eph_e, self._point_eph_v, self._bn_sig
+
+    def activated_components(self):
+        return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
+
+    def _reconstruct_shamirs_secret(self):
+        id_cfrag_pairs = list(self._attached_cfrags.items())
+        id_0, cfrag_0 = id_cfrag_pairs[0]
+        if len(id_cfrag_pairs) > 1:
+            ids = self._attached_cfrags.keys()
+            lambda_0 = lambda_coeff(id_0, ids)
+            e = lambda_0 * cfrag_0.point_eph_e1
+            v = lambda_0 * cfrag_0.point_eph_v1
+
+            for id_i, cfrag in id_cfrag_pairs[1:]:
+                lambda_i = lambda_coeff(id_i, ids)
+                e = e + (lambda_i * cfrag.point_eph_e1)
+                v = v + (lambda_i * cfrag.point_eph_v1)
+        else:
+            e = cfrag_0.point_eph_e1
+            v = cfrag_0.point_eph_v1
+
+        self._point_eph_e_prime = e
+        self._point_eph_v_prime = v
+        self._point_noninteractive = cfrag_0.point_eph_ni
+
+    def __bytes__(self):
+        self.to_bytes()
+
+    def __eq__(self, other):
+        if all(self.activated_components() + other.activated_components()):
+            activated_match = self.activated_components() == other.activated_components()
+            return activated_match
+        elif all(self.original_components() + other.original_components()):
+            original_match = self.original_components() == other.original_components()
+            return original_match
+        else:
+            return False
+
+
+class ChallengeResponse(object):
+    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
+        self.point_eph_e2 = e2
+        self.point_eph_v2 = v2
+        self.point_kfrag_commitment = u1
+        self.point_kfrag_pok = u2
+        self.bn_kfrag_sig1 = z1
+        self.bn_kfrag_sig2 = z2
+        self.bn_sig = z3
+
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
+        """
+        Instantiate ChallengeResponse from serialized data.
+        """
+        curve = curve if curve is not None else default_curve()
+        key_size = get_curve_keysize_bytes(curve)
+        data = BytesIO(data)
+
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        e2 = Point.from_bytes(data.read(key_size + 1), curve)
+        v2 = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
+        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
+        sig = BigNum.from_bytes(data.read(key_size), curve)
+
+        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
+
+    def to_bytes(self):
+        """
+        Serialize the ChallengeResponse to a bytestring.
+        """
+        e2 = self.point_eph_e2.to_bytes()
+        v2 = self.point_eph_v2.to_bytes()
+        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
+        kfrag_pok = self.point_kfrag_pok.to_bytes()
+        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
+        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        return (e2 + v2 + kfrag_commitment + kfrag_pok + kfrag_sig1
+                + kfrag_sig2 + sig)
+
+    def __bytes__(self):
+        return self.to_bytes()

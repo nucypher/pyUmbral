@@ -1,5 +1,6 @@
 from umbral.bignum import BigNum
 from cryptography.hazmat.backends.openssl import backend
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.config import default_curve
 
@@ -15,7 +16,7 @@ class Point(object):
         self.group = group
 
     @classmethod
-    def gen_rand(cls, curve):
+    def gen_rand(cls, curve: ec.EllipticCurve=None):
         """
         Returns a Point object with a cryptographically secure EC_POINT based
         on the provided curve.

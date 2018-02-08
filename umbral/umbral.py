@@ -186,44 +186,46 @@ class PRE(object):
         g = params.g
         return priv * g
 
-    def split_rekey(self, priv_a, pub_b, threshold, N):
+    def split_rekey(self, priv_a, pub_b, threshold, N, params: UmbralParameters=None):
         """
         Creates a re-encryption key and splits it using Shamir's Secret Sharing.
         Requires a threshold number of fragments out of N to rebuild rekey.
 
         Returns rekeys and the vKeys.
         """
+        params = params if params is not None else default_params()
+
         if type(priv_a) == UmbralPrivateKey:
             priv_a = priv_a.bn_key
 
         if type(pub_b) == UmbralPublicKey:
             pub_b = pub_b.point_key
 
-        g = self.params.g
+        g = params.g
 
         pub_a = priv_a * g
 
-        x = BigNum.gen_rand(self.params.curve)
+        x = BigNum.gen_rand(params.curve)
         xcomp = x * g
-        d = hash_to_bn([xcomp, pub_b, pub_b * x], self.params)
+        d = hash_to_bn([xcomp, pub_b, pub_b * x], params)
 
         coeffs = [priv_a * (~d)]
-        coeffs += [BigNum.gen_rand(self.params.curve) for _ in range(threshold - 1)]
+        coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
 
-        h = self.params.h
-        u = self.params.u
+        h = params.h
+        u = params.u
 
         vKeys = [coeff * h for coeff in coeffs]
 
         rk_shares = []
         for _ in range(N):
-            id_kfrag = BigNum.gen_rand(self.params.curve)
+            id_kfrag = BigNum.gen_rand(params.curve)
             rk = poly_eval(coeffs, id_kfrag)
 
             u1 = rk * u
-            y = BigNum.gen_rand(self.params.curve)
+            y = BigNum.gen_rand(params.curve)
 
-            z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], self.params)
+            z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
             z2 = y - priv_a * z1
 
             kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)

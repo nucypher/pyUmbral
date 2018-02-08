@@ -1,8 +1,11 @@
 from umbral.bignum import BigNum
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import InternalError
 
 from umbral.config import default_curve
+from umbral.utils import get_curve_keysize_bytes
 
 
 class Point(object):
@@ -116,7 +119,7 @@ class Point(object):
         if data[0] in [2, 3]:
             type_y = data[0] - 2
 
-            if len(data[1:]) > curve.key_size // 8:
+            if len(data[1:]) > get_curve_keysize_bytes(curve):
                 raise ValueError("X coordinate too large for curve.")
 
             affine_x = BigNum.from_bytes(data[1:], curve)
@@ -135,7 +138,7 @@ class Point(object):
 
         # Handle uncompressed point
         elif data[0] == 4:
-            key_size = curve.key_size // 8
+            key_size = get_curve_keysize_bytes(curve)
             affine_x = int.from_bytes(data[1:key_size+1], 'big')
             affine_y = int.from_bytes(data[1+key_size:], 'big')
 
@@ -279,3 +282,49 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return Point(inv, self.curve_nid, self.group)
+
+
+def unsafe_hash_to_point(params, data, label=None):
+    """
+    Hashes arbitrary data into a valid EC point of the specified curve,
+    using the try-and-increment method.
+    It admits an optional label as an additional input to the hash function.
+    It uses SHA256 as the internal hash function.
+
+    WARNING: Do not use when the input data is secret, as this implementation is not
+    in label time, and hence, it is not safe with respect to timing attacks.
+
+    TODO: Check how to uniformly generate ycoords. Currently, it only outputs points
+    where ycoord is even (i.e., starting with 0x02 in compressed notation)
+    """
+    if label is None:
+        label = []
+
+    # We use a 32-bit counter as additional input
+    i = 1
+    while i < 2**32:
+        ibytes = i.to_bytes(4, byteorder='big')
+        sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+        sha_512.update(label + ibytes + data)
+        hash_digest = sha_512.finalize()[:params.CURVE_KEY_SIZE_BYTES]
+
+        compressed02 = b"\x02" + hash_digest
+
+        try:
+            h = Point.from_bytes(compressed02, params.curve)
+            return h
+        except InternalError as e:
+            # We want to catch specific InternalExceptions:
+            # - Point not in the curve (code 107)
+            # - Invalid compressed point (code 110)
+            # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
+            if e.err_code[0].reason in (107, 110):
+                pass
+            else:
+                # Any other exception, we raise it
+                raise e
+
+        i += 1
+
+    # Only happens with probability 2^(-32)
+    raise ValueError('Could not hash input into the curve')

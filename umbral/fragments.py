@@ -1,9 +1,9 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from umbral.bignum import BigNum
+from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_curve, default_params
 from umbral.point import Point
-from umbral.utils import hash_to_bn
+from umbral.utils import get_curve_keysize_bytes
 
 from io import BytesIO
 
@@ -23,7 +23,7 @@ class KFrag(object):
         Instantiate a KFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = curve.key_size // 8
+        key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the
@@ -96,7 +96,7 @@ class CapsuleFrag(object):
         Instantiates a CapsuleFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = curve.key_size // 8
+        key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the

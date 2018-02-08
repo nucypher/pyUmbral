@@ -1,14 +1,14 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 from nacl.secret import SecretBox
 
-from umbral.bignum import BigNum
+from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
+from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
 
 from io import BytesIO
 
@@ -49,7 +49,7 @@ class Capsule(object):
         Instantiates a Capsule object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = curve.key_size // 8
+        key_size = get_curve_keysize_bytes(curve)
         capsule_buff = BytesIO(capsule_bytes)
 
         # BigNums are the keysize in bytes, Points are compressed and the
@@ -149,7 +149,7 @@ class ChallengeResponse(object):
         Instantiate ChallengeResponse from serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = curve.key_size // 8
+        key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the

@@ -2,8 +2,10 @@ import os
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
 
 from umbral.config import default_curve
+from umbral.utils import get_curve_keysize_bytes
 
 
 class BigNum(object):
@@ -40,14 +42,15 @@ class BigNum(object):
         order_int = backend._bn_to_int(order)
 
         # Generate random number on curve
-        rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
+        key_size = get_curve_keysize_bytes(curve)
+        rand_num = int.from_bytes(os.urandom(key_size), 'big')
         while rand_num >= order_int or rand_num <= 0:
-            rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
+            rand_num = int.from_bytes(os.urandom(key_size), 'big')
 
         new_rand_bn = backend._int_to_bn(rand_num)
         new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_free)
 
-        return BigNum(new_rand_bn, curve_nid, group, order)
+        return cls(new_rand_bn, curve_nid, group, order)
 
     @classmethod
     def from_int(cls, num, curve: ec.EllipticCurve=None):
@@ -80,7 +83,7 @@ class BigNum(object):
         bignum = backend._int_to_bn(num)
         bignum = backend._ffi.gc(bignum, backend._lib.BN_free)
 
-        return BigNum(bignum, curve_nid, group, order)
+        return cls(bignum, curve_nid, group, order)
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
@@ -251,3 +254,27 @@ class BigNum(object):
 
     def __hash__(self):
         return hash(int(self))
+
+
+def hash_to_bn(crypto_items, params):
+    sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+    for item in crypto_items:
+        try:
+            data_bytes = item.to_bytes()
+        except AttributeError:
+            data_bytes = item
+        sha_512.update(data_bytes)
+
+    i = 0
+    h = 0
+    while h < params.CURVE_MINVAL_SHA512:
+        sha_512_i = sha_512.copy()
+        sha_512_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+        hash_digest = sha_512_i.finalize()
+        h = int.from_bytes(hash_digest, byteorder='big', signed=False)
+        i += 1
+    hash_bn = h % int(params.order)
+
+    res = BigNum.from_int(hash_bn, params.curve)
+
+    return res

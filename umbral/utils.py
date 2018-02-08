@@ -1,3 +1,5 @@
+import math
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -111,3 +113,7 @@ def kdf(ecpoint, key_length):
         info=None,
         backend=default_backend()
     ).derive(data)
+
+
+def get_curve_keysize_bytes(curve):
+    return int(math.ceil(curve.key_size / 8.00))

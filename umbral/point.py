@@ -45,11 +45,12 @@ class Point(object):
         return Point(rand_point, curve_nid, group)
 
     @classmethod
-    def from_affine(cls, coords, curve):
+    def from_affine(cls, coords, curve: ec.EllipticCurve=None):
         """
         Returns a Point object from the given affine coordinates in a tuple in
         the format of (x, y) and a given curve.
         """
+        curve = curve if curve is not None else default_curve()
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
         except AttributeError:
@@ -100,10 +101,11 @@ class Point(object):
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
     @classmethod
-    def from_bytes(cls, data, curve):
+    def from_bytes(cls, data, curve: ec.EllipticCurve=None):
         """
         Returns a Point object from the given byte data on the curve provided.
         """
+        curve = curve if curve is not None else default_curve()
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
         except AttributeError:
@@ -164,10 +166,11 @@ class Point(object):
         return data
 
     @classmethod
-    def get_generator_from_curve(cls, curve):
+    def get_generator_from_curve(cls, curve: ec.EllipticCurve=None):
         """
         Returns the generator Point from the given curve as a Point object.
         """
+        curve = curve if curve is not None else default_curve()
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
         except AttributeError:
@@ -183,10 +186,11 @@ class Point(object):
         return cls(generator, curve_nid, group)
 
     @classmethod
-    def get_order_from_curve(cls, curve):
+    def get_order_from_curve(cls, curve: ec.EllipticCurve=None):
         """
         Returns the order from the given curve as a BigNum.
         """
+        curve = curve if curve is not None else default_curve()
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
         except AttributeError:

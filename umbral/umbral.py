@@ -73,7 +73,8 @@ class Capsule(object):
             bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
         return bytes_representation
 
-    def verify(self, params: UmbralParameters):
+    def verify(self, params: UmbralParameters=None):
+        params = params if params is not None else default_params()
 
         e = self._point_eph_e
         v = self._point_eph_v

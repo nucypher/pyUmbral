@@ -30,27 +30,23 @@ def poly_eval(coeff, x):
     return result
 
 
-# minVal = (1 << 256) % self.order   (i.e., 2^256 % order)
-MINVAL_SECP256K1_HASH_256 = 432420386565659656852420866394968145599
-
-
 def hash_to_bn(crypto_items, params):
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+    sha_512 = hashes.Hash(hashes.SHA512(), backend=default_backend())
     for item in crypto_items:
         if isinstance(item, Point):
             data_bytes = item.to_bytes()
         elif isinstance(item, BigNum):
-            data_bytes = int(item).to_bytes(32, byteorder='big')
+            data_bytes = int(item).to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big')
         else:
             data_bytes = item
-        digest.update(data_bytes)
+        sha_512.update(data_bytes)
 
     i = 0
     h = 0
-    while h < MINVAL_SECP256K1_HASH_256:
-        digest_i = digest.copy()
-        digest_i.update(i.to_bytes(32, byteorder='big'))
-        hash_digest = digest_i.finalize()
+    while h < params.CURVE_MINVAL_SHA512:
+        sha_512_i = sha_512.copy()
+        sha_512_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+        hash_digest = sha_512_i.finalize()
         h = int.from_bytes(hash_digest, byteorder='big', signed=False)
         i += 1
     hash_bn = h % int(params.order)
@@ -59,7 +55,7 @@ def hash_to_bn(crypto_items, params):
  
     return res
 
-def unsafe_hash_to_point(curve, data, label=None):
+def unsafe_hash_to_point(params, data, label=None):
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
@@ -79,14 +75,14 @@ def unsafe_hash_to_point(curve, data, label=None):
     i = 1
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
-        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        digest.update(label + ibytes + data)
-        hash_digest = digest.finalize()
+        sha_512 = hashes.Hash(hashes.SHA512(), backend=default_backend())
+        sha_512.update(label + ibytes + data)
+        hash_digest = sha_512.finalize()[:params.CURVE_KEY_SIZE_BYTES]
 
         compressed02 = b"\x02" + hash_digest
 
         try:
-            h = Point.from_bytes(compressed02, curve)
+            h = Point.from_bytes(compressed02, params.curve)
             return h
         except InternalError as e:
             # We want to catch specific InternalExceptions: 

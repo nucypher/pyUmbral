@@ -5,6 +5,8 @@ from umbral.config import default_curve, default_params
 from umbral.point import Point
 from umbral.utils import hash_to_bn
 
+from io import BytesIO
+
 
 class KFrag(object):
     def __init__(self, id_, key, x, u1, z1, z2):
@@ -21,13 +23,17 @@ class KFrag(object):
         Instantiate a KFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
+        key_size = curve.key_size // 8
+        data = BytesIO(data)
 
-        id = BigNum.from_bytes(data[0:32], curve)
-        key = BigNum.from_bytes(data[32:64], curve)
-        eph_ni = Point.from_bytes(data[64:97], curve)
-        commitment = Point.from_bytes(data[97:130], curve)
-        sig1 = BigNum.from_bytes(data[130:162], curve)
-        sig2 = BigNum.from_bytes(data[162:194], curve)
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        id = BigNum.from_bytes(data.read(key_size), curve)
+        key = BigNum.from_bytes(data.read(key_size), curve)
+        eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
+        commitment = Point.from_bytes(data.read(key_size + 1), curve)
+        sig1 = BigNum.from_bytes(data.read(key_size), curve)
+        sig2 = BigNum.from_bytes(data.read(key_size), curve)
 
         return KFrag(id, key, eph_ni, commitment, sig1, sig2)
 
@@ -90,10 +96,15 @@ class CapsuleFrag(object):
         Instantiates a CapsuleFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        e1 = Point.from_bytes(data[0:33], curve)
-        v1 = Point.from_bytes(data[33:66], curve)
-        kfrag_id = BigNum.from_bytes(data[66:98], curve)
-        eph_ni = Point.from_bytes(data[98:131], curve)
+        key_size = curve.key_size // 8
+        data = BytesIO(data)
+
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        e1 = Point.from_bytes(data.read(key_size + 1), curve)
+        v1 = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
+        eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
 
         return CapsuleFrag(e1, v1, kfrag_id, eph_ni)
 

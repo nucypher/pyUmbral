@@ -10,6 +10,8 @@ from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, hash_to_bn, kdf
 
+from io import BytesIO
+
 
 class Capsule(object):
     def __init__(self,
@@ -47,18 +49,22 @@ class Capsule(object):
         Instantiates a Capsule object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        # TODO: This has gotten utterly unwieldy.  We need a programmatic splitting facility (let's just use BytestringSplitter?)
+        key_size = curve.key_size // 8
+        capsule_buff = BytesIO(capsule_bytes)
+
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
         if len(capsule_bytes) == 197:
-            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
-            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
-            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
-            e_prime = Point.from_bytes(capsule_bytes[98:131], curve)
-            v_prime = Point.from_bytes(capsule_bytes[131:164], curve)
-            eph_ni = Point.from_bytes(capsule_bytes[164:197], curve)
+            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
+            e_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            v_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_ni = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
         else:
-            eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
-            eph_v = Point.from_bytes(capsule_bytes[33:66], curve)
-            sig = BigNum.from_bytes(capsule_bytes[66:98], curve)
+            eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+            sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
             e_prime = v_prime = eph_ni = None
 
         return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
@@ -137,22 +143,26 @@ class ChallengeResponse(object):
         self.bn_kfrag_sig2 = z2
         self.bn_sig = z3
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate ChallengeResponse from serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        e2 = Point.from_bytes(data[0:33], curve)
-        v2 = Point.from_bytes(data[33:66], curve)
-        kfrag_commitment = Point.from_bytes(data[66:99], curve)
-        kfrag_pok = Point.from_bytes(data[99:132], curve)
-        kfrag_sig1 = BigNum.from_bytes(data[132:164], curve)
-        kfrag_sig2 = BigNum.from_bytes(data[164:196], curve)
-        sig = BigNum.from_bytes(data[196:228], curve)
+        key_size = curve.key_size // 8
+        data = BytesIO(data)
 
-        return ChallengeResponse(e2, v2, kfrag_commitment, kfrag_pok,
-                                 kfrag_sig1, kfrag_sig2, sig)
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        e2 = Point.from_bytes(data.read(key_size + 1), curve)
+        v2 = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
+        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
+        sig = BigNum.from_bytes(data.read(key_size), curve)
+
+        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
 
     def to_bytes(self):
         """

@@ -173,242 +173,255 @@ class ChallengeResponse(object):
         return self.to_bytes()
 
 
-class PRE(object):
-    def __init__(self, params: UmbralParameters = None):
-        if params is None:
-            params = default_params()
-        self.params = params
+def gen_priv(curve: ec.EllipticCurve=None):
+    curve = curve if curve is not None else default_curve()
+    return BigNum.gen_rand(curve)
 
-    def gen_priv(self):
-        return BigNum.gen_rand(self.params.curve)
 
-    def priv2pub(self, priv, params: UmbralParameters = None):
-        params = params if params is not None else default_params()
-        g = params.g
-        return priv * g
+def priv2pub(priv, params: UmbralParameters=None):
+    params = params if params is not None else default_params()
+    return priv * params.g
 
-    def split_rekey(self, priv_a, pub_b, threshold, N, params: UmbralParameters=None):
-        """
-        Creates a re-encryption key and splits it using Shamir's Secret Sharing.
-        Requires a threshold number of fragments out of N to rebuild rekey.
 
-        Returns rekeys and the vKeys.
-        """
-        params = params if params is not None else default_params()
+def split_rekey(priv_a, pub_b, threshold, N, params: UmbralParameters=None):
+    """
+    Creates a re-encryption key and splits it using Shamir's Secret Sharing.
+    Requires a threshold number of fragments out of N to rebuild rekey.
 
-        if type(priv_a) == UmbralPrivateKey:
-            priv_a = priv_a.bn_key
+    Returns rekeys and the vKeys.
+    """
+    params = params if params is not None else default_params()
 
-        if type(pub_b) == UmbralPublicKey:
-            pub_b = pub_b.point_key
+    if type(priv_a) == UmbralPrivateKey:
+        priv_a = priv_a.bn_key
 
-        g = params.g
+    if type(pub_b) == UmbralPublicKey:
+        pub_b = pub_b.point_key
 
-        pub_a = priv_a * g
+    g = params.g
 
-        x = BigNum.gen_rand(params.curve)
-        xcomp = x * g
-        d = hash_to_bn([xcomp, pub_b, pub_b * x], params)
+    pub_a = priv_a * g
 
-        coeffs = [priv_a * (~d)]
-        coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
+    x = BigNum.gen_rand(params.curve)
+    xcomp = x * g
+    d = hash_to_bn([xcomp, pub_b, pub_b * x], params)
 
-        h = params.h
-        u = params.u
+    coeffs = [priv_a * (~d)]
+    coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
 
-        vKeys = [coeff * h for coeff in coeffs]
+    h = params.h
+    u = params.u
 
-        rk_shares = []
-        for _ in range(N):
-            id_kfrag = BigNum.gen_rand(params.curve)
-            rk = poly_eval(coeffs, id_kfrag)
+    vKeys = [coeff * h for coeff in coeffs]
 
-            u1 = rk * u
-            y = BigNum.gen_rand(params.curve)
+    rk_shares = []
+    for _ in range(N):
+        id_kfrag = BigNum.gen_rand(params.curve)
+        rk = poly_eval(coeffs, id_kfrag)
 
-            z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
-            z2 = y - priv_a * z1
+        u1 = rk * u
+        y = BigNum.gen_rand(params.curve)
 
-            kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
-            rk_shares.append(kFrag)
+        z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
+        z2 = y - priv_a * z1
 
-        return rk_shares, vKeys
+        kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
+        rk_shares.append(kFrag)
 
-    def reencrypt(self, kFrag, capsule):
-        if not capsule.verify(self.params):
-            raise capsule.NotValid
+    return rk_shares, vKeys
 
-        e1 = kFrag.bn_key * capsule._point_eph_e
-        v1 = kFrag.bn_key * capsule._point_eph_v
 
-        cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
-        return cFrag
+def reencrypt(kFrag, capsule, params: UmbralParameters=None):
+    params = params if params is not None else default_params()
 
-    def challenge(self, rk, capsule, cFrag):
-        e1 = cFrag.point_eph_e1
-        v1 = cFrag.point_eph_v1
+    if not capsule.verify(params):
+        raise capsule.NotValid
 
-        e = capsule._point_eph_e
-        v = capsule._point_eph_v
+    e1 = kFrag.bn_key * capsule._point_eph_e
+    v1 = kFrag.bn_key * capsule._point_eph_v
 
-        u = self.params.u
-        u1 = rk.point_commitment
+    cFrag = CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
+    return cFrag
 
-        t = BigNum.gen_rand(self.params.curve)
-        e2 = t * e
-        v2 = t * v
-        u2 = t * u
 
-        h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
+def challenge(rk, capsule, cFrag, params: UmbralParameters=None):
+    params = params if params is not None else default_params()
 
-        z3 = t + h * rk.bn_key
+    e1 = cFrag.point_eph_e1
+    v1 = cFrag.point_eph_v1
 
-        ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
+    e = capsule._point_eph_e
+    v = capsule._point_eph_v
 
-        # Check correctness of original ciphertext (check nº 2) at the end
-        # to avoid timing oracles
-        assert capsule.verify(self.params), "Generic Umbral Error"
-        return ch_resp
+    u = params.u
+    u1 = rk.point_commitment
 
-    def check_challenge(self, capsule, cFrag, challenge_resp, pub_a, pub_b):
-        e = capsule._point_eph_e
-        v = capsule._point_eph_v
+    t = BigNum.gen_rand(params.curve)
+    e2 = t * e
+    v2 = t * v
+    u2 = t * u
 
-        e1 = cFrag.point_eph_e1
-        v1 = cFrag.point_eph_v1
-        xcomp = cFrag.point_eph_ni
-        kfrag_id = cFrag.bn_kfrag_id
+    h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], params)
 
-        e2 = challenge_resp.point_eph_e2
-        v2 = challenge_resp.point_eph_v2
+    z3 = t + h * rk.bn_key
 
-        g = self.params.g
+    ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
 
-        u = self.params.u
-        u1 = challenge_resp.point_kfrag_commitment
-        u2 = challenge_resp.point_kfrag_pok
+    # Check correctness of original ciphertext (check nº 2) at the end
+    # to avoid timing oracles
+    assert capsule.verify(params), "Generic Umbral Error"
+    return ch_resp
 
-        z1 = challenge_resp.bn_kfrag_sig1
-        z2 = challenge_resp.bn_kfrag_sig2
-        z3 = challenge_resp.bn_sig
 
-        g_y = (z2 * g) + (z1 * pub_a)
+def check_challenge(capsule, cFrag, challenge_resp, pub_a, pub_b, params: UmbralParameters=None):
+    params = params if params is not None else default_params()
 
-        h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], self.params)
+    e = capsule._point_eph_e
+    v = capsule._point_eph_v
 
-        check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], self.params)
-        check32 = z3 * e == e2 + (h * e1)
-        check33 = z3 * u == u2 + (h * u1)
+    e1 = cFrag.point_eph_e1
+    v1 = cFrag.point_eph_v1
+    xcomp = cFrag.point_eph_ni
+    kfrag_id = cFrag.bn_kfrag_id
 
-        return check31 & check32 & check33
+    e2 = challenge_resp.point_eph_e2
+    v2 = challenge_resp.point_eph_v2
 
-    def _encapsulate(self, alice_pub_key, key_length=32):
-        """Generates a symmetric key and its associated KEM ciphertext"""
-        g = self.params.g
+    g = params.g
+    u = params.u
 
-        priv_r = BigNum.gen_rand(self.params.curve)
-        pub_r = priv_r * g
+    u1 = challenge_resp.point_kfrag_commitment
+    u2 = challenge_resp.point_kfrag_pok
 
-        priv_u = BigNum.gen_rand(self.params.curve)
-        pub_u = priv_u * g
+    z1 = challenge_resp.bn_kfrag_sig1
+    z2 = challenge_resp.bn_kfrag_sig2
+    z3 = challenge_resp.bn_sig
 
-        h = hash_to_bn([pub_r, pub_u], self.params)
-        s = priv_u + (priv_r * h)
+    g_y = (z2 * g) + (z1 * pub_a)
 
-        shared_key = (priv_r + priv_u) * alice_pub_key
+    h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], params)
 
-        # Key to be used for symmetric encryption
-        key = kdf(shared_key, key_length)
+    check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
+    check32 = z3 * e == e2 + (h * e1)
+    check33 = z3 * u == u2 + (h * u1)
 
-        return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
+    return check31 & check32 & check33
 
-    def _decapsulate_original(self, priv_key, capsule, key_length=32):
-        """Derive the same symmetric key"""
-        shared_key = priv_key * (capsule._point_eph_e + capsule._point_eph_v)
-        key = kdf(shared_key, key_length)
 
-        # Check correctness of original ciphertext (check nº 2) at the end
-        # to avoid timing oracles
-        assert capsule.verify(self.params), "Generic Umbral Error"
-        return key
+def _encapsulate(alice_pub_key, key_length=32, params: UmbralParameters=None):
+    """Generates a symmetric key and its associated KEM ciphertext"""
+    params = params if params is not None else default_params()
 
-    def decapsulate_reencrypted(self, pub_key: Point, priv_key: BigNum, orig_pub_key: Point,
-                                capsule: Capsule, key_length=32):
-        """Derive the same symmetric key"""
+    g = params.g
 
-        xcomp = capsule._point_noninteractive
-        d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], self.params)
+    priv_r = BigNum.gen_rand(params.curve)
+    pub_r = priv_r * g
 
-        e_prime = capsule._point_eph_e_prime
-        v_prime = capsule._point_eph_v_prime
+    priv_u = BigNum.gen_rand(params.curve)
+    pub_u = priv_u * g
 
-        shared_key = d * (e_prime + v_prime)
+    h = hash_to_bn([pub_r, pub_u], params)
+    s = priv_u + (priv_r * h)
 
-        key = kdf(shared_key, key_length)
+    shared_key = (priv_r + priv_u) * alice_pub_key
 
-        e = capsule._point_eph_e
-        v = capsule._point_eph_v
-        s = capsule._bn_sig
-        h = hash_to_bn([e, v], self.params)
-        inv_d = ~d
+    # Key to be used for symmetric encryption
+    key = kdf(shared_key, key_length)
 
-        assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
+    return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
-        return key
 
-    def encrypt(self, pub_key: UmbralPublicKey, data: bytes):
-        """
-        Performs an encryption using the UmbralDEM object and encapsulates a key
-        for the sender using the public key provided.
+def _decapsulate_original(priv_key, capsule, key_length=32, params: UmbralParameters=None):
+    """Derive the same symmetric key"""
+    params = params if params is not None else default_params()
 
-        Returns the ciphertext and the KEM Capsule.
-        """
-        key, capsule = self._encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+    shared_key = priv_key * (capsule._point_eph_e + capsule._point_eph_v)
+    key = kdf(shared_key, key_length)
 
+    # Check correctness of original ciphertext (check nº 2) at the end
+    # to avoid timing oracles
+    assert capsule.verify(params), "Generic Umbral Error"
+    return key
+
+
+def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
+                            orig_pub_key: Point, capsule: Capsule, key_length=32,
+                            params: UmbralParameters=None):
+    """Derive the same symmetric key"""
+    params = params if params is not None else default_params()
+
+    xcomp = capsule._point_noninteractive
+    d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], params)
+
+    e_prime = capsule._point_eph_e_prime
+    v_prime = capsule._point_eph_v_prime
+
+    shared_key = d * (e_prime + v_prime)
+
+    key = kdf(shared_key, key_length)
+
+    e = capsule._point_eph_e
+    v = capsule._point_eph_v
+    s = capsule._bn_sig
+    h = hash_to_bn([e, v], params)
+    inv_d = ~d
+
+    assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
+    return key
+
+
+def encrypt(pub_key: UmbralPublicKey, data: bytes):
+    """
+    Performs an encryption using the UmbralDEM object and encapsulates a key
+    for the sender using the public key provided.
+
+    Returns the ciphertext and the KEM Capsule.
+    """
+    key, capsule = _encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+
+    dem = UmbralDEM(key)
+    enc_data = dem.encrypt(data)
+
+    return enc_data, capsule
+
+
+def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
+                  alice_pub_key: UmbralPublicKey):
+    """
+    Activates the Capsule from the attached CFrags,
+    opens the Capsule and returns what is inside.
+
+    This will often be a symmetric key.
+    """
+    recp_pub_key = bob_private_key.get_pub_key()
+    capsule._reconstruct_shamirs_secret()
+
+    key = decapsulate_reencrypted(
+        recp_pub_key.point_key, bob_private_key.bn_key,
+        alice_pub_key.point_key, capsule
+    )
+    return key
+
+
+def decrypt(capsule, priv_key: UmbralPrivateKey,
+            ciphertext: bytes, alice_pub_key: UmbralPublicKey = None):
+    """
+    Opens the capsule and gets what's inside.
+
+    We hope that's a symmetric key, which we use to decrypt the ciphertext
+    and return the resulting cleartext.
+    """
+    if capsule._attached_cfrags:
+        # Since there are cfrags attached, we assume this is Bob opening the Capsule.
+        bob_priv_key = priv_key
+        key = _open_capsule(capsule, bob_priv_key, alice_pub_key)
         dem = UmbralDEM(key)
-        enc_data = dem.encrypt(data)
-
-        return enc_data, capsule
-
-    def _open_capsule(self,
-                      capsule: Capsule,
-                      bob_private_key: UmbralPrivateKey,
-                      alice_pub_key: UmbralPublicKey,
-                      ):
-        """
-        Activates the Capsule from the attached CFrags,
-        opens the Capsule and returns what is inside.
-
-        This will often be a symmetric key.
-        """
-        recp_pub_key = bob_private_key.get_pub_key()
-        capsule._reconstruct_shamirs_secret()
-
-        key = self.decapsulate_reencrypted(
-            recp_pub_key.point_key, bob_private_key.bn_key,
-            alice_pub_key.point_key, capsule
-        )
-        return key
-
-    def decrypt(self, capsule, priv_key: UmbralPrivateKey,
-                ciphertext: bytes, alice_pub_key: UmbralPublicKey = None):
-        """
-        Opens the capsule and gets what's inside.
-
-        We hope that's a symmetric key, which we use to decrypt the ciphertext
-        and return the resulting cleartext.
-        """
-        if capsule._attached_cfrags:
-            # Since there are cfrags attached, we assume this is Bob opening the Capsule.
-            bob_priv_key = priv_key
-            key = self._open_capsule(capsule, bob_priv_key, alice_pub_key)
-            dem = UmbralDEM(key)
-            cleartext = dem.decrypt(ciphertext)
-            return cleartext
-        else:
-            # Without cfrags, only Alice can open this Capsule.
-            alice_priv_key = priv_key
-            key = self._decapsulate_original(alice_priv_key.bn_key, capsule)
-            dem = UmbralDEM(key)
-            cleartext = dem.decrypt(ciphertext)
-            return cleartext
+        cleartext = dem.decrypt(ciphertext)
+        return cleartext
+    else:
+        # Without cfrags, only Alice can open this Capsule.
+        alice_priv_key = priv_key
+        key = _decapsulate_original(alice_priv_key.bn_key, capsule)
+        dem = UmbralDEM(key)
+        cleartext = dem.decrypt(ciphertext)
+        return cleartext

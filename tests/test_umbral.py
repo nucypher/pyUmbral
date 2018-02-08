@@ -17,24 +17,20 @@ parameters = [
 
 
 def test_decapsulation_by_alice():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
-
-    sym_key, capsule = pre._encapsulate(pub_key)
+    sym_key, capsule = umbral._encapsulate(pub_key)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
 
-    sym_key_2 = pre._decapsulate_original(priv_key, capsule)
+    sym_key_2 = umbral._decapsulate_original(priv_key, capsule)
     assert sym_key_2 == sym_key
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_simple_api(N, threshold):
-    pre = umbral.PRE()
-
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pub_key()
 
@@ -42,40 +38,37 @@ def test_simple_api(N, threshold):
     pub_key_bob = priv_key_bob.get_pub_key()
 
     plain_data = b'attack at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = umbral.encrypt(pub_key_alice, plain_data)
 
-    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
+    cleartext = umbral.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
-    rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
+    rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
     for rekey in rekeys:
-        cFrag = pre.reencrypt(rekey, capsule)
+        cFrag = umbral.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
 
-    reenc_cleartext = pre.decrypt(
+    reenc_cleartext = umbral.decrypt(
         capsule, priv_key_bob, ciphertext, pub_key_alice
     )
     assert reenc_cleartext == plain_data
 
 
 def test_bad_capsule_fails_reencryption():
-    pre = umbral.PRE()
-
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pub_key()
 
-    k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+    k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
     bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(),
                                point_eph_v=Point.gen_rand(),
                                bn_sig=BigNum.gen_rand())
 
     with pytest.raises(Capsule.NotValid):
-        pre.reencrypt(k_frags[0], bollocks_capsule)
+        umbral.reencrypt(k_frags[0], bollocks_capsule)
 
 
 def test_two_unequal_capsules():
-    pre = umbral.PRE()
     one_capsule = Capsule(point_eph_e=Point.gen_rand(),
                           point_eph_v=Point.gen_rand(),
                           bn_sig=BigNum.gen_rand()
@@ -97,40 +90,37 @@ def test_two_unequal_capsules():
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_m_of_n(N, threshold):
-    pre = umbral.PRE()
-    priv_alice = pre.gen_priv()
-    pub_alice = pre.priv2pub(priv_alice)
-    priv_bob = pre.gen_priv()
-    pub_bob = pre.priv2pub(priv_bob)
+    priv_alice = umbral.gen_priv()
+    pub_alice = umbral.priv2pub(priv_alice)
+    priv_bob = umbral.gen_priv()
+    pub_bob = umbral.priv2pub(priv_bob)
 
-    sym_key, capsule = pre._encapsulate(pub_alice)
-    kfrags, vkeys = pre.split_rekey(priv_alice, pub_bob, threshold, N)
+    sym_key, capsule = umbral._encapsulate(pub_alice)
+    kfrags, vkeys = umbral.split_rekey(priv_alice, pub_bob, threshold, N)
 
     for kfrag in kfrags:
-        assert kfrag.verify(pub_alice, pub_bob, pre.params)
-        assert kfrag.is_consistent(vkeys, pre.params)
+        assert kfrag.verify(pub_alice, pub_bob)
+        assert kfrag.is_consistent(vkeys)
 
     for kfrag in kfrags[:threshold]:
-        cfrag = pre.reencrypt(kfrag, capsule)
+        cfrag = umbral.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
-        ch = pre.challenge(kfrag, capsule, cfrag)
-        assert pre.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
+        ch = umbral.challenge(kfrag, capsule, cfrag)
+        assert umbral.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
     capsule._reconstruct_shamirs_secret()
-    sym_key_from_capsule = pre.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
+    sym_key_from_capsule = umbral.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
     assert sym_key == sym_key_from_capsule
 
 
 def test_kfrag_serialization():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
-
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
@@ -146,15 +136,13 @@ def test_kfrag_serialization():
 
 
 def test_cfrag_serialization():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+    _unused_key, capsule = umbral._encapsulate(pub_key)
+    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
 
-    _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
-
-    cfrag = pre.reencrypt(kfrags[0], capsule)
+    cfrag = umbral.reencrypt(kfrags[0], capsule)
     cfrag_bytes = cfrag.to_bytes()
 
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
@@ -168,12 +156,10 @@ def test_cfrag_serialization():
 
 
 def test_capsule_serialization():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
-
-    _symmetric_key, capsule = pre._encapsulate(pub_key)
+    _symmetric_key, capsule = umbral._encapsulate(pub_key)
     capsule_bytes = capsule.to_bytes()
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
@@ -195,15 +181,13 @@ def test_capsule_serialization():
 
 
 def test_activated_capsule_serialization():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+    _unused_key, capsule = umbral._encapsulate(pub_key)
+    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
 
-    _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
-
-    cfrag = pre.reencrypt(kfrags[0], capsule)
+    cfrag = umbral.reencrypt(kfrags[0], capsule)
 
     capsule.attach_cfrag(cfrag)
 
@@ -228,18 +212,16 @@ def test_activated_capsule_serialization():
 
 
 def test_challenge_response_serialization():
-    pre = umbral.PRE()
+    priv_key = umbral.gen_priv()
+    pub_key = umbral.priv2pub(priv_key)
 
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+    _unused_key, capsule = umbral._encapsulate(pub_key)
+    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
 
-    _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
-
-    cfrag = pre.reencrypt(kfrags[0], capsule)
+    cfrag = umbral.reencrypt(kfrags[0], capsule)
 
     capsule.attach_cfrag(cfrag)
-    ch_resp = pre.challenge(kfrags[0], capsule, cfrag)
+    ch_resp = umbral.challenge(kfrags[0], capsule, cfrag)
 
     ch_resp_bytes = ch_resp.to_bytes()
 

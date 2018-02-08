@@ -136,8 +136,7 @@ def test_kfrag_serialization():
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
     assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
 
-    new_frag = umbral.KFrag.from_bytes(kfrag_bytes,
-                                       umbral.UmbralParameters().curve)
+    new_frag = umbral.KFrag.from_bytes(kfrag_bytes)
     assert new_frag.bn_id == kfrags[0].bn_id
     assert new_frag.bn_key == kfrags[0].bn_key
     assert new_frag.point_eph_ni == kfrags[0].point_eph_ni
@@ -161,8 +160,7 @@ def test_cfrag_serialization():
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
     assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
-    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
-                                              umbral.UmbralParameters().curve)
+    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag.point_eph_e1 == cfrag.point_eph_e1
     assert new_cfrag.point_eph_v1 == cfrag.point_eph_v1
     assert new_cfrag.bn_kfrag_id == cfrag.bn_kfrag_id
@@ -181,8 +179,7 @@ def test_capsule_serialization():
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
-    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
-                                            umbral.UmbralParameters().curve)
+    new_capsule = umbral.Capsule.from_bytes(capsule_bytes)
 
     # Three ways to think about equality.
     # First, the public approach for the Capsule.  Simply:
@@ -218,9 +215,7 @@ def test_activated_capsule_serialization():
     # two points and a bignum (32 bytes) (the activated components), for 197 total.
     assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
 
-    new_rec_capsule = umbral.Capsule.from_bytes(
-        rec_capsule_bytes,
-        umbral.UmbralParameters().curve)
+    new_rec_capsule = umbral.Capsule.from_bytes(rec_capsule_bytes)
 
     # Again, the same three perspectives on equality. 
     new_rec_capsule == capsule
@@ -251,8 +246,7 @@ def test_challenge_response_serialization():
     # A ChallengeResponse can be represented as the 228 total bytes of four Points (33 each) and three BigNums (32 each).
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
-    new_ch_resp = umbral.ChallengeResponse.from_bytes(
-        ch_resp_bytes, umbral.UmbralParameters().curve)
+    new_ch_resp = umbral.ChallengeResponse.from_bytes(ch_resp_bytes)
     assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
     assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment

@@ -1,3 +1,4 @@
+from cryptography.hazmat.primitives.asymmetric import ec
 import pytest
 
 from umbral import umbral, keys
@@ -16,7 +17,7 @@ parameters = [
 
 
 def test_decapsulation_by_alice():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -32,8 +33,7 @@ def test_decapsulation_by_alice():
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_simple_api(N, threshold):
-    params = umbral.UmbralParameters()
-    pre = umbral.PRE(params)
+    pre = umbral.PRE()
 
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pub_key()
@@ -66,9 +66,9 @@ def test_bad_capsule_fails_reencryption():
 
     k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
-    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                               point_eph_v=Point.gen_rand(),
+                               bn_sig=BigNum.gen_rand())
 
     with pytest.raises(Capsule.NotValid):
         pre.reencrypt(k_frags[0], bollocks_capsule)
@@ -76,26 +76,28 @@ def test_bad_capsule_fails_reencryption():
 
 def test_two_unequal_capsules():
     pre = umbral.PRE()
-    one_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    one_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                          point_eph_v=Point.gen_rand(),
+                          bn_sig=BigNum.gen_rand()
+                          )
 
-    another_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                          point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                          bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    another_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                              point_eph_v=Point.gen_rand(),
+                              bn_sig=BigNum.gen_rand()
+                              )
 
     assert one_capsule != another_capsule
 
-    activated_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
-                                    v_prime=Point.gen_rand(curve=pre.params.curve),
-                                    noninteractive_point=Point.gen_rand(curve=pre.params.curve))
+    activated_capsule = Capsule(e_prime=Point.gen_rand(),
+                                v_prime=Point.gen_rand(),
+                                noninteractive_point=Point.gen_rand())
 
     assert activated_capsule != one_capsule
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_m_of_n(N, threshold):
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
     priv_alice = pre.gen_priv()
     pub_alice = pre.priv2pub(priv_alice)
     priv_bob = pre.gen_priv()
@@ -123,7 +125,7 @@ def test_m_of_n(N, threshold):
 
 
 def test_kfrag_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -134,8 +136,7 @@ def test_kfrag_serialization():
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
     assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
 
-    new_frag = umbral.KFrag.from_bytes(kfrag_bytes,
-                                       umbral.UmbralParameters().curve)
+    new_frag = umbral.KFrag.from_bytes(kfrag_bytes)
     assert new_frag.bn_id == kfrags[0].bn_id
     assert new_frag.bn_key == kfrags[0].bn_key
     assert new_frag.point_eph_ni == kfrags[0].point_eph_ni
@@ -145,7 +146,7 @@ def test_kfrag_serialization():
 
 
 def test_cfrag_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -159,8 +160,7 @@ def test_cfrag_serialization():
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
     assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
-    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes,
-                                              umbral.UmbralParameters().curve)
+    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag.point_eph_e1 == cfrag.point_eph_e1
     assert new_cfrag.point_eph_v1 == cfrag.point_eph_v1
     assert new_cfrag.bn_kfrag_id == cfrag.bn_kfrag_id
@@ -168,7 +168,7 @@ def test_cfrag_serialization():
 
 
 def test_capsule_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -179,8 +179,7 @@ def test_capsule_serialization():
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
-    new_capsule = umbral.Capsule.from_bytes(capsule_bytes,
-                                            umbral.UmbralParameters().curve)
+    new_capsule = umbral.Capsule.from_bytes(capsule_bytes)
 
     # Three ways to think about equality.
     # First, the public approach for the Capsule.  Simply:
@@ -196,7 +195,7 @@ def test_capsule_serialization():
 
 
 def test_activated_capsule_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -216,9 +215,7 @@ def test_activated_capsule_serialization():
     # two points and a bignum (32 bytes) (the activated components), for 197 total.
     assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
 
-    new_rec_capsule = umbral.Capsule.from_bytes(
-        rec_capsule_bytes,
-        umbral.UmbralParameters().curve)
+    new_rec_capsule = umbral.Capsule.from_bytes(rec_capsule_bytes)
 
     # Again, the same three perspectives on equality. 
     new_rec_capsule == capsule
@@ -231,7 +228,7 @@ def test_activated_capsule_serialization():
 
 
 def test_challenge_response_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -249,8 +246,7 @@ def test_challenge_response_serialization():
     # A ChallengeResponse can be represented as the 228 total bytes of four Points (33 each) and three BigNums (32 each).
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
-    new_ch_resp = umbral.ChallengeResponse.from_bytes(
-        ch_resp_bytes, umbral.UmbralParameters().curve)
+    new_ch_resp = umbral.ChallengeResponse.from_bytes(ch_resp_bytes)
     assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
     assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment

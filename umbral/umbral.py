@@ -2,6 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum
+from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
@@ -41,10 +42,11 @@ class Capsule(object):
         """
 
     @classmethod
-    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve):
+    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiates a Capsule object from the serialized data.
         """
+        curve = curve if curve is not None else default_curve()
         # TODO: This has gotten utterly unwieldy.  We need a programmatic splitting facility (let's just use BytestringSplitter?)
         if len(capsule_bytes) == 197:
             eph_e = Point.from_bytes(capsule_bytes[0:33], curve)
@@ -135,10 +137,11 @@ class ChallengeResponse(object):
         self.bn_sig = z3
 
     @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate ChallengeResponse from serialized data.
         """
+        curve = curve if curve is not None else default_curve()
         e2 = Point.from_bytes(data[0:33], curve)
         v2 = Point.from_bytes(data[33:66], curve)
         kfrag_commitment = Point.from_bytes(data[66:99], curve)
@@ -172,7 +175,7 @@ class ChallengeResponse(object):
 class PRE(object):
     def __init__(self, params: UmbralParameters = None):
         if params is None:
-            params = UmbralParameters()
+            params = default_params()
         self.params = params
 
     def gen_priv(self):
@@ -384,7 +387,7 @@ class PRE(object):
         return key
 
     def decrypt(self, capsule, priv_key: UmbralPrivateKey,
-                ciphertext: bytes, alice_pub_key: UmbralPublicKey=None):
+                ciphertext: bytes, alice_pub_key: UmbralPublicKey = None):
         """
         Opens the capsule and gets what's inside.
 

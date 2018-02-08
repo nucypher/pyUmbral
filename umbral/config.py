@@ -5,24 +5,27 @@ class _CONFIG:
     __curve = None
     __params = None
 
+    class UmbralConfigurationError(RuntimeError):
+        """Raised when somebody does something dumb re: configuration."""
+
     @classmethod
     def params(cls):
         if not cls.__params:
-            raise RuntimeError("No default curve has been set; you need one for default params.")
+            raise cls.UmbralConfigurationError("No default curve has been set; you need one for default params.")
         else:
             return cls.__params
 
     @classmethod
     def curve(cls):
         if not cls.__curve:
-            raise RuntimeError("No default curve has been set.")
+            raise cls.UmbralConfigurationError("No default curve has been set.")
         else:
             return cls.__curve
 
     @classmethod
     def set_curve(cls, curve: ec.EllipticCurve=None):
         if cls.__curve:
-            raise RuntimeError("You can only set the default curve once.  Do it once and then leave it alone.")
+            raise cls.UmbralConfigurationError("You can only set the default curve once.  Do it once and then leave it alone.")
         else:
             from umbral.params import UmbralParameters
             cls.__curve = curve

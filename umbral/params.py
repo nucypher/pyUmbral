@@ -17,5 +17,5 @@ class UmbralParameters(object):
         self.CURVE_KEY_SIZE_BYTES = get_curve_keysize_bytes(self.curve)
 
         parameters_seed = b'NuCypherKMS/UmbralParameters/'
-        self.h = unsafe_hash_to_point(self, g_bytes, domain_seed + b'h')
-        self.u = unsafe_hash_to_point(self, g_bytes, domain_seed + b'u')
+        self.h = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'h')
+        self.u = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'u')

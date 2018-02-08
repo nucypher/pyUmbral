@@ -284,7 +284,7 @@ class Point(object):
         return Point(inv, self.curve_nid, self.group)
 
 
-def unsafe_hash_to_point(params, data, label=None):
+def unsafe_hash_to_point(data, params, label=None):
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.

@@ -66,9 +66,9 @@ def test_bad_capsule_fails_reencryption():
 
     k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
-    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                               point_eph_v=Point.gen_rand(),
+                               bn_sig=BigNum.gen_rand())
 
     with pytest.raises(Capsule.NotValid):
         pre.reencrypt(k_frags[0], bollocks_capsule)
@@ -76,19 +76,21 @@ def test_bad_capsule_fails_reencryption():
 
 def test_two_unequal_capsules():
     pre = umbral.PRE()
-    one_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                               point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                               bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    one_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                          point_eph_v=Point.gen_rand(),
+                          bn_sig=BigNum.gen_rand()
+                          )
 
-    another_capsule = Capsule(point_eph_e=Point.gen_rand(curve=pre.params.curve),
-                          point_eph_v=Point.gen_rand(curve=pre.params.curve),
-                          bn_sig=BigNum.gen_rand(curve=pre.params.curve))
+    another_capsule = Capsule(point_eph_e=Point.gen_rand(),
+                              point_eph_v=Point.gen_rand(),
+                              bn_sig=BigNum.gen_rand()
+                              )
 
     assert one_capsule != another_capsule
 
-    activated_capsule = Capsule(e_prime=Point.gen_rand(curve=pre.params.curve),
-                                    v_prime=Point.gen_rand(curve=pre.params.curve),
-                                    noninteractive_point=Point.gen_rand(curve=pre.params.curve))
+    activated_capsule = Capsule(e_prime=Point.gen_rand(),
+                                v_prime=Point.gen_rand(),
+                                noninteractive_point=Point.gen_rand())
 
     assert activated_capsule != one_capsule
 

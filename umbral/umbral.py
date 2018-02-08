@@ -181,8 +181,9 @@ class PRE(object):
     def gen_priv(self):
         return BigNum.gen_rand(self.params.curve)
 
-    def priv2pub(self, priv):
-        g = self.params.g
+    def priv2pub(self, priv, params: UmbralParameters = None):
+        params = params if params is not None else default_params()
+        g = params.g
         return priv * g
 
     def split_rekey(self, priv_a, pub_b, threshold, N):

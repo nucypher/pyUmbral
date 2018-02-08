@@ -3,6 +3,7 @@ import os
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey
 
 from umbral.config import default_curve
 from umbral.utils import get_curve_keysize_bytes
@@ -103,6 +104,41 @@ class BigNum(object):
         size = backend._lib.BN_num_bytes(self.order)
 
         return int.to_bytes(int(self), size, 'big')
+
+    def to_cryptography_priv_key(self):
+        """
+        Converts the BigNum object to a cryptography.io EllipticCurvePrivateKey
+        """
+        backend.openssl_assert(self.group != backend._ffi.NULL)
+        backend.openssl_assert(self.bignum != backend._ffi.NULL)
+
+        ec_key = backend._lib.EC_KEY_new()
+        backend.openssl_assert(ec_key != backend._ffi.NULL)
+        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+
+        res = backend._lib.EC_KEY_set_group(ec_key, self.group)
+        backend.openssl_assert(res == 1)
+
+        res = backend._lib.EC_KEY_set_private_key(ec_key, self.bignum)
+        backend.openssl_assert(res == 1)
+
+        # Get public key
+        point = backend._lib.EC_POINT_new(self.group)
+        backend.openssl_assert(point != backend._ffi.NULL)
+        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_mul(
+                self.group, point, self.bignum, backend._ffi.NULL,
+                backend._ffi.NULL, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+            res = backend._lib.EC_KEY_set_public_key(ec_key, point)
+            backend.openssl_assert(res == 1)
+
+        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
+        return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)
 
     def __int__(self):
         """

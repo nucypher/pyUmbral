@@ -13,9 +13,9 @@ class UmbralParameters(object):
 
         g_bytes = self.g.to_bytes(is_compressed=True)
 
+        self.CURVE_MINVAL_SHA512 = (1 << 512) % int(self.order)
+        self.CURVE_KEY_SIZE_BYTES = self.curve.key_size // 8
+
         domain_seed = b'NuCypherKMS/UmbralParameters/'
-
-        self.h = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'h')
-        self.u = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'u')
-
-        CURVE_MINVAL_SHA512 = (1 << 512) % self.order
+        self.h = unsafe_hash_to_point(self, g_bytes, domain_seed + b'h')
+        self.u = unsafe_hash_to_point(self, g_bytes, domain_seed + b'u')

@@ -1,8 +1,16 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
 
-class _DEFAULT_CURVE:
+class _CONFIG:
     __curve = None
+    __params = None
+
+    @classmethod
+    def params(cls):
+        if not cls.__params:
+            raise RuntimeError("No default curve has been set; you need one for default params.")
+        else:
+            return cls.__params
 
     @classmethod
     def curve(cls):
@@ -16,11 +24,18 @@ class _DEFAULT_CURVE:
         if cls.__curve:
             raise RuntimeError("You can only set the default curve once.  Do it once and then leave it alone.")
         else:
+            from umbral.params import UmbralParameters
             cls.__curve = curve
+            cls.__params = UmbralParameters(curve)
 
 
 def set_default_curve(curve: ec.EllipticCurve=None):
-    _DEFAULT_CURVE.set_curve(curve)
+    _CONFIG.set_curve(curve)
+
 
 def default_curve():
-    return _DEFAULT_CURVE.curve()
+    return _CONFIG.curve()
+
+
+def default_params():
+    return _CONFIG.params()

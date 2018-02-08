@@ -1,12 +1,13 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from umbral.point import Point
-from umbral.utils import unsafe_hash_to_point
-
 
 class UmbralParameters(object):
-    def __init__(self):
-        self.curve = ec.SECP256K1()
+    def __init__(self, curve: ec.EllipticCurve = None):
+        from umbral.point import Point
+        from umbral.utils import unsafe_hash_to_point
+
+        self.curve = curve
+
         self.g = Point.get_generator_from_curve(self.curve)
         self.order = Point.get_order_from_curve(self.curve)
 

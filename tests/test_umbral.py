@@ -1,3 +1,4 @@
+from cryptography.hazmat.primitives.asymmetric import ec
 import pytest
 
 from umbral import umbral, keys
@@ -16,7 +17,7 @@ parameters = [
 
 
 def test_decapsulation_by_alice():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -32,8 +33,7 @@ def test_decapsulation_by_alice():
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_simple_api(N, threshold):
-    params = umbral.UmbralParameters()
-    pre = umbral.PRE(params)
+    pre = umbral.PRE()
 
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pub_key()
@@ -95,7 +95,7 @@ def test_two_unequal_capsules():
 
 @pytest.mark.parametrize("N,threshold", parameters)
 def test_m_of_n(N, threshold):
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
     priv_alice = pre.gen_priv()
     pub_alice = pre.priv2pub(priv_alice)
     priv_bob = pre.gen_priv()
@@ -123,7 +123,7 @@ def test_m_of_n(N, threshold):
 
 
 def test_kfrag_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -145,7 +145,7 @@ def test_kfrag_serialization():
 
 
 def test_cfrag_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -168,7 +168,7 @@ def test_cfrag_serialization():
 
 
 def test_capsule_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -196,7 +196,7 @@ def test_capsule_serialization():
 
 
 def test_activated_capsule_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)
@@ -231,7 +231,7 @@ def test_activated_capsule_serialization():
 
 
 def test_challenge_response_serialization():
-    pre = umbral.PRE(umbral.UmbralParameters())
+    pre = umbral.PRE()
 
     priv_key = pre.gen_priv()
     pub_key = pre.priv2pub(priv_key)

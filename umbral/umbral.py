@@ -2,6 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum
+from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey

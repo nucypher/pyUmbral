@@ -50,10 +50,11 @@ class BigNum(object):
         return BigNum(new_rand_bn, curve_nid, group, order)
 
     @classmethod
-    def from_int(cls, num, curve):
+    def from_int(cls, num, curve: ec.EllipticCurve=None):
         """
         Returns a BigNum object from a given integer on a curve.
         """
+        curve = curve if curve is not None else default_curve()
         try:
             curve_nid = backend._elliptic_curve_to_nid(curve)
         except AttributeError:
@@ -82,11 +83,12 @@ class BigNum(object):
         return BigNum(bignum, curve_nid, group, order)
 
     @classmethod
-    def from_bytes(cls, data, curve):
+    def from_bytes(cls, data, curve: ec.EllipticCurve=None):
         """
         Returns a BigNum object from the given byte data that's within the size
         of the provided curve's order.
         """
+        curve = curve if curve is not None else default_curve()
         num = int.from_bytes(data, 'big')
 
         return BigNum.from_int(num, curve)

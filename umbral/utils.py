@@ -6,6 +6,7 @@ from cryptography.exceptions import InternalError
 from umbral.bignum import BigNum
 from umbral.point import Point
 
+
 def lambda_coeff(id_i, selected_ids):
     ids = [x for x in selected_ids if x != id_i]
 
@@ -20,6 +21,7 @@ def lambda_coeff(id_i, selected_ids):
 
     return result
 
+
 def poly_eval(coeff, x):
     result = coeff[-1]
     for i in range(-2, -len(coeff) - 1, -1):
@@ -27,28 +29,29 @@ def poly_eval(coeff, x):
 
     return result
 
+
 # minVal = (1 << 256) % self.order   (i.e., 2^256 % order)
 MINVAL_SECP256K1_HASH_256 = 432420386565659656852420866394968145599
 
-def hash_to_bn(list, params):
+
+def hash_to_bn(crypto_items, params):
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-    for x in list:
-        if isinstance(x, Point):
-            bytes = x.to_bytes()
-        elif isinstance(x, BigNum):
-            bytes = int(x).to_bytes(32, byteorder='big')
+    for item in crypto_items:
+        if isinstance(item, Point):
+            data_bytes = item.to_bytes()
+        elif isinstance(item, BigNum):
+            data_bytes = int(item).to_bytes(32, byteorder='big')
         else:
-            # print(type(x))
-            bytes = x
-        digest.update(bytes)
+            data_bytes = item
+        digest.update(data_bytes)
 
     i = 0
     h = 0
     while h < MINVAL_SECP256K1_HASH_256:
         digest_i = digest.copy()
         digest_i.update(i.to_bytes(32, byteorder='big'))
-        hash = digest_i.finalize()
-        h = int.from_bytes(hash, byteorder='big', signed=False)
+        hash_digest = digest_i.finalize()
+        h = int.from_bytes(hash_digest, byteorder='big', signed=False)
         i += 1
     hash_bn = h % int(params.order)
  
@@ -78,9 +81,9 @@ def unsafe_hash_to_point(curve, data, label=None):
         ibytes = i.to_bytes(4, byteorder='big')
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(label + ibytes + data)
-        hash = digest.finalize()
+        hash_digest = digest.finalize()
 
-        compressed02 = b"\x02"+hash
+        compressed02 = b"\x02" + hash_digest
 
         try:
             h = Point.from_bytes(compressed02, curve)
@@ -100,6 +103,7 @@ def unsafe_hash_to_point(curve, data, label=None):
 
     # Only happens with probability 2^(-32)
     raise ValueError('Could not hash input into the curve')
+
 
 def kdf(ecpoint, key_length):
     data = ecpoint.to_bytes(is_compressed=True)

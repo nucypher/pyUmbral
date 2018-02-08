@@ -1,7 +1,7 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.point import Point
 from umbral.utils import hash_to_bn
 
@@ -21,6 +21,7 @@ class KFrag(object):
         Instantiate a KFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
+
         id = BigNum.from_bytes(data[0:32], curve)
         key = BigNum.from_bytes(data[32:64], curve)
         eph_ni = Point.from_bytes(data[64:97], curve)
@@ -43,7 +44,8 @@ class KFrag(object):
 
         return id + key + eph_ni + commitment + sig1 + sig2
 
-    def verify(self, pub_a, pub_b, params: "UmbralParameters"):
+    def verify(self, pub_a, pub_b, params: "UmbralParameters"=None):
+        params = params if params is not None else default_params()
 
         u1 = self.point_commitment
         z1 = self.bn_sig1
@@ -54,7 +56,9 @@ class KFrag(object):
 
         return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
 
-    def is_consistent(self, vKeys, params: "UmbralParameters"):
+    def is_consistent(self, vKeys, params: "UmbralParameters"=None):
+        params = params if params is not None else default_params()
+
         if vKeys is None or len(vKeys) == 0:
             raise ValueError('vKeys must not be empty')
 

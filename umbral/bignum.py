@@ -1,5 +1,9 @@
 import os
+
 from cryptography.hazmat.backends.openssl import backend
+from cryptography.hazmat.primitives.asymmetric import ec
+
+from umbral.config import default_curve
 
 
 class BigNum(object):
@@ -14,11 +18,12 @@ class BigNum(object):
         self.order = order
 
     @classmethod
-    def gen_rand(cls, curve):
+    def gen_rand(cls, curve: ec.EllipticCurve = None):
         """
         Returns a BigNum object with a cryptographically secure BigNum based
         on the given curve.
         """
+        curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)

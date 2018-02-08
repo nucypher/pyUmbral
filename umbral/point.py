@@ -1,6 +1,8 @@
 from umbral.bignum import BigNum
 from cryptography.hazmat.backends.openssl import backend
 
+from umbral.config import default_curve
+
 
 class Point(object):
     """
@@ -18,6 +20,7 @@ class Point(object):
         Returns a Point object with a cryptographically secure EC_POINT based
         on the provided curve.
         """
+        curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)

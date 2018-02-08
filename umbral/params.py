@@ -17,3 +17,5 @@ class UmbralParameters(object):
 
         self.h = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'h')
         self.u = unsafe_hash_to_point(self.curve, g_bytes, domain_seed + b'u')
+
+        CURVE_MINVAL_SHA512 = (1 << 512) % self.order

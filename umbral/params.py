@@ -2,7 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 
 class UmbralParameters(object):
-    def __init__(self, curve: ec.EllipticCurve = None):
+    def __init__(self, curve: ec.EllipticCurve):
         from umbral.point import Point
         from umbral.utils import unsafe_hash_to_point
 

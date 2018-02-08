@@ -20,7 +20,7 @@ class KFrag(object):
         """
         Instantiate a KFrag object from the serialized data.
         """
-        curve = curve or default_curve
+        curve = curve if curve is not None else default_curve()
         id = BigNum.from_bytes(data[0:32], curve)
         key = BigNum.from_bytes(data[32:64], curve)
         eph_ni = Point.from_bytes(data[64:97], curve)
@@ -81,10 +81,11 @@ class CapsuleFrag(object):
         self.point_eph_ni = x
 
     @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve):
+    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiates a CapsuleFrag object from the serialized data.
         """
+        curve = curve if curve is not None else default_curve()
         e1 = Point.from_bytes(data[0:33], curve)
         v1 = Point.from_bytes(data[33:66], curve)
         kfrag_id = BigNum.from_bytes(data[66:98], curve)

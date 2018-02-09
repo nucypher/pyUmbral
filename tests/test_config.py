@@ -3,6 +3,7 @@ import pytest
 import importlib
 from cryptography.hazmat.primitives.asymmetric import ec
 from umbral.point import Point
+import warnings
 
 
 def copy_config_for_testing():
@@ -18,16 +19,44 @@ def copy_config_for_testing():
     return config_copy
 
 
-def test_set_default_curve_exactly_once():
+def test_try_to_use_curve_with_no_default_curve():
     config = copy_config_for_testing()
 
-    # Can't get the default curve if we haven't set one yet.
-    with pytest.raises(config._CONFIG.UmbralConfigurationError):
-        config.default_curve()
+    # No curve is set.
+    assert config._CONFIG._CONFIG__curve is None
 
-    # Also, we don't have default params if we haven't passed a curve.
-    with pytest.raises(config._CONFIG.UmbralConfigurationError):
+    # Getting the default curve if we haven't set one yet sets one and gives us a warning.
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        assert len(caught_warnings) == 0
+        config.default_curve()
+        assert len(caught_warnings) == 1
+        assert caught_warnings[0].message.args[0] == config._CONFIG._CONFIG__WARNING_IF_NO_DEFAULT_SET
+        assert caught_warnings[0].category == RuntimeWarning
+
+    # Now, a default curve has been set.
+    assert config._CONFIG._CONFIG__curve == ec.SECP256K1
+
+
+def test_try_to_use_default_params_with_no_default_curve():
+    config = copy_config_for_testing()
+
+    # Again, no curve is set.
+    assert config._CONFIG._CONFIG__curve is None
+
+    # This time, we'll try to use default_params() and get the same warning as above.
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        assert len(caught_warnings) == 0
         config.default_params()
+        assert len(caught_warnings) == 1
+        assert caught_warnings[0].message.args[0] == config._CONFIG._CONFIG__WARNING_IF_NO_DEFAULT_SET
+        assert caught_warnings[0].category == RuntimeWarning
+
+    # Now, a default curve has been set.
+    assert config._CONFIG._CONFIG__curve == ec.SECP256K1
+
+
+def test_cannot_set_default_curve_twice():
+    config = copy_config_for_testing()
 
     # pyumbral even supports untrustworthy curves!
     config.set_default_curve(ec.SECP256R1)

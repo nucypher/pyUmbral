@@ -2,8 +2,11 @@ import os
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey
 
 from umbral.config import default_curve
+from umbral.utils import get_curve_keysize_bytes
 
 
 class BigNum(object):
@@ -40,14 +43,15 @@ class BigNum(object):
         order_int = backend._bn_to_int(order)
 
         # Generate random number on curve
-        rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
+        key_size = get_curve_keysize_bytes(curve)
+        rand_num = int.from_bytes(os.urandom(key_size), 'big')
         while rand_num >= order_int or rand_num <= 0:
-            rand_num = int.from_bytes(os.urandom(curve.key_size // 8), 'big')
+            rand_num = int.from_bytes(os.urandom(key_size), 'big')
 
         new_rand_bn = backend._int_to_bn(rand_num)
         new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_free)
 
-        return BigNum(new_rand_bn, curve_nid, group, order)
+        return cls(new_rand_bn, curve_nid, group, order)
 
     @classmethod
     def from_int(cls, num, curve: ec.EllipticCurve=None):
@@ -80,7 +84,7 @@ class BigNum(object):
         bignum = backend._int_to_bn(num)
         bignum = backend._ffi.gc(bignum, backend._lib.BN_free)
 
-        return BigNum(bignum, curve_nid, group, order)
+        return cls(bignum, curve_nid, group, order)
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
@@ -100,6 +104,41 @@ class BigNum(object):
         size = backend._lib.BN_num_bytes(self.order)
 
         return int.to_bytes(int(self), size, 'big')
+
+    def to_cryptography_priv_key(self):
+        """
+        Converts the BigNum object to a cryptography.io EllipticCurvePrivateKey
+        """
+        backend.openssl_assert(self.group != backend._ffi.NULL)
+        backend.openssl_assert(self.bignum != backend._ffi.NULL)
+
+        ec_key = backend._lib.EC_KEY_new()
+        backend.openssl_assert(ec_key != backend._ffi.NULL)
+        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+
+        res = backend._lib.EC_KEY_set_group(ec_key, self.group)
+        backend.openssl_assert(res == 1)
+
+        res = backend._lib.EC_KEY_set_private_key(ec_key, self.bignum)
+        backend.openssl_assert(res == 1)
+
+        # Get public key
+        point = backend._lib.EC_POINT_new(self.group)
+        backend.openssl_assert(point != backend._ffi.NULL)
+        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_mul(
+                self.group, point, self.bignum, backend._ffi.NULL,
+                backend._ffi.NULL, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+            res = backend._lib.EC_KEY_set_public_key(ec_key, point)
+            backend.openssl_assert(res == 1)
+
+        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
+        return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)
 
     def __int__(self):
         """
@@ -251,3 +290,27 @@ class BigNum(object):
 
     def __hash__(self):
         return hash(int(self))
+
+
+def hash_to_bn(crypto_items, params):
+    sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+    for item in crypto_items:
+        try:
+            data_bytes = item.to_bytes()
+        except AttributeError:
+            data_bytes = item
+        sha_512.update(data_bytes)
+
+    i = 0
+    h = 0
+    while h < params.CURVE_MINVAL_SHA512:
+        sha_512_i = sha_512.copy()
+        sha_512_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+        hash_digest = sha_512_i.finalize()
+        h = int.from_bytes(hash_digest, byteorder='big', signed=False)
+        i += 1
+    hash_bn = h % int(params.order)
+
+    res = BigNum.from_int(hash_bn, params.curve)
+
+    return res

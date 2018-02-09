@@ -54,6 +54,20 @@ def test_simple_api(N, threshold):
     assert reenc_cleartext == plain_data
 
 
+def test_pub_key_encryption():
+    priv_key_alice = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice = priv_key_alice.get_pub_key()
+
+    priv_key_bob = keys.UmbralPrivateKey.gen_key()
+    pub_key_bob = priv_key_bob.get_pub_key()
+
+    plain_data = b'attack at dawn'
+    ciphertext, capsule = umbral.encrypt(pub_key_bob, plain_data)
+
+    cleartext = umbral.decrypt(capsule, priv_key_bob, ciphertext)
+    assert cleartext == plain_data
+
+
 def test_bad_capsule_fails_reencryption():
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pub_key()

@@ -3,6 +3,7 @@ from umbral.bignum import BigNum
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InternalError
 
+
 def test_from_to_bytes():
     curve = ec.SECP256K1()
     p = Point.gen_rand(curve)
@@ -16,6 +17,22 @@ def test_from_to_bytes():
     q = Point.from_bytes(pbytes, curve)
 
     assert p == q
+
+
+def test_point_to_cryptography_pubkey():
+    curve = ec.SECP256K1()
+    p = Point.gen_rand(curve)
+
+    crypto_pub_key = p.to_cryptography_pub_key()
+
+    p_affine = p.to_affine()
+    crypto_affine = (
+        crypto_pub_key.public_numbers().x,
+        crypto_pub_key.public_numbers().y
+    )
+
+    assert p_affine == crypto_affine
+
 
 def test_invalid_points():
     curve = ec.SECP256K1()
@@ -39,6 +56,7 @@ def test_invalid_points():
             assert False
     else:
         assert False
+
 
 def test_generator():
     curve = ec.SECP256K1()

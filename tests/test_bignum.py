@@ -1,9 +1,11 @@
 from umbral.bignum import BigNum
 from cryptography.hazmat.primitives.asymmetric import ec
+from umbral.config import default_curve
+
 
 
 def test_from_to_int():
-    curve = ec.SECP256K1()
+    curve = default_curve() or ec.SECP256K1()
     x = BigNum.gen_rand(curve)
 
     xint = x.__int__()

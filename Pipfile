@@ -7,10 +7,8 @@ name = "pypi"
 
 [packages]
 
-msgpack-python = "*"
 cryptography = "*"
-pynacl = "*"
-pytest-mock = "*"
+PyNaCl = "*"
 
 
 [dev-packages]
@@ -20,3 +18,4 @@ coverage = "*"
 pytest-cov = "*"
 pdbpp = "*"
 ipython = "*"
+pytest-mock = "*"

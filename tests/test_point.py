@@ -20,6 +20,11 @@ def mock_openssl(mocker):
     @contextlib.contextmanager
     def mocked_openssl_backend():
         def mocked_ec_point_equality(group, ec_point, other_point, bn_ctx):
+            assert 'BN_CTX' in str(bn_ctx)
+            assert 'EC_GROUP' in str(group)
+            assert 'EC_POINT' in str(ec_point)
+            assert 'EC_POINT' in str(other_point)
+
             assert RANDOM_K256_POINT.group == group
             assert RANDOM_K256_POINT.ec_point == ec_point
             assert RANDOM_K256_POINT.ec_point == other_point
@@ -27,12 +32,22 @@ def mock_openssl(mocker):
             return 1
 
         def mocked_ec_point_addition(group, sum, ec_point, other_point, bn_ctx):
+            assert 'BN_CTX' in str(bn_ctx)
+            assert 'EC_POINT' in str(other_point)
+            assert 'EC_POINT' in str(sum)
+
             assert RANDOM_K256_POINT.group == group
             assert RANDOM_K256_POINT.ec_point == ec_point
 
             return 1
 
         def mocked_ec_point_multiplication(group, product, null, ec_point, bignum, bn_ctx):
+            assert 'BN_CTX' in str(bn_ctx)
+            assert 'EC_GROUP' in str(group)
+            assert 'EC_POINT' in str(ec_point)
+            assert 'EC_POINT' in str(product)
+            assert 'NULL' in str(null)
+
             assert RANDOM_K256_POINT.group == group
             assert RANDOM_K256_POINT.ec_point == ec_point
 
@@ -42,23 +57,31 @@ def mock_openssl(mocker):
             return 1
 
         def mocked_ec_point_inversion(group, inverse, bn_ctx):
+            assert 'EC_POINT' in str(inverse)
+            assert 'BN_CTX' in str(bn_ctx)
+
             assert RANDOM_K256_POINT.group == group
 
             return 1
 
+        mock_load = {'EC_POINT_mul': mocked_ec_point_multiplication,
+                     'EC_POINT_cmp': mocked_ec_point_equality,
+                     'EC_POINT_add': mocked_ec_point_addition,
+                     'EC_POINT_invert': mocked_ec_point_inversion}
+
         with contextlib.ExitStack() as stack:
-            def patcher():
-                mock_load = {'EC_POINT_mul': mocked_ec_point_multiplication,
-                             'EC_POINT_cmp': mocked_ec_point_equality,
-                             'EC_POINT_add': mocked_ec_point_addition,
-                             'EC_POINT_invert': mocked_ec_point_inversion}
-
-                for method, patch in mock_load.items():
-                    patched_method = stack.enter_context(mocker.mock_module.patch.object(backend._lib, method, patch))
-                    yield patched_method
-            yield patcher()
-
+            for method, patch in mock_load.items():
+                stack.enter_context(mocker.mock_module.patch.object(backend._lib, method, patch))
+            yield
     return mocked_openssl_backend
+
+
+def test_mocked_point_curve_arithmetic(mock_openssl):
+    with mock_openssl():
+        _ = RANDOM_K256_POINT == RANDOM_K256_POINT     # __eq__
+        _ = RANDOM_K256_POINT * RANDOM_K256_BIGNUM     # __mul__
+        _ = RANDOM_K256_POINT + RANDOM_K256_POINT2     # __add__
+        _ = ~RANDOM_K256_POINT                         # __invert__
 
 
 def test_from_to_bytes():
@@ -110,7 +133,7 @@ def test_invalid_points():
         assert False
 
 
-def test_generator():
+def test_generator_point():
     g1 = Point.get_generator_from_curve(curve)
 
     # http://www.secg.org/SEC2-Ver-1.0.pdf
@@ -127,13 +150,6 @@ def test_generator():
     g3 = Point.from_bytes(g_uncompressed, curve)
     assert g1 == g3
     assert g2 == g3
-
-
-def test_mocked_point_curve_arithmetic(mocker, mock_openssl):
-    with mock_openssl():
-        product = RANDOM_K256_POINT * RANDOM_K256_BIGNUM
-        result = RANDOM_K256_POINT + RANDOM_K256_POINT2
-        inverted = ~RANDOM_K256_POINT
 
 
 def test_point_curve_mult_regression():

@@ -1,0 +1,22 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+msgpack-python = "*"
+cryptography = "*"
+pynacl = "*"
+pytest-mock = "*"
+
+
+[dev-packages]
+
+pytest = "*"
+coverage = "*"
+pytest-cov = "*"
+pdbpp = "*"
+ipython = "*"

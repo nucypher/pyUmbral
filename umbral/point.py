@@ -251,14 +251,14 @@ class Point(object):
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """
+
         prod = backend._lib.EC_POINT_new(self.group)
         backend.openssl_assert(prod != backend._ffi.NULL)
         prod = backend._ffi.gc(prod, backend._lib.EC_POINT_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
-                self.group, prod, backend._ffi.NULL, self.ec_point,
-                other.bignum, bn_ctx
+                self.group, prod, backend._ffi.NULL, self.ec_point, other.bignum, bn_ctx
             )
             backend.openssl_assert(res == 1)
 

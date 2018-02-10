@@ -121,19 +121,18 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def load_key(cls, key_data: Union[str, bytes], params: UmbralParameters=None):
+    def load_key(cls, key_data: Union[str, bytes],
+                 params: UmbralParameters=None, as_bytes=False):
         """
         Loads an Umbral public key from a urlsafe base64 encoded string or bytes.
         """
         if params is None:
             params = default_params()
 
-        if isinstance(key_data, str):
+        if not as_bytes:
             key_bytes = base64.urlsafe_b64decode(key_data)
-        elif isinstance(key_data, bytes):
-            key_bytes = key_data
         else:
-            raise TypeError("key_data must be a urlsafe base64 string or bytes.")
+            key_bytes = key_data
 
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)

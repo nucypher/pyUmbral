@@ -30,18 +30,20 @@ class _CONFIG:
         return cls.__curve
 
     @classmethod
-    def set_curve(cls, curve: ec.EllipticCurve = None):
+    def set_curve(cls, curve: ec.EllipticCurve=None):
         if cls.__curve:
             raise cls.UmbralConfigurationError(
                 "You can only set the default curve once.  Do it once and then leave it alone.")
         else:
             from umbral.params import UmbralParameters
+            if curve is None:
+                curve = _CONFIG.__CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER
             cls.__curve = curve
             cls.__params = UmbralParameters(curve)
 
 
-def set_default_curve(curve: ec.EllipticCurve = None):
-    _CONFIG.set_curve(curve)
+def set_default_curve(curve: ec.EllipticCurve=None):
+    return _CONFIG.set_curve(curve)
 
 
 def default_curve():

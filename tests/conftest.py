@@ -2,38 +2,35 @@ import contextlib
 
 import pytest
 from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
-from umbral.config import set_default_curve
 from umbral.point import Point
-
-
-CURVE = set_default_curve(ec.SECP256K1())
 
 
 @pytest.fixture()
 def random_ec_point1():
-    yield Point.gen_rand(CURVE)
+    yield Point.gen_rand()
 
 
 @pytest.fixture()
 def random_ec_point2():
-    yield Point.gen_rand(CURVE)
+    yield Point.gen_rand()
 
 
 @pytest.fixture()
 def random_ec_bignum1():
-    yield BigNum.gen_rand(CURVE)
+    yield BigNum.gen_rand()
 
 
 @pytest.fixture()
 def random_ec_bignum2():
-    yield BigNum.gen_rand(CURVE)
+    yield BigNum.gen_rand()
 
 
 @pytest.fixture()
 def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2):
+
+    actual_mod_inverse = backend._lib.BN_mod_inverse
 
     def check_bignum_ctypes(*bignums):
         for bn in bignums:
@@ -111,7 +108,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
             assert 'NULL' in str(null)
 
             assert random_ec_bignum1.bignum == bignum
-            return bignum
+            return actual_mod_inverse(null, bignum, order, context)
 
         def mocked_bn_add(sum, bignum, other, order, context):
             assert 'BN_CTX' in str(context)

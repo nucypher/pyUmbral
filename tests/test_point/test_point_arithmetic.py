@@ -10,7 +10,7 @@ def test_mocked_openssl_point_arithmetic(mock_openssl, random_ec_point1, random_
         _ = random_ec_point1 == random_ec_point1   # __eq__
         _ = random_ec_point1 * random_ec_bignum1   # __mul__
         _ = random_ec_point1 + random_ec_point2    # __add__
-        _ = random_ec_point1                       # __invert__
+        _ = ~random_ec_point1                      # __invert__
 
 
 def test_point_curve_mult_regression():

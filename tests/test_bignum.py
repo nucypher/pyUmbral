@@ -28,3 +28,4 @@ def test_bn_to_cryptography_privkey():
     bn = BigNum.gen_rand()
     crypto_privkey = bn.to_cryptography_priv_key()
     assert int(bn) == crypto_privkey.private_numbers().private_value
+

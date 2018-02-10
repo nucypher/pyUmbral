@@ -11,16 +11,13 @@ from umbral.point import Point
 def random_ec_point1():
     yield Point.gen_rand()
 
-
 @pytest.fixture()
 def random_ec_point2():
     yield Point.gen_rand()
 
-
 @pytest.fixture()
 def random_ec_bignum1():
     yield BigNum.gen_rand()
-
 
 @pytest.fixture()
 def random_ec_bignum2():

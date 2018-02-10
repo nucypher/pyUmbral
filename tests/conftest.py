@@ -34,8 +34,9 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
     For all functions, 1 is returned for success, 0 on error.
 
     """
-
+    actual_point_equality = backend._lib.EC_POINT_cmp
     actual_mod_inverse = backend._lib.BN_mod_inverse
+    actual_bn_equality = backend._lib.BN_cmp
 
     def check_bignum_ctypes(*bignums):
         for bn in bignums:
@@ -54,7 +55,6 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
             check_point_ctypes(ec_point, other_point)
 
             assert random_ec_point1.group == group
-
             assert random_ec_point1.ec_point == ec_point
             assert random_ec_point1.ec_point == other_point
             return 1    # always succeed
@@ -88,23 +88,23 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
 
         def mocked_bn_compare(bignum, other):
             check_bignum_ctypes(bignum, other)
-            assert random_ec_bignum1.bignum == bignum
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
             return 1    # always succeed
 
         def mocked_bn_mod_exp(power, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
             check_bignum_ctypes(bignum, other, power, order)
 
-            assert random_ec_bignum1.bignum == bignum
-            assert random_ec_bignum2.bignum == other
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
+            assert not bool(actual_bn_equality(random_ec_bignum2.bignum, other))
             return 1    # always succeed
 
         def mocked_bn_mod_mul(product, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
             check_bignum_ctypes(bignum, other, product, order)
 
-            assert random_ec_bignum1.bignum == bignum
-            assert random_ec_bignum2.bignum == other
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
+            assert not bool(actual_bn_equality(random_ec_bignum2.bignum, other))
             return 1    # always succeed
 
         def mocked_bn_inverse(null, bignum, order, context):
@@ -112,31 +112,31 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
             check_bignum_ctypes(bignum, order)
             assert 'NULL' in str(null)
 
-            assert random_ec_bignum1.bignum == bignum
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
             return actual_mod_inverse(null, bignum, order, context)    # patched to original call
 
         def mocked_bn_add(sum, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
             check_bignum_ctypes(bignum, other, sum, order)
 
-            assert random_ec_bignum1.bignum == bignum
-            assert random_ec_bignum2.bignum == other
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
+            assert not bool(actual_bn_equality(random_ec_bignum2.bignum, other))
             return 1    # always succeed
 
         def mocked_bn_sub(diff, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
             check_bignum_ctypes(bignum, other, diff, order)
 
-            assert random_ec_bignum1.bignum == bignum
-            assert random_ec_bignum2.bignum == other
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
+            assert not bool(actual_bn_equality(random_ec_bignum2.bignum, other))
             return 1    # always succeed
 
         def mocked_bn_nmod(rem, bignum, other, context):
             assert 'BN_CTX' in str(context)
             check_bignum_ctypes(bignum, other, rem)
 
-            assert random_ec_bignum1.bignum == bignum
-            assert random_ec_bignum2.bignum == other
+            assert not bool(actual_bn_equality(random_ec_bignum1.bignum, bignum))
+            assert not bool(actual_bn_equality(random_ec_bignum2.bignum, other))
             return 1    # always succeed
 
         mock_load = {

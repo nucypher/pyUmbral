@@ -3,13 +3,16 @@ from umbral.bignum import BigNum
 
 def test_mocked_openssl_bignum_arithmetic(mock_openssl, random_ec_bignum1, random_ec_bignum2):
     with mock_openssl():
-        _ = random_ec_bignum1 == random_ec_bignum1     # __eq__
-        _ = random_ec_bignum1 * random_ec_bignum2      # __mul__
-        _ = random_ec_bignum1 ** random_ec_bignum2     # __pow__
-        _ = random_ec_bignum1 + random_ec_bignum2      # __add__
-        _ = random_ec_bignum1 - random_ec_bignum2      # __sub__
-        _ = random_ec_bignum1 % random_ec_bignum2      # __mod__
-        _ = ~random_ec_bignum1                         # __invert__
+        _ = random_ec_bignum1 == random_ec_bignum1          # __eq__
+        _ = random_ec_bignum1 * random_ec_bignum2           # __mul__
+        _ = random_ec_bignum1 ** random_ec_bignum2          # __pow__
+        _ = random_ec_bignum1 ** int(random_ec_bignum2)     # __pow__ (as int)
+        _ = random_ec_bignum1 + random_ec_bignum2           # __add__
+        _ = random_ec_bignum1 - random_ec_bignum2           # __sub__
+        _ = random_ec_bignum1 % random_ec_bignum2           # __mod__
+        _ = random_ec_bignum1 % int(random_ec_bignum2)      # __mod__ (as int)
+        _ = ~random_ec_bignum1                              # __invert__
+        # _ = random_ec_bignum1 / random_ec_bignum2           # __truediv__
 
 
 def test_cast_bignum_to_int():

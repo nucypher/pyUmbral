@@ -8,5 +8,4 @@ install:
     - pip install pipenv --upgrade
     - pipenv install --dev --three
 script:
-    - pipenv run py.test tests
-    - codecov
+    - pipenv run py.test --cov=umbral

@@ -8,7 +8,7 @@ name = "pypi"
 [packages]
 
 cryptography = "*"
-PyNaCl = "*"
+pynacl = "*"
 
 
 [dev-packages]
@@ -19,3 +19,4 @@ pytest-cov = "*"
 pdbpp = "*"
 ipython = "*"
 pytest-mock = "*"
+codecov = "*"

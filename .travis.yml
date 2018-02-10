@@ -9,3 +9,4 @@ install:
     - pipenv install --dev --three
 script:
     - pipenv run py.test tests
+    - codecov

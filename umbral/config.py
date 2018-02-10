@@ -40,8 +40,9 @@ class _CONFIG:
             cls.__params = UmbralParameters(curve)
 
 
-def set_default_curve(curve: ec.EllipticCurve = None):
+def set_default_curve(curve: ec.EllipticCurve = None) -> ec.EllipticCurve:
     _CONFIG.set_curve(curve)
+    return curve
 
 
 def default_curve():

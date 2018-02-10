@@ -1,6 +1,8 @@
 import os
 import base64
 
+from typing import Union
+
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
@@ -119,14 +121,19 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def load_key(cls, key_data: str, params: UmbralParameters=None):
+    def load_key(cls, key_data: Union[str, bytes], params: UmbralParameters=None):
         """
-        Loads an Umbral public key from a urlsafe base64 encoded string.
+        Loads an Umbral public key from a urlsafe base64 encoded string or bytes.
         """
         if params is None:
             params = default_params()
 
-        key_bytes = base64.urlsafe_b64decode(key_data)
+        if isinstance(key_data, str):
+            key_bytes = base64.urlsafe_b64decode(key_data)
+        elif isinstance(key_data, bytes):
+            key_bytes = key_data
+        else:
+            raise TypeError("key_data must be a urlsafe base64 string or bytes.")
 
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)

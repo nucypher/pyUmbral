@@ -6,7 +6,7 @@ from umbral.point import Point
 import warnings
 
 
-def copy_config_for_testing():
+def _copy_config_for_testing():
     """
     NEVER do this.  This is for testing only.
     This is absolutely not a thing to actually do in production code.  At all.  Ever.
@@ -20,7 +20,7 @@ def copy_config_for_testing():
 
 
 def test_try_to_use_curve_with_no_default_curve():
-    config = copy_config_for_testing()
+    config = _copy_config_for_testing()
 
     # No curve is set.
     assert config._CONFIG._CONFIG__curve is None
@@ -38,7 +38,7 @@ def test_try_to_use_curve_with_no_default_curve():
 
 
 def test_try_to_use_default_params_with_no_default_curve():
-    config = copy_config_for_testing()
+    config = _copy_config_for_testing()
 
     # Again, no curve is set.
     assert config._CONFIG._CONFIG__curve is None
@@ -56,7 +56,7 @@ def test_try_to_use_default_params_with_no_default_curve():
 
 
 def test_cannot_set_default_curve_twice():
-    config = copy_config_for_testing()
+    config = _copy_config_for_testing()
 
     # pyumbral even supports untrustworthy curves!
     config.set_default_curve(ec.SECP256R1)

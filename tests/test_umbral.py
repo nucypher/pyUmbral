@@ -1,8 +1,10 @@
-from cryptography.hazmat.primitives.asymmetric import ec
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import umbral, keys
 from umbral.bignum import BigNum
+from umbral.config import default_curve
+from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.umbral import Capsule
 
@@ -13,6 +15,11 @@ parameters = [
     (6, 4),
     (6, 6),
     (50, 30)
+]
+
+secp_curves = [
+    ec.SECP384R1,
+    ec.SECP192R1
 ]
 
 
@@ -30,11 +37,14 @@ def test_decapsulation_by_alice():
 
 
 @pytest.mark.parametrize("N,threshold", parameters)
-def test_simple_api(N, threshold):
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
+def test_simple_api(N, threshold, curve=default_curve()):
+
+    params = UmbralParameters(curve=curve)
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
     pub_key_alice = priv_key_alice.get_pub_key()
 
-    priv_key_bob = keys.UmbralPrivateKey.gen_key()
+    priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
     pub_key_bob = priv_key_bob.get_pub_key()
 
     plain_data = b'attack at dawn'
@@ -43,15 +53,21 @@ def test_simple_api(N, threshold):
     cleartext = umbral.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
-    rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, threshold, N)
+    rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, threshold, N, params)
     for rekey in rekeys:
         cFrag = umbral.reencrypt(rekey, capsule)
         capsule.attach_cfrag(cFrag)
 
     reenc_cleartext = umbral.decrypt(
-        capsule, priv_key_bob, ciphertext, pub_key_alice
+        capsule, priv_key_bob, ciphertext, pub_key_alice,
     )
     assert reenc_cleartext == plain_data
+
+
+@pytest.mark.parametrize("curve", secp_curves)
+@pytest.mark.parametrize("N,threshold", parameters)
+def test_simple_api_on_multiple_curves(N, threshold, curve):
+    test_simple_api(N, threshold, curve)
 
 
 def test_pub_key_encryption():
@@ -183,7 +199,7 @@ def test_capsule_serialization():
 
     # Three ways to think about equality.
     # First, the public approach for the Capsule.  Simply:
-    new_capsule == capsule
+    assert new_capsule == capsule
 
     # Second, we show that the original components (which is all we have here since we haven't activated) are the same:
     assert new_capsule.original_components() == capsule.original_components()
@@ -216,7 +232,7 @@ def test_activated_capsule_serialization():
     new_rec_capsule = umbral.Capsule.from_bytes(rec_capsule_bytes)
 
     # Again, the same three perspectives on equality. 
-    new_rec_capsule == capsule
+    assert new_rec_capsule == capsule
 
     assert new_rec_capsule.activated_components() == capsule.activated_components()
 

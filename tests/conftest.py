@@ -11,13 +11,16 @@ from umbral.point import Point
 def random_ec_point1():
     yield Point.gen_rand()
 
+
 @pytest.fixture()
 def random_ec_point2():
     yield Point.gen_rand()
 
+
 @pytest.fixture()
 def random_ec_bignum1():
     yield BigNum.gen_rand()
+
 
 @pytest.fixture()
 def random_ec_bignum2():
@@ -25,7 +28,12 @@ def random_ec_bignum2():
 
 
 @pytest.fixture()
-def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2):
+def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, random_ec_bignum2: BigNum):
+    """
+    Patches openssl backend methods for testing.
+    For all functions, 1 is returned for success, 0 on error.
+
+    """
 
     actual_mod_inverse = backend._lib.BN_mod_inverse
 
@@ -49,7 +57,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_point1.ec_point == ec_point
             assert random_ec_point1.ec_point == other_point
-            return 1
+            return 1    # always succeed
 
         def mocked_ec_point_addition(group, sum, ec_point, other_point, context):
             assert 'BN_CTX' in str(context)
@@ -57,7 +65,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_point1.group == group
             assert random_ec_point1.ec_point == ec_point
-            return 1
+            return 1    # always succeed
 
         def mocked_ec_point_multiplication(group, product, null, ec_point, bignum, context):
             assert 'BN_CTX' in str(context)
@@ -69,19 +77,19 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
             assert random_ec_point1.ec_point == ec_point
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum1.curve_nid == random_ec_point1.curve_nid
-            return 1
+            return 1    # always succeed
 
         def mocked_ec_point_inversion(group, inverse, context):
             assert 'BN_CTX' in str(context)
             check_point_ctypes(inverse)
 
             assert random_ec_point1.group == group
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_compare(bignum, other):
             check_bignum_ctypes(bignum, other)
             assert random_ec_bignum1.bignum == bignum
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_mod_exp(power, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
@@ -89,7 +97,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum2.bignum == other
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_mod_mul(product, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
@@ -97,7 +105,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum2.bignum == other
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_inverse(null, bignum, order, context):
             assert 'BN_CTX' in str(context)
@@ -105,7 +113,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
             assert 'NULL' in str(null)
 
             assert random_ec_bignum1.bignum == bignum
-            return actual_mod_inverse(null, bignum, order, context)
+            return actual_mod_inverse(null, bignum, order, context)    # patched to original call
 
         def mocked_bn_add(sum, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
@@ -113,7 +121,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum2.bignum == other
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_sub(diff, bignum, other, order, context):
             assert 'BN_CTX' in str(context)
@@ -121,7 +129,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum2.bignum == other
-            return 1
+            return 1    # always succeed
 
         def mocked_bn_nmod(rem, bignum, other, context):
             assert 'BN_CTX' in str(context)
@@ -129,7 +137,7 @@ def mock_openssl(mocker, random_ec_point1, random_ec_bignum1, random_ec_bignum2)
 
             assert random_ec_bignum1.bignum == bignum
             assert random_ec_bignum2.bignum == other
-            return 1
+            return 1    # always succeed
 
         mock_load = {
                      # Point

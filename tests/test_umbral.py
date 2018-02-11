@@ -268,46 +268,64 @@ def test_challenge_response_serialization():
     assert new_ch_resp.bn_kfrag_sig2 == ch_resp.bn_kfrag_sig2
     assert new_ch_resp.bn_sig == ch_resp.bn_sig
 
-# @pytest.mark.parametrize("N,M", parameters)
-# def test_cheating_Ursula_replays_old_reencryption(N, M, curve=default_curve()):
-#
-#     params = UmbralParameters(curve=curve)
-#
-#     priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-#     pub_key_alice = priv_key_alice.get_pub_key()
-#
-#     priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-#     pub_key_bob = priv_key_bob.get_pub_key()
-#
-#     plain_data = b'attack at dawn'
-#     ciphertext1, alice_capsule1 = umbral.encrypt(pub_key_alice, plain_data)
-#     ciphertext2, alice_capsule2 = umbral.encrypt(pub_key_alice, plain_data)
-#
-#     k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
-#     for i, k_frag in enumerate(k_frags):
-#         if i == 0:
-#             c_frag = umbral.reencrypt(k_frag, alice_capsule2)    # cheat
-#         else:
-#             c_frag = umbral.reencrypt(k_frag, alice_capsule1)
-#         alice_capsule1.attach_cfrag(c_frag)
-#
-#
-#     # Let's put the re-encryption of a different Alice ciphertext
-#     # cfrags[0] = umbral.reencrypt(k_frags[0], other_capsule_alice)
-#
-#     capsule_bob = alice_capsule1.activate_capsule()
-#
-#     try:
-#         # This line should always raise an AssertionError ("Generic Umbral Error")
-#         sym_key_2 = pre._decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule_bob, capsule_alice)
-#         assert not sym_key_2 == sym_key
-#     except AssertionError as e:
-#         assert str(e) == "Generic Umbral Error"
-#         assert not pre.check_challenge(capsule_alice, cfrags[0], challenges[0], pub_alice)
-#         # The response of cheating Ursula is in capsules[0],
-#         # so the rest of challenges chould be correct:
-#         for (cFrag,ch) in zip(cfrags[1:], challenges[1:]):
-#             assert pre.check_challenge(capsule_alice, cFrag, ch, pub_alice)
+
+@pytest.mark.parametrize("N, M", parameters)
+def test_cheating_ursula_replays_old_reencryption(N, M, curve=default_curve()):
+
+    params = UmbralParameters(curve=curve)
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
+    pub_key_alice = priv_key_alice.get_pub_key()
+
+    priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
+    pub_key_bob = priv_key_bob.get_pub_key()
+
+    sym_key_alice1, capsule_alice1 = umbral._encapsulate(pub_key_alice.point_key, params=params)
+    sym_key_alice2, capsule_alice2 = umbral._encapsulate(pub_key_alice.point_key, params=params)
+
+    k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+
+    c_frags, challenges = [], []
+    for index, k_frag in enumerate(k_frags):
+        if index == 0:
+            # Let's put the re-encryption of a different Alice ciphertext
+            c_frag = umbral.reencrypt(k_frag, capsule_alice2)
+        else:
+            c_frag = umbral.reencrypt(k_frag, capsule_alice1)
+
+        challenge = umbral.challenge(k_frag, capsule_alice1, c_frag)
+        capsule_alice1.attach_cfrag(c_frag)
+
+        challenges.append(challenge)
+        c_frags.append(c_frag)
+
+    capsule_alice1._reconstruct_shamirs_secret()    # activate capsule
+
+    try:
+        # This line should always raise an AssertionError ("Generic Umbral Error")
+        sym_key = umbral.decapsulate_reencrypted(pub_key_bob.point_key,
+                                                  priv_key_bob.bn_key,
+                                                  pub_key_alice.point_key,
+                                                  capsule_alice1)
+        assert not sym_key == sym_key_alice1
+    except AssertionError as e:
+        assert str(e) == "Generic Umbral Error"
+        assert not umbral.check_challenge(capsule_alice1,
+                                          c_frags[0],
+                                          challenges[0],
+                                          pub_key_alice.point_key,
+                                          pub_key_bob.point_key,
+                                          params=params)
+
+        # The response of cheating Ursula is in capsules[0],
+        # so the rest of challenges chould be correct:
+        for (c_frag, ch) in zip(c_frags[1:], challenges[1:]):
+            assert umbral.check_challenge(capsule_alice1,
+                                          c_frag,
+                                          ch,
+                                          pub_key_alice.point_key,
+                                          pub_key_bob.point_key,
+                                          params=params)
 
 
 @pytest.mark.parametrize("N, M", parameters)

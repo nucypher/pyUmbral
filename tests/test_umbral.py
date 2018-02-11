@@ -64,7 +64,7 @@ def test_simple_api(N, M, curve=default_curve()):
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.xfail(raises=InvalidTag)
+@pytest.mark.xfail(raises=InvalidTag)    # remove this mark to fail instead of ignore
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):

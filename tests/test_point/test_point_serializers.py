@@ -2,9 +2,28 @@ import pytest
 from cryptography.exceptions import InternalError
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from umbral.bignum import BigNum
-from umbral.config import default_curve
 from umbral.point import Point
+
+
+def generate_test_points_bytes(quantity=2):
+    points_bytes = [
+        (ec.SECP256K1, 714, b'\x02x{DR\x94\x8f\x17\xb8\xa2\x14t\x11\xdb\xb1VK\xdb\xc2\xa0T\x97iCK\x8cz~\xea\xa3\xb7AJ'),
+    ]
+    for _ in range(quantity):
+        args = (ec.SECP256K1, 714, Point.gen_rand(curve=ec.SECP256K1).to_bytes())
+        points_bytes.append(args)
+    return points_bytes
+
+
+def generate_test_points_affine(quantity=2):
+    points_affine = [
+        (ec.SECP256K1, 714, (54495335564072000415434275044935054036617226655045445809732056033758606213450,
+                             26274482902044210718566767736429706729731617411738990314884135712590488065008)),
+    ]
+    for _ in range(quantity):
+        args = (ec.SECP256K1, 714, Point.gen_rand(curve=ec.SECP256K1).to_affine())
+        points_affine.append(args)
+    return points_affine
 
 
 def test_generate_random_points():
@@ -16,21 +35,19 @@ def test_generate_random_points():
         assert point != another_point
 
 
-def test_bytes_serializers(random_ec_point1):
+@pytest.mark.xfail(raises=AttributeError)
+@pytest.mark.parametrize("curve, nid, point_bytes", generate_test_points_bytes())
+def test_bytes_serializers(point_bytes, nid, curve):
 
-    curve = ec.SECP256K1
-    point_bytes = random_ec_point1.to_bytes()
-
-    point_with_nid = Point.from_bytes(point_bytes, curve=714)         # from nid
+    point_with_nid = Point.from_bytes(point_bytes, curve=nid)         # from nid
     assert isinstance(point_with_nid, Point)
 
     point_with_curve = Point.from_bytes(point_bytes, curve=curve)     # from curve
-    assert isinstance(point_with_nid, Point)
+    assert isinstance(point_with_curve, Point)
 
     assert point_with_nid == point_with_curve
 
-    point = point_with_curve
-    the_same_point_bytes = point.to_bytes(is_compressed=False)
+    the_same_point_bytes = point_with_curve.to_bytes(is_compressed=False)
     assert point_bytes == the_same_point_bytes
 
     malformed_point_bytes = point_bytes + b'0x'
@@ -38,42 +55,32 @@ def test_bytes_serializers(random_ec_point1):
         _ = Point.from_bytes(malformed_point_bytes)
 
 
-def test_affine_deserializer():
-    affine = (54495335564072000415434275044935054036617226655045445809732056033758606213450,
-              26274482902044210718566767736429706729731617411738990314884135712590488065008)
-
-    curve = ec.SECP256K1
-    point = Point.from_affine(affine, curve=714)              # from nid
-    the_same_point = Point.from_affine(affine, curve=curve)   # from curve instance
-
+@pytest.mark.parametrize("curve, nid, point_affine", generate_test_points_affine())
+def test_affine(point_affine, nid, curve):
+    point = Point.from_affine(point_affine, curve=nid)              # from nid
+    the_same_point = Point.from_affine(point_affine, curve=curve)   # from curve instance
     assert point == the_same_point
-    assert isinstance(point, Point), 'affine deserializer did not return a Point'
+    assert isinstance(point, Point)
+    point_affine2 = point.to_affine()
+    assert point_affine == point_affine2
 
 
-def test_point_to_cryptography_pubkey():
-    p = Point.gen_rand()
-
-    crypto_pub_key = p.to_cryptography_pub_key()
-
-    p_affine = p.to_affine()
-    crypto_affine = (
-        crypto_pub_key.public_numbers().x,
-        crypto_pub_key.public_numbers().y
-    )
-
+def test_point_to_cryptography_pubkey(random_ec_point2):
+    crypto_pub_key = random_ec_point2.to_cryptography_pub_key()
+    p_affine = random_ec_point2.to_affine()
+    x, y = crypto_pub_key.public_numbers().x, crypto_pub_key.public_numbers().y
+    crypto_affine = (x, y)
     assert p_affine == crypto_affine
 
 
-def test_invalid_points():
-    p = Point.gen_rand()
+def test_invalid_points(random_ec_point2):
 
-    pbytes = bytearray(p.to_bytes(is_compressed=False))
-    # Flips last bit
-    pbytes[-1] = pbytes[-1] ^ 0x01
-    pbytes = bytes(pbytes)
+    point_bytes = bytearray(random_ec_point2.to_bytes(is_compressed=False))
+    point_bytes[-1] = point_bytes[-1] ^ 0x01        # Flips last bit
+    point_bytes = bytes(point_bytes)
 
     try:
-        q = Point.from_bytes(pbytes)
+        _ = Point.from_bytes(point_bytes)
     except InternalError as e:
         # We want to catch specific InternalExceptions:
         # - Point not in the curve (code 107)
@@ -92,9 +99,9 @@ def test_generator_point():
     g1 = Point.get_generator_from_curve()
 
     g_compressed = 0x0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
-    g_compressed = g_compressed.to_bytes(32+1, byteorder='big')
-
     g_uncompressed = 0x0479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+
+    g_compressed = g_compressed.to_bytes(32+1, byteorder='big')
     g_uncompressed = g_uncompressed.to_bytes(64+1, byteorder='big')
 
     g2 = Point.from_bytes(g_compressed)

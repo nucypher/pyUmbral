@@ -36,7 +36,7 @@ class UmbralPrivateKey(object):
         return cls(bn_key, params)
 
     @classmethod
-    def load_key(cls, key_data: str, params: UmbralParameters=None,
+    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None,
                  password: bytes=None, _scrypt_cost: int=20):
         """
         Loads an Umbral private key from a urlsafe base64 encoded string.
@@ -44,7 +44,7 @@ class UmbralPrivateKey(object):
         nacl's Salsa20-Poly1305 and Scrypt key derivation.
 
         WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. Unless you changed this when you called `save_key`, you should
+        files. Unless you changed this when you called `to_bytes`, you should
         not change it here. It is NOT recommended to change the `_scrypt_cost`
         value unless you know what you're doing.
         """
@@ -71,7 +71,7 @@ class UmbralPrivateKey(object):
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
-    def save_key(self, password: bytes=None, _scrypt_cost: int=20):
+    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
         """
         Returns an Umbral private key as a urlsafe base64 encoded string with
         optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
@@ -121,7 +121,7 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def load_key(cls, key_data: bytes, params: UmbralParameters=None, as_b64=False):
+    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None, as_b64=True):
         """
         Loads an Umbral public key from a urlsafe base64 encoded string or bytes.
         """
@@ -136,7 +136,7 @@ class UmbralPublicKey(object):
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def save_key(self):
+    def to_bytes(self):
         """
         Returns an Umbral public key as a urlsafe base64 encoded string.
         """

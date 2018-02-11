@@ -10,9 +10,9 @@ def test_mocked_openssl_bignum_arithmetic(mock_openssl, random_ec_bignum1, rando
         random_ec_bignum1 + random_ec_bignum2,           # __add__
         random_ec_bignum1 - random_ec_bignum2,           # __sub__
         random_ec_bignum1 % random_ec_bignum2,           # __mod__
-        random_ec_bignum1 % int(random_ec_bignum2) ,     # __mod__ (as int)
+        random_ec_bignum1 % int(random_ec_bignum2),      # __mod__ (as int)
         ~random_ec_bignum1,                              # __invert__
-        # assert random_ec_bignum1 / random_ec_bignum2   # __truediv__
+        # random_ec_bignum1 / random_ec_bignum2            # __truediv__
     )
 
     with mock_openssl():

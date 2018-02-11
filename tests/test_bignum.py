@@ -1,24 +1,40 @@
 from umbral.bignum import BigNum
-from cryptography.hazmat.primitives.asymmetric import ec
-from umbral.config import default_curve
 
 
+def test_mocked_openssl_bignum_arithmetic(mock_openssl, random_ec_bignum1, random_ec_bignum2):
 
-def test_from_to_int():
-    curve = default_curve() or ec.SECP256K1()
-    x = BigNum.gen_rand(curve)
+    operations_that_construct = (
+        random_ec_bignum1 * random_ec_bignum2,           # __mul__
+        random_ec_bignum1 ** random_ec_bignum2,          # __pow__
+        random_ec_bignum1 ** int(random_ec_bignum2),     # __pow__ (as int)
+        random_ec_bignum1 + random_ec_bignum2,           # __add__
+        random_ec_bignum1 - random_ec_bignum2,           # __sub__
+        random_ec_bignum1 % random_ec_bignum2,           # __mod__
+        random_ec_bignum1 % int(random_ec_bignum2),      # __mod__ (as int)
+        ~random_ec_bignum1,                              # __invert__
+        # random_ec_bignum1 / random_ec_bignum2            # __truediv__
+    )
 
-    xint = x.__int__()
-    
-    y = BigNum.from_int(xint, curve)
+    with mock_openssl():
+        assert random_ec_bignum1 == random_ec_bignum1    # __eq__
+        for operator_result in operations_that_construct:
+            assert operator_result
+            assert isinstance(operator_result, BigNum)
 
+
+def test_cast_bignum_to_int():
+    x = BigNum.gen_rand()
+
+    x_as_int_from_dunder = x.__int__()
+    x_as_int_type_caster = int(x)
+    assert x_as_int_from_dunder == x_as_int_type_caster
+    x = x_as_int_type_caster
+
+    y = BigNum.from_int(x)
     assert x == y
 
 
 def test_bn_to_cryptography_privkey():
-    curve = ec.SECP256K1()
-    bn = BigNum.gen_rand(curve)
-
+    bn = BigNum.gen_rand()
     crypto_privkey = bn.to_cryptography_priv_key()
-
-    assert int(bn) == crypto_privkey.private_numbers().private_value 
+    assert int(bn) == crypto_privkey.private_numbers().private_value

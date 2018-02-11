@@ -17,10 +17,9 @@ def test_private_key_serialization():
     priv_key = umbral.gen_priv()
     umbral_key = keys.UmbralPrivateKey(priv_key)
 
-    encoded_key = umbral_key.save_key()
+    encoded_key = umbral_key.to_bytes()
 
-    decoded_key = keys.UmbralPrivateKey.load_key(encoded_key)
-
+    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key)
     assert priv_key == decoded_key.bn_key
 
 
@@ -28,10 +27,9 @@ def test_private_key_serialization_with_encryption():
     priv_key = umbral.gen_priv()
     umbral_key = keys.UmbralPrivateKey(priv_key)
 
-    encoded_key = umbral_key.save_key(password=b'test')
+    encoded_key = umbral_key.to_bytes(password=b'test')
 
-    decoded_key = keys.UmbralPrivateKey.load_key(encoded_key, password=b'test')
-
+    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key, password=b'test')
     assert priv_key == decoded_key.bn_key
 
 
@@ -41,10 +39,9 @@ def test_public_key_serialization():
 
     umbral_key = keys.UmbralPublicKey(pub_key)
 
-    encoded_key = umbral_key.save_key()
+    encoded_key = umbral_key.to_bytes()
 
-    decoded_key = keys.UmbralPublicKey.load_key(encoded_key)
-
+    decoded_key = keys.UmbralPublicKey.from_bytes(encoded_key)
     assert pub_key == decoded_key.point_key
 
 

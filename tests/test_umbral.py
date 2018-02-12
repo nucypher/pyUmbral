@@ -8,6 +8,8 @@ from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.umbral import Capsule
+from collections import namedtuple
+
 
 parameters = [
     # (N, M)
@@ -24,28 +26,40 @@ secp_curves = [
 ]
 
 
-def test_decapsulation_by_alice():
-    priv_key = umbral.gen_priv()
-    pub_key = umbral.priv2pub(priv_key)
+@pytest.fixture(scope='function')
+def alices_keys(curve=default_curve()):
+    params = UmbralParameters(curve=curve)
+    priv = keys.UmbralPrivateKey.gen_key(params)
+    pub = priv.get_pub_key()
+    TestKeyPair = namedtuple('TestKeyPair', 'name priv pub')
+    return TestKeyPair('alice', priv, pub)
 
-    sym_key, capsule = umbral._encapsulate(pub_key)
+
+@pytest.fixture(scope='function')
+def bobs_keys(curve=default_curve()):
+    params = UmbralParameters(curve=curve)
+    priv = keys.UmbralPrivateKey.gen_key(params)
+    pub = priv.get_pub_key()
+    TestKeyPair = namedtuple('TestKeyPair', 'name priv pub')
+    return TestKeyPair('bob', priv, pub)
+
+
+def test_decapsulation_by_alice(alices_keys):
+    name, alice_priv, alice_pub = alices_keys
+
+    sym_key, capsule = umbral._encapsulate(alice_pub.point_key)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
-    sym_key_2 = umbral._decapsulate_original(priv_key, capsule)
+    sym_key_2 = umbral._decapsulate_original(alice_priv.bn_key, capsule)
     assert sym_key_2 == sym_key
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api(N, M, curve=default_curve()):
-
+def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
     params = UmbralParameters(curve=curve)
-
-    priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_alice = priv_key_alice.get_pub_key()
-
-    priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_bob = priv_key_bob.get_pub_key()
+    _, priv_key_alice, pub_key_alice = alices_keys
+    _, priv_key_bob, pub_key_bob = bobs_keys
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_alice, plain_data)
@@ -64,19 +78,16 @@ def test_simple_api(N, M, curve=default_curve()):
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.xfail(raises=InvalidTag)    # remove this mark to fail instead of ignore
+@pytest.mark.xfail(raises=AssertionError)    # remove this mark to fail instead of ignore
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api_on_multiple_curves(N, M, curve):
-    test_simple_api(N, M, curve)
+def test_simple_api_on_multiple_curves(alices_keys, bobs_keys, N, M, curve):
+    test_simple_api(alices_keys, bobs_keys, N, M, curve)
 
 
-def test_pub_key_encryption():
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pub_key()
-
-    priv_key_bob = keys.UmbralPrivateKey.gen_key()
-    pub_key_bob = priv_key_bob.get_pub_key()
+def test_pub_key_encryption(alices_keys, bobs_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
+    _, priv_key_bob, pub_key_bob = bobs_keys
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_bob, plain_data)
@@ -85,9 +96,8 @@ def test_pub_key_encryption():
     assert cleartext == plain_data
 
 
-def test_bad_capsule_fails_reencryption():
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pub_key()
+def test_bad_capsule_fails_reencryption(alices_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
 
     k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
@@ -120,38 +130,39 @@ def test_two_unequal_capsules():
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_m_of_n(N, M):
-    priv_alice = umbral.gen_priv()
-    pub_alice = umbral.priv2pub(priv_alice)
-    priv_bob = umbral.gen_priv()
-    pub_bob = umbral.priv2pub(priv_bob)
+def test_m_of_n(N, M, alices_keys, bobs_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
+    _, priv_key_bob, pub_key_bob = bobs_keys
 
-    sym_key, capsule = umbral._encapsulate(pub_alice)
-    kfrags, vkeys = umbral.split_rekey(priv_alice, pub_bob, M, N)
+    sym_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
+    kfrags, vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     for kfrag in kfrags:
-        assert kfrag.verify(pub_alice, pub_bob)
+        assert kfrag.verify(pub_key_alice.point_key, pub_key_bob.point_key)
         assert kfrag.is_consistent(vkeys)
 
     for kfrag in kfrags[:M]:
         cfrag = umbral.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
         ch = umbral.challenge(kfrag, capsule, cfrag)
-        assert umbral.check_challenge(capsule, cfrag, ch, pub_alice, pub_bob)
+        assert umbral.check_challenge(capsule, cfrag, ch, pub_key_alice.point_key, pub_key_bob.point_key)
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
     capsule._reconstruct_shamirs_secret()
-    sym_key_from_capsule = umbral.decapsulate_reencrypted(pub_bob, priv_bob, pub_alice, capsule)
+    sym_key_from_capsule = umbral.decapsulate_reencrypted(pub_key_bob.point_key,
+                                                          priv_key_bob.bn_key,
+                                                          pub_key_alice.point_key,
+                                                          capsule)
     assert sym_key == sym_key_from_capsule
 
 
-def test_kfrag_serialization():
-    priv_key = umbral.gen_priv()
-    pub_key = umbral.priv2pub(priv_key)
+def test_kfrag_serialization(alices_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
 
-    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
+
+    kfrags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
@@ -166,31 +177,29 @@ def test_kfrag_serialization():
     assert new_frag.bn_sig2 == kfrags[0].bn_sig2
 
 
-def test_cfrag_serialization():
-    priv_key = umbral.gen_priv()
-    pub_key = umbral.priv2pub(priv_key)
+def test_cfrag_serialization(alices_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
 
-    _unused_key, capsule = umbral._encapsulate(pub_key)
-    kfrags, _unused_vkeys = umbral.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
+    k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
-    cfrag = umbral.reencrypt(kfrags[0], capsule)
-    cfrag_bytes = cfrag.to_bytes()
+    c_frag = umbral.reencrypt(k_frags[0], capsule)
+    c_frag_bytes = c_frag.to_bytes()
 
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
-    assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
+    assert len(c_frag_bytes) == 33 + 33 + 33 + 32 == 131
 
-    new_cfrag = umbral.CapsuleFrag.from_bytes(cfrag_bytes)
-    assert new_cfrag.point_eph_e1 == cfrag.point_eph_e1
-    assert new_cfrag.point_eph_v1 == cfrag.point_eph_v1
-    assert new_cfrag.bn_kfrag_id == cfrag.bn_kfrag_id
-    assert new_cfrag.point_eph_ni == cfrag.point_eph_ni
+    new_cfrag = umbral.CapsuleFrag.from_bytes(c_frag_bytes)
+    assert new_cfrag.point_eph_e1 == c_frag.point_eph_e1
+    assert new_cfrag.point_eph_v1 == c_frag.point_eph_v1
+    assert new_cfrag.bn_kfrag_id == c_frag.bn_kfrag_id
+    assert new_cfrag.point_eph_ni == c_frag.point_eph_ni
 
 
-def test_capsule_serialization():
-    priv_key = umbral.gen_priv()
-    pub_key = umbral.priv2pub(priv_key)
+def test_capsule_serialization(alices_keys):
+    _, priv_key_alice, pub_key_alice = alices_keys
 
-    _symmetric_key, capsule = umbral._encapsulate(pub_key)
+    _symmetric_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
     capsule_bytes = capsule.to_bytes()
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).

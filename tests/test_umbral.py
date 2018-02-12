@@ -26,13 +26,15 @@ secp_curves = [
 ]
 
 
+TestKeyPair = namedtuple('TestKeyPair', 'priv pub')
+
+
 @pytest.fixture(scope='function')
 def alices_keys(curve=default_curve()):
     params = UmbralParameters(curve=curve)
     priv = keys.UmbralPrivateKey.gen_key(params)
     pub = priv.get_pub_key()
-    TestKeyPair = namedtuple('TestKeyPair', 'name priv pub')
-    return TestKeyPair('alice', priv, pub)
+    return TestKeyPair(priv, pub)
 
 
 @pytest.fixture(scope='function')
@@ -40,12 +42,11 @@ def bobs_keys(curve=default_curve()):
     params = UmbralParameters(curve=curve)
     priv = keys.UmbralPrivateKey.gen_key(params)
     pub = priv.get_pub_key()
-    TestKeyPair = namedtuple('TestKeyPair', 'name priv pub')
-    return TestKeyPair('bob', priv, pub)
+    return TestKeyPair(priv, pub)
 
 
 def test_decapsulation_by_alice(alices_keys):
-    name, alice_priv, alice_pub = alices_keys
+    alice_priv, alice_pub = alices_keys
 
     sym_key, capsule = umbral._encapsulate(alice_pub.point_key)
     assert len(sym_key) == 32
@@ -58,8 +59,8 @@ def test_decapsulation_by_alice(alices_keys):
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
     params = UmbralParameters(curve=curve)
-    _, priv_key_alice, pub_key_alice = alices_keys
-    _, priv_key_bob, pub_key_bob = bobs_keys
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_alice, plain_data)
@@ -69,8 +70,8 @@ def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
 
     rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
     for rekey in rekeys:
-        cFrag = umbral.reencrypt(rekey, capsule)
-        capsule.attach_cfrag(cFrag)
+        c_frag = umbral.reencrypt(rekey, capsule)
+        capsule.attach_cfrag(c_frag)
 
     reenc_cleartext = umbral.decrypt(
         capsule, priv_key_bob, ciphertext, pub_key_alice,
@@ -86,8 +87,8 @@ def test_simple_api_on_multiple_curves(alices_keys, bobs_keys, N, M, curve):
 
 
 def test_pub_key_encryption(alices_keys, bobs_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
-    _, priv_key_bob, pub_key_bob = bobs_keys
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_bob, plain_data)
@@ -97,7 +98,7 @@ def test_pub_key_encryption(alices_keys, bobs_keys):
 
 
 def test_bad_capsule_fails_reencryption(alices_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
+    priv_key_alice, pub_key_alice = alices_keys
 
     k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
@@ -131,8 +132,8 @@ def test_two_unequal_capsules():
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
-    _, priv_key_bob, pub_key_bob = bobs_keys
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
 
     sym_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
     kfrags, vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N)
@@ -159,8 +160,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
 
 def test_kfrag_serialization(alices_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
-
+    priv_key_alice, pub_key_alice = alices_keys
 
     kfrags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
@@ -178,7 +178,7 @@ def test_kfrag_serialization(alices_keys):
 
 
 def test_cfrag_serialization(alices_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
+    priv_key_alice, pub_key_alice = alices_keys
 
     _unused_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
     k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
@@ -197,7 +197,7 @@ def test_cfrag_serialization(alices_keys):
 
 
 def test_capsule_serialization(alices_keys):
-    _, priv_key_alice, pub_key_alice = alices_keys
+    priv_key_alice, pub_key_alice = alices_keys
 
     _symmetric_key, capsule = umbral._encapsulate(pub_key_alice.point_key)
     capsule_bytes = capsule.to_bytes()
@@ -214,7 +214,8 @@ def test_capsule_serialization(alices_keys):
     # Second, we show that the original components (which is all we have here since we haven't activated) are the same:
     assert new_capsule.original_components() == capsule.original_components()
 
-    # Third, we can directly compare the private original component attributes (though this is not a supported approach):
+    # Third, we can directly compare the private original component attributes
+    # (though this is not a supported approach):
     assert new_capsule._point_eph_e == capsule._point_eph_e
     assert new_capsule._point_eph_v == capsule._point_eph_v
     assert new_capsule._bn_sig == capsule._bn_sig

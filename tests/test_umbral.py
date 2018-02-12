@@ -292,7 +292,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M, curve=default_curve()):
     sym_key_alice1, capsule_alice1 = umbral._encapsulate(pub_key_alice.point_key, params=params)
     sym_key_alice2, capsule_alice2 = umbral._encapsulate(pub_key_alice.point_key, params=params)
 
-    k_frags, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+    k_frags, v_keys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+
+    for k_frag in k_frags:
+        assert k_frag.is_consistent(v_keys)
 
     c_frags, challenges = [], []
     for index, k_frag in enumerate(k_frags):
@@ -350,7 +353,10 @@ def test_cheating_ursula_sends_garbage(N, M, curve=default_curve()):
     pub_key_bob = priv_key_bob.get_pub_key()
 
     sym_key, capsule_alice = umbral._encapsulate(pub_key_alice.point_key, params=params)
-    k_frags, vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+    k_frags, v_keys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+
+    for k_frag in k_frags:
+        assert k_frag.is_consistent(v_keys)
 
     c_frags, challenges = [], []
     for k_frag in k_frags[0:M]:

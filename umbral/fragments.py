@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_curve, default_params
 from umbral.point import Point
-from umbral.utils import get_curve_keysize_bytes
+from umbral.utils import get_curve_keysize_bytes, check_bytes_length
 
 from io import BytesIO
 
@@ -24,6 +24,10 @@ class KFrag(object):
         """
         curve = curve if curve is not None else default_curve()
         key_size = get_curve_keysize_bytes(curve)
+
+        expected_length = (key_size * 4) + ((key_size + 1) * 2)
+        check_bytes_length(len(data), expected_length)
+
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the
@@ -97,6 +101,10 @@ class CapsuleFrag(object):
         """
         curve = curve if curve is not None else default_curve()
         key_size = get_curve_keysize_bytes(curve)
+
+        expected_length = keysize + ((keysize + 1) * 3)
+        check_bytes_length(len(data), expected_length)
+
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the

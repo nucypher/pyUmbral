@@ -42,3 +42,9 @@ def kdf(ecpoint, key_length):
 
 def get_curve_keysize_bytes(curve):
     return int(math.ceil(curve.key_size / 8.00))
+
+
+def check_bytes_length(given_length, expected_length):
+    if given_length != expected_length:
+        raise ValueError(
+            "Bytes passed are an invalid length for this curve. Got {}, must be {}.".format(given_length, expected_length))

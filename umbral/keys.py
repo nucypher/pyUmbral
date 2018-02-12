@@ -136,13 +136,16 @@ class UmbralPublicKey(object):
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def to_bytes(self):
+    def to_bytes(self, as_b64=True):
         """
         Returns an Umbral public key as a urlsafe base64 encoded string.
         """
         umbral_pub_key = self.point_key.to_bytes()
 
-        encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
+        if as_b64:
+            key_bytes = base64.urlsafe_b64encode(umbral_pub_key)
+        else:
+            key_byts = umbral_pub_key
         return encoded_key
 
     def __bytes__(self):

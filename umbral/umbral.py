@@ -202,7 +202,8 @@ def priv2pub(priv: BigNum, params: UmbralParameters=None) -> Point:
     return priv * params.g
 
 
-def split_rekey(priv_a: UmbralPrivateKey, pub_b: UmbralPublicKey,
+def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
+                pub_b: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
                 params: UmbralParameters=None) -> Tuple[List[KFrag], List[Point]]:
     """

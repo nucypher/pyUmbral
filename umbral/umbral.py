@@ -50,18 +50,25 @@ class Capsule(object):
         """
         curve = curve if curve is not None else default_curve()
         key_size = get_curve_keysize_bytes(curve)
+
         capsule_buff = BytesIO(capsule_bytes)
 
         # BigNums are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        if len(capsule_bytes) == 197:
+        try:
+            expected_len1 = keysize + ((keysize + 1) * 5)
+            check_bytes_length(len(capsule_bytes), expected_len1)
+
             eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
             e_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             v_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             eph_ni = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-        else:
+        except ValueError:
+            expected_len2 = keysize + ((keysize + 1) * 2)
+            check_bytes_length(len(capsule_bytes), expected_len2)
+
             eph_e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             eph_v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
             sig = BigNum.from_bytes(capsule_buff.read(key_size), curve)
@@ -150,6 +157,9 @@ class ChallengeResponse(object):
         """
         curve = curve if curve is not None else default_curve()
         key_size = get_curve_keysize_bytes(curve)
+
+        expected_length = (keysize * 3) + ((keysize + 1) * 4)
+        check_bytes_length(len(data), 
         data = BytesIO(data)
 
         # BigNums are the keysize in bytes, Points are compressed and the

@@ -197,12 +197,13 @@ def gen_priv(curve: ec.EllipticCurve=None) -> BigNum:
     return BigNum.gen_rand(curve)
 
 
-def priv2pub(priv, params: UmbralParameters=None) -> Point:
+def priv2pub(priv: BigNum, params: UmbralParameters=None) -> Point:
     params = params if params is not None else default_params()
     return priv * params.g
 
 
-def split_rekey(priv_a, pub_b, threshold, N,
+def split_rekey(priv_a: UmbralPrivateKey, pub_b: UmbralPublicKey,
+                threshold: int, N: int,
                 params: UmbralParameters=None) -> Tuple[List[KFrag], List[Point]]:
     """
     Creates a re-encryption key and splits it using Shamir's Secret Sharing.
@@ -231,7 +232,7 @@ def split_rekey(priv_a, pub_b, threshold, N,
     h = params.h
     u = params.u
 
-    vKeys = [coeff * h for coeff in coeffs]
+    v_keys = [coeff * h for coeff in coeffs]
 
     rk_shares = []
     for _ in range(N):
@@ -247,32 +248,35 @@ def split_rekey(priv_a, pub_b, threshold, N,
         kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
         rk_shares.append(kFrag)
 
-    return rk_shares, vKeys
+    return rk_shares, v_keys
 
 
-def reencrypt(kFrag, capsule, params: UmbralParameters=None) -> CapsuleFrag:
+def reencrypt(k_frag: KFrag, capsule: Capsule,
+              params: UmbralParameters=None) -> CapsuleFrag:
     params = params if params is not None else default_params()
 
     if not capsule.verify(params):
         raise capsule.NotValid
 
-    e1 = kFrag.bn_key * capsule._point_eph_e
-    v1 = kFrag.bn_key * capsule._point_eph_v
+    e1 = k_frag.bn_key * capsule._point_eph_e
+    v1 = k_frag.bn_key * capsule._point_eph_v
 
-    return CapsuleFrag(e1=e1, v1=v1, id_=kFrag.bn_id, x=kFrag.point_eph_ni)
+    c_frag = CapsuleFrag(e1=e1, v1=v1, id_=k_frag.bn_id, x=k_frag.point_eph_ni)
+    return c_frag
 
 
-def challenge(rk, capsule, cFrag, params: UmbralParameters=None) -> ChallengeResponse:
+def challenge(k_frag: KFrag, capsule: Capsule, c_frag: CapsuleFrag,
+              params: UmbralParameters=None) -> ChallengeResponse:
     params = params if params is not None else default_params()
 
-    e1 = cFrag.point_eph_e1
-    v1 = cFrag.point_eph_v1
+    e1 = c_frag.point_eph_e1
+    v1 = c_frag.point_eph_v1
 
     e = capsule._point_eph_e
     v = capsule._point_eph_v
 
     u = params.u
-    u1 = rk.point_commitment
+    u1 = k_frag.point_commitment
 
     t = BigNum.gen_rand(params.curve)
     e2 = t * e
@@ -281,9 +285,10 @@ def challenge(rk, capsule, cFrag, params: UmbralParameters=None) -> ChallengeRes
 
     h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], params)
 
-    z3 = t + h * rk.bn_key
+    z3 = t + h * k_frag.bn_key
 
-    ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2, z1=rk.bn_sig1, z2=rk.bn_sig2, z3=z3)
+    ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2,
+                                z1=k_frag.bn_sig1, z2=k_frag.bn_sig2, z3=z3)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
@@ -291,17 +296,19 @@ def challenge(rk, capsule, cFrag, params: UmbralParameters=None) -> ChallengeRes
     return ch_resp
 
 
-def check_challenge(capsule, cFrag, challenge_resp, pub_a, pub_b,
+def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
+                    challenge_resp: ChallengeResponse,
+                    pub_a: Point, pub_b: Point,
                     params: UmbralParameters=None) -> bool:
     params = params if params is not None else default_params()
 
     e = capsule._point_eph_e
     v = capsule._point_eph_v
 
-    e1 = cFrag.point_eph_e1
-    v1 = cFrag.point_eph_v1
-    xcomp = cFrag.point_eph_ni
-    kfrag_id = cFrag.bn_kfrag_id
+    e1 = c_frag.point_eph_e1
+    v1 = c_frag.point_eph_v1
+    xcomp = c_frag.point_eph_ni
+    kfrag_id = c_frag.bn_kfrag_id
 
     e2 = challenge_resp.point_eph_e2
     v2 = challenge_resp.point_eph_v2
@@ -327,7 +334,7 @@ def check_challenge(capsule, cFrag, challenge_resp, pub_a, pub_b,
     return check31 & check32 & check33
 
 
-def _encapsulate(alice_pub_key, key_length=32,
+def _encapsulate(alice_pub_key: Point, key_length=32,
                  params: UmbralParameters=None) -> Tuple[bytes, Capsule]:
     """Generates a symmetric key and its associated KEM ciphertext"""
     params = params if params is not None else default_params()
@@ -351,7 +358,7 @@ def _encapsulate(alice_pub_key, key_length=32,
     return key, Capsule(point_eph_e=pub_r, point_eph_v=pub_u, bn_sig=s)
 
 
-def _decapsulate_original(priv_key, capsule, key_length=32,
+def _decapsulate_original(priv_key: BigNum, capsule: Capsule, key_length=32,
                           params: UmbralParameters=None) -> bytes:
     """Derive the same symmetric key"""
     params = params if params is not None else default_params()
@@ -366,8 +373,8 @@ def _decapsulate_original(priv_key, capsule, key_length=32,
 
 
 def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
-                            orig_pub_key: Point, capsule: Capsule, key_length=32,
-                            params: UmbralParameters=None) -> bytes:
+                            orig_pub_key: Point, capsule: Capsule,
+                            key_length=32, params: UmbralParameters=None) -> bytes:
     """Derive the same symmetric key"""
     params = params if params is not None else default_params()
 
@@ -424,7 +431,7 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     return key
 
 
-def decrypt(capsule, priv_key: UmbralPrivateKey,
+def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
             ciphertext: bytes, alice_pub_key: UmbralPublicKey=None) -> bytes:
     """
     Opens the capsule and gets what's inside.

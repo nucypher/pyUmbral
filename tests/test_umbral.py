@@ -79,21 +79,18 @@ def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.xfail(raises=AssertionError)    # remove this mark to fail instead of ignore
+@pytest.mark.xfail(raises=umbral.GenericUmbralError)    # remove this mark to fail instead of ignore
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(alices_keys, bobs_keys, N, M, curve):
     test_simple_api(alices_keys, bobs_keys, N, M, curve)
 
 
-def test_pub_key_encryption(alices_keys, bobs_keys):
+def test_pub_key_encryption(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
-    priv_key_bob, pub_key_bob = bobs_keys
-
     plain_data = b'attack at dawn'
-    ciphertext, capsule = umbral.encrypt(pub_key_bob, plain_data)
-
-    cleartext = umbral.decrypt(capsule, priv_key_bob, ciphertext)
+    ciphertext, capsule = umbral.encrypt(pub_key_alice, plain_data)
+    cleartext = umbral.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
 
@@ -266,7 +263,8 @@ def test_challenge_response_serialization():
 
     ch_resp_bytes = ch_resp.to_bytes()
 
-    # A ChallengeResponse can be represented as the 228 total bytes of four Points (33 each) and three BigNums (32 each).
+    # A ChallengeResponse can be represented as
+    # the 228 total bytes of four Points (33 each) and three BigNums (32 each).
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
     new_ch_resp = umbral.ChallengeResponse.from_bytes(ch_resp_bytes)
@@ -314,15 +312,13 @@ def test_cheating_ursula_replays_old_reencryption(N, M, curve=default_curve()):
 
     capsule_alice1._reconstruct_shamirs_secret()    # activate capsule
 
-    try:
-        # This line should always raise an AssertionError ("Generic Umbral Error")
+    with pytest.raises(umbral.GenericUmbralError):
         sym_key = umbral.decapsulate_reencrypted(pub_key_bob.point_key,
                                                   priv_key_bob.bn_key,
                                                   pub_key_alice.point_key,
                                                   capsule_alice1)
         assert not sym_key == sym_key_alice1
-    except AssertionError as e:
-        assert str(e) == "Generic Umbral Error"
+
         assert not umbral.check_challenge(capsule_alice1,
                                           c_frags[0],
                                           challenges[0],
@@ -381,16 +377,14 @@ def test_cheating_ursula_sends_garbage(N, M, curve=default_curve()):
 
     capsule_alice._reconstruct_shamirs_secret()    # activate capsule
 
-    try:
-        # This line should always raise an AssertionError ("Generic Umbral Error")
+    with pytest.raises(umbral.GenericUmbralError):
         sym_key2 = umbral.decapsulate_reencrypted(pub_key_bob.point_key,
                                                   priv_key_bob.bn_key,
                                                   pub_key_alice.point_key,
                                                   capsule_alice)
         assert sym_key2 != sym_key
-    except AssertionError as e:
-        assert str(e) == "Generic Umbral Error"
         assert not umbral.check_challenge(capsule_alice, c_frags[0], challenges[0], pub_key_alice.point_key, pub_key_bob.point_key, params=params)
+
         # The response of cheating Ursula is in capsules[0],
         # so the rest of challenges chould be correct:
         for (c_frag, ch) in zip(c_frags[1:], challenges[1:]):

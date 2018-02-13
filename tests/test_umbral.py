@@ -33,7 +33,7 @@ TestKeyPair = namedtuple('TestKeyPair', 'priv pub')
 def alices_keys(curve=default_curve()):
     params = UmbralParameters(curve=curve)
     priv = keys.UmbralPrivateKey.gen_key(params)
-    pub = priv.get_pub_key()
+    pub = priv.get_pubkey()
     return TestKeyPair(priv, pub)
 
 
@@ -41,7 +41,7 @@ def alices_keys(curve=default_curve()):
 def bobs_keys(curve=default_curve()):
     params = UmbralParameters(curve=curve)
     priv = keys.UmbralPrivateKey.gen_key(params)
-    pub = priv.get_pub_key()
+    pub = priv.get_pubkey()
     return TestKeyPair(priv, pub)
 
 
@@ -283,10 +283,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M, curve=default_curve()):
     params = UmbralParameters(curve=curve)
 
     priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key_alice1, capsule_alice1 = umbral._encapsulate(pub_key_alice.point_key, params=params)
     sym_key_alice2, capsule_alice2 = umbral._encapsulate(pub_key_alice.point_key, params=params)
@@ -343,11 +343,11 @@ def test_cheating_ursula_sends_garbage(N, M, curve=default_curve()):
 
     # Alice
     priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     # Bob
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = umbral._encapsulate(pub_key_alice.point_key, params=params)
     k_frags, v_keys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
@@ -397,10 +397,10 @@ def test_alice_sends_fake_kfrag_to_ursula(N, M, curve=default_curve()):
     params = UmbralParameters(curve=curve)
 
     priv_key_alice = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params)
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     plaintext = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_alice, plaintext)

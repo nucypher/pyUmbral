@@ -431,7 +431,7 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
 
     This will often be a symmetric key.
     """
-    recp_pub_key = bob_private_key.get_pub_key()
+    recp_pub_key = bob_private_key.get_pubkey()
     capsule._reconstruct_shamirs_secret()
 
     key = decapsulate_reencrypted(

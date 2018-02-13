@@ -157,3 +157,6 @@ class UmbralPublicKey(object):
         Returns an Umbral Public key as a bytestring.
         """
         return self.point_key.to_bytes()
+
+    def __repr__(self):
+        return "{}:{}".format(self.__class__, self.point_key.to_bytes().hex()[:15])

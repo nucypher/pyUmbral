@@ -9,7 +9,7 @@ def test_gen_key():
     umbral_priv_key = keys.UmbralPrivateKey.gen_key(UmbralParameters(ec.SECP256K1()))
     assert type(umbral_priv_key) == keys.UmbralPrivateKey
 
-    umbral_pub_key = umbral_priv_key.get_pub_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
     assert type(umbral_pub_key) == keys.UmbralPublicKey
 
 

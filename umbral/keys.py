@@ -118,6 +118,10 @@ class UmbralPublicKey(object):
             params = default_params()
 
         self.params = params
+
+        if not isinstance(point_key, Point):
+            raise TypeError("point_key can only be a Point.  Don't pass anything else.")
+
         self.point_key = point_key
 
     @classmethod

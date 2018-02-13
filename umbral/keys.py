@@ -102,7 +102,7 @@ class UmbralPrivateKey(object):
         encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
         return encoded_key
 
-    def get_pub_key(self):
+    def get_pubkey(self):
         """
         Calculates and returns the public key of the private key.
         """
@@ -144,6 +144,9 @@ class UmbralPublicKey(object):
 
         encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
         return encoded_key
+
+    def get_pubkey(self):
+        raise NotImplementedError
 
     def __bytes__(self):
         """

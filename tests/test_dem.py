@@ -56,5 +56,5 @@ def test_encrypt_decrypt_associated_data():
     assert cleartext1 == plaintext
 
     # Attempt decryption with invalid associated data
-    with pytest.raises(InvalidTag) as err_info:
+    with pytest.raises(InvalidTag):
         cleartext2 = dem.decrypt(ciphertext0, authenticated_data=b'wrong data')

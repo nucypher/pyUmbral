@@ -1,12 +1,9 @@
-from cryptography.hazmat.primitives.asymmetric import ec
-
 from umbral import umbral, keys
-from umbral.params import UmbralParameters
 
 
 def test_gen_key():
     # Pass in the parameters to test that manual param selection works
-    umbral_priv_key = keys.UmbralPrivateKey.gen_key(UmbralParameters(ec.SECP256K1()))
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
     assert type(umbral_priv_key) == keys.UmbralPrivateKey
 
     umbral_pub_key = umbral_priv_key.get_pub_key()

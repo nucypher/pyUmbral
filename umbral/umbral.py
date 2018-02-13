@@ -408,17 +408,17 @@ def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     return key
 
 
-def encrypt(pub_key: UmbralPublicKey, data: bytes) -> Tuple[bytes, Capsule]:
+def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Capsule]:
     """
     Performs an encryption using the UmbralDEM object and encapsulates a key
     for the sender using the public key provided.
 
     Returns the ciphertext and the KEM Capsule.
     """
-    key, capsule = _encapsulate(pub_key.point_key, SecretBox.KEY_SIZE)
+    key, capsule = _encapsulate(alice_pubkey.point_key, SecretBox.KEY_SIZE)
 
     dem = UmbralDEM(key)
-    ciphertext = dem.encrypt(data)
+    ciphertext = dem.encrypt(plaintext)
 
     return ciphertext, capsule
 

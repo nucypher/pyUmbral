@@ -15,6 +15,10 @@ from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
 from io import BytesIO
 
 
+class GenericUmbralError(Exception):
+    pass
+
+
 class Capsule(object):
     def __init__(self,
                  point_eph_e=None,
@@ -178,13 +182,13 @@ class ChallengeResponse(object):
         kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
         sig = self.bn_sig.to_bytes()
 
-        result = e2                 \
-                 + v2               \
-                 + kfrag_commitment \
-                 + kfrag_pok        \
-                 + kfrag_sig1       \
-                 + kfrag_sig2       \
-                 + sig
+        result = e2            \
+            + v2               \
+            + kfrag_commitment \
+            + kfrag_pok        \
+            + kfrag_sig1       \
+            + kfrag_sig2       \
+            + sig
 
         return result
 
@@ -293,7 +297,9 @@ def challenge(k_frag: KFrag, capsule: Capsule, c_frag: CapsuleFrag,
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
-    assert capsule.verify(params), "Generic Umbral Error"
+    if not capsule.verify(params):
+        raise capsule.NotValid("Capsule verification failed.")
+
     return ch_resp
 
 
@@ -364,12 +370,14 @@ def _decapsulate_original(priv_key: BigNum, capsule: Capsule, key_length=32,
     """Derive the same symmetric key"""
     params = params if params is not None else default_params()
 
-    shared_key = priv_key * (capsule._point_eph_e + capsule._point_eph_v)
+    shared_key = priv_key * (capsule._point_eph_e+capsule._point_eph_v)
     key = kdf(shared_key, key_length)
 
-    # Check correctness of original ciphertext (check nº 2) at the end
-    # to avoid timing oracles
-    assert capsule.verify(params), "Generic Umbral Error"
+    if not capsule.verify(params):
+        # Check correctness of original ciphertext
+        # (check nº 2) at the end to avoid timing oracles
+        raise capsule.NotValid("Capsule verification failed.")
+
     return key
 
 
@@ -395,7 +403,8 @@ def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     h = hash_to_bn([e, v], params)
     inv_d = ~d
 
-    assert (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime, "Generic Umbral Error"
+    if not (s*inv_d) * orig_pub_key == (h*e_prime) + v_prime:
+        raise GenericUmbralError()
     return key
 
 

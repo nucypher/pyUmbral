@@ -126,7 +126,7 @@ class Capsule(object):
         self._point_noninteractive = cfrag_0.point_eph_ni
 
     def __bytes__(self):
-        self.to_bytes()
+        return self.to_bytes()
 
     def __eq__(self, other):
         if all(self.activated_components() + other.activated_components()):

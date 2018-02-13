@@ -1,4 +1,5 @@
 import pytest
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import umbral, keys
@@ -29,26 +30,29 @@ TestKeyPair = namedtuple('TestKeyPair', 'priv pub')
 
 
 @pytest.fixture(scope='function')
-def alices_keys(curve=default_curve()):
-    params = UmbralParameters(curve=curve)
-    priv = keys.UmbralPrivateKey.gen_key(params)
-    pub = priv.get_pub_key()
+def alices_keys():
+    priv = keys.UmbralPrivateKey.gen_key()
+    pub = priv.get_pubkey()
     return TestKeyPair(priv, pub)
 
 
 @pytest.fixture(scope='function')
-def bobs_keys(curve=default_curve()):
-    params = UmbralParameters(curve=curve)
-    priv = keys.UmbralPrivateKey.gen_key(params)
-    pub = priv.get_pub_key()
+def bobs_keys():
+    priv = keys.UmbralPrivateKey.gen_key()
+    pub = priv.get_pubkey()
     return TestKeyPair(priv, pub)
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
+def test_simple_api(N, M, curve=default_curve()):
+    """Manually injects umbralparameters for multi-curve testing."""
     params = UmbralParameters(curve=curve)
-    priv_key_alice, pub_key_alice = alices_keys
-    priv_key_bob, pub_key_bob = bobs_keys
+
+    priv_key_alice = keys.UmbralPrivateKey.gen_key(params=params)
+    pub_key_alice = priv_key_alice.get_pubkey()
+
+    priv_key_bob = keys.UmbralPrivateKey.gen_key(params=params)
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     plain_data = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_alice, plain_data)
@@ -56,22 +60,20 @@ def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
     cleartext = umbral.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
-    rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params)
+    rekeys, _unused_vkeys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
     for rekey in rekeys:
-        c_frag = umbral.reencrypt(rekey, capsule)
+        c_frag = umbral.reencrypt(rekey, capsule, params=params)
         capsule.attach_cfrag(c_frag)
 
-    reenc_cleartext = umbral.decrypt(
-        capsule, priv_key_bob, ciphertext, pub_key_alice,
-    )
+    reenc_cleartext = umbral.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice)
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.xfail(raises=umbral.GenericUmbralError)    # remove this mark to fail instead of ignore
+@pytest.mark.xfail(raises=InvalidTag)    # remove this mark to fail instead of ignore
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api_on_multiple_curves(alices_keys, bobs_keys, N, M, curve):
-    test_simple_api(alices_keys, bobs_keys, N, M, curve)
+def test_simple_api_on_multiple_curves(N, M, curve):
+    test_simple_api(N, M, curve)
 
 
 def test_pub_key_encryption(alices_keys):
@@ -285,12 +287,11 @@ def test_challenge_response_serialization():
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_cheating_ursula_replays_old_reencryption(N, M):
-
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key_alice1, capsule_alice1 = umbral._encapsulate(pub_key_alice.point_key)
     sym_key_alice2, capsule_alice2 = umbral._encapsulate(pub_key_alice.point_key)
@@ -343,14 +344,12 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_cheating_ursula_sends_garbage(N, M):
-
-    # Alice
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     # Bob
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = umbral._encapsulate(pub_key_alice.point_key)
     k_frags, v_keys = umbral.split_rekey(priv_key_alice, pub_key_bob, M, N)
@@ -398,10 +397,10 @@ def test_cheating_ursula_sends_garbage(N, M):
 def test_alice_sends_fake_kfrag_to_ursula(N, M):
 
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pub_key()
+    pub_key_alice = priv_key_alice.get_pubkey()
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
-    pub_key_bob = priv_key_bob.get_pub_key()
+    pub_key_bob = priv_key_bob.get_pubkey()
 
     plaintext = b'attack at dawn'
     ciphertext, capsule = umbral.encrypt(pub_key_alice, plaintext)

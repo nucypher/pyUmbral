@@ -102,7 +102,7 @@ class UmbralPrivateKey(object):
         encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
         return encoded_key
 
-    def get_pub_key(self):
+    def get_pubkey(self):
         """
         Calculates and returns the public key of the private key.
         """
@@ -118,6 +118,10 @@ class UmbralPublicKey(object):
             params = default_params()
 
         self.params = params
+
+        if not isinstance(point_key, Point):
+            raise TypeError("point_key can only be a Point.  Don't pass anything else.")
+
         self.point_key = point_key
 
     @classmethod
@@ -145,8 +149,14 @@ class UmbralPublicKey(object):
         encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
         return encoded_key
 
+    def get_pubkey(self):
+        raise NotImplementedError
+
     def __bytes__(self):
         """
         Returns an Umbral Public key as a bytestring.
         """
         return self.point_key.to_bytes()
+
+    def __repr__(self):
+        return "{}:{}".format(self.__class__, self.point_key.to_bytes().hex()[:15])

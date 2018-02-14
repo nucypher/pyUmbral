@@ -2,9 +2,13 @@ import contextlib
 
 import pytest
 from cryptography.hazmat.backends.openssl import backend
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.bignum import BigNum
+from umbral.config import set_default_curve
 from umbral.point import Point
+
+set_default_curve(ec.SECP256K1)
 
 
 @pytest.fixture()

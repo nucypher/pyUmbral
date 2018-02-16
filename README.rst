@@ -1,6 +1,7 @@
 pyUmbral
 ========
-[![Build Status](https://travis-ci.org/nucypher/pyUmbral.svg?branch=master)](https://travis-ci.org/nucypher/pyUmbral)
+.. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
+    :target: https://travis-ci.org/nucypher/pyUmbral
 
 pyUmbral is a 100% python implementation of Umbral using OpenSSL and Cryptography.io
 

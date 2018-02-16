@@ -15,7 +15,6 @@ in a straightforward and usable manner.
 **Alice encrypts data for herself**
 
 .. code-block:: python
-    :linenos:
 
     from umbral import umbral, keys
 
@@ -33,7 +32,6 @@ in a straightforward and usable manner.
 **Ursula Re-encrypts for Bob**
 
 .. code-block:: python
-    :linenos:
 
     # Generate a key pair for Bob
     bobs_private_key = keys.UmbralPrivateKey.gen_key()

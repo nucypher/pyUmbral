@@ -8,9 +8,9 @@ pyUmbral
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
     :target: https://travis-ci.org/nucypher/pyUmbral
 
-pyUmbral is a 100% python implementation of Umbral using OpenSSL and Cryptography.io,
-enabling users to perform public key encryption and split key proxy-rencryption
-in a straightforward and usable manner.
+    pyUmbral is a 100% python implementation of Umbral using OpenSSL and Cryptography.io,
+    enabling users to perform *split-key proxy-rencryption* and public key encryption
+    in an understandable and usable manner.
 
 **Alice encrypts data for herself**
 
@@ -54,18 +54,20 @@ in a straightforward and usable manner.
 
 
 Features
---------
-- Proxy re-encryption
-- Asymmetric key pair generation
-- Public key encryption
-- Key Encapsulation
+---------
+- Bulk Data and Key Encapsulation
+- Asymmetric Key Pair Generation
+- Public Key Encryption & Decryption
+- Data Re-encryption
+- Re-encryption Key Generation
+- Threshold re-encryption key splitting (via Shamir's Secret Sharing)
 
 
-Installation
-------------
+Quick Installation
+-------------------
 
 The NuCypher team uses pipenv for managing pyUmbral's dependencies.
-The recommended installation procedure is as follows...
+The recommended installation procedure is as follows:
 
 .. code-block:: bash
 
@@ -75,10 +77,10 @@ The recommended installation procedure is as follows...
 Post-installation, you can activate the project virtual enviorment
 in your current terminal session by running :bash:`pipenv shell`.
 
-For more information on pipenv, find the official documentation here: `https://docs.pipenv.org/`_.
+For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
 
 Support & Contribute
 ---------------------
 
-- Issue Tracker: `github.com/nucypher/pyUmbral/issues`_
-- Source Code: `github.com/nucypher/pyUmbral`_
+- Issue Tracker: https://github.com/nucypher/pyUmbral/issues
+- Source Code: https://github.com/nucypher/pyUmbral`

@@ -16,6 +16,7 @@ in an understandable and usable manner.
    :caption: Table of Contents:
 
    installation
+   using_pyumbral
 
 
 Features

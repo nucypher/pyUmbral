@@ -7,26 +7,28 @@ pyUmbral
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
    :target: https://travis-ci.org/nucypher/pyUmbral
 
-pyUmbral is a 100% python implementation of Umbral using OpenSSL and Cryptography.io,
+pyUmbral is a python implementation of Umbral using OpenSSL and Cryptography.io,
 enabling users to perform *split-key proxy re-encryption* and public key encryption
 in an understandable and usable manner.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Table of Contents:
 
    installation
    using_pyumbral
 
 
+
 Features
-=========
+==========
+- Threshold re-encryption key splitting (via Shamir's Secret Sharing)
+- Proxy Re-encryption
+- Re-encryption Key Generation
+- Public Key Encryption & Decryption
 - Bulk Data and Key Encapsulation
 - Asymmetric Key Pair Generation
-- Public Key Encryption & Decryption
-- Data Re-encryption
-- Re-encryption Key Generation
-- Threshold re-encryption key splitting (via Shamir's Secret Sharing)
+
 
 
 Technical documentation

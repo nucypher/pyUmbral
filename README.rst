@@ -10,7 +10,7 @@ pyUmbral
 
 pyUmbral is a 100% python implementation of Umbral using OpenSSL and Cryptography.io,
 enabling users to perform *split-key proxy-rencryption* and public key encryption
-in an understandable and usable manner.
+in an understandable, usable manner.
 
 
 Features

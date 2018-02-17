@@ -28,6 +28,22 @@ Features
 - Threshold re-encryption key splitting (via Shamir's Secret Sharing)
 
 
+Technical documentation
+========================
+  "Umbral: A Threshold Proxy Re-Encryption Scheme"
+  by David Nuñez
+
+Technical documentation and cryptographic specifications
+are availible on GitHub https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf.
+
+
+Support & Contribute
+=====================
+
+- Issue Tracker: https://github.com/nucypher/pyUmbral/issues
+- Source Code: https://github.com/nucypher/pyUmbral
+
+
 
 Indices and tables
 ==================

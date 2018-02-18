@@ -18,17 +18,15 @@ in an understandable and usable manner.
    installation
    using_pyumbral
 
-
-
 Features
 ==========
-- Threshold re-encryption key splitting (via Shamir's Secret Sharing)
 - Proxy Re-encryption
+- Threshold Re-encryption Key Splitting
+- Bulk Data and Key Encapsulation
 - Re-encryption Key Generation
 - Public Key Encryption & Decryption
-- Bulk Data and Key Encapsulation
-- Asymmetric Key Pair Generation
-
+- Asymmetric Umbral Key Generation
+- Elliptic Curve Arithmetic
 
 
 Technical documentation

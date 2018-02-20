@@ -48,13 +48,6 @@ a `UmbralConfigurationError`.
   ...
   umbral.config.UmbralConfigurationError: You can only set the default curve once.  Do it once and then leave it alone.
 
-In order to set an alternative curve configuration,
-pass the curve reference as an argument.
-
-.. code-block:: python
-
-    config.set_default_curve(<YOUR CURVE HERE>)
-
 
 Public Key Encryption
 ======================
@@ -164,7 +157,7 @@ altering the state of the `capsule`. Bob collects the resulting `cfrags` from Ur
 
 
 Bob attches cfrags to the capsule
---------------------------------------
+----------------------------------
 Bob attaches at least `M` `cfrags` to the capsule. Then the capsule
 can be *activated*.
 
@@ -175,7 +168,7 @@ can be *activated*.
 
 
 Bob opens the capsule
-----------------------
+------------------------
 Bob activates the capsule, opens it, and decrypts the re-encrypted ciphertext,
 revealing the message.
 

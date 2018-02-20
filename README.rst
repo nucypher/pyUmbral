@@ -60,12 +60,9 @@ in an understandable and usable manner.
 Features
 ==========
 - Proxy Re-encryption
-- Threshold Re-encryption Key Splitting
-- Bulk Data and Key Encapsulation
-- Re-encryption Key Generation
+- Threshold Proxy Re-encryption Key Splitting
+- Data and Key Encapsulation
 - Public Key Encryption & Decryption
-- Asymmetric Umbral Key Generation
-- Elliptic Curve Arithmetic
 
 
 Quick Installation
@@ -85,7 +82,7 @@ in your current terminal session by running :bash:`pipenv shell`.
 For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
 
 
-Technical documentation
+Technical Documentation
 ========================
   "Umbral: A Threshold Proxy Re-Encryption Scheme"
   by David Nuñez

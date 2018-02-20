@@ -20,7 +20,6 @@ Once you have aquired the source code, you can...
 
 .. code-block:: python
 
-   import umbral
    from umbral import umbral, keys
 
 *...install pyUmbral with pipenv...*
@@ -59,7 +58,7 @@ If your installation is successful, the following command will succeed without e
 
 For more information on pipenv, The official documentation is located here: https://docs.pipenv.org/.
 
-Development installation
+Development Installation
 -------------------------
 
 If you need to execute the test suite or build documentation,
@@ -68,3 +67,6 @@ be sure to install the additional development requirements.
 .. code-block:: bash
 
    $ pipenv install --dev --three
+
+
+To build the documentation locally

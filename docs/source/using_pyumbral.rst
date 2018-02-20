@@ -4,7 +4,7 @@ Using pyUmbral
 .. image:: .static/PRE_image.png
 
 
-Import umbral modules:
+Import umbral modules
 
 .. code-block:: python
 
@@ -14,15 +14,17 @@ Import umbral modules:
 Configuration
 ==============
 
+
+
 Setting the default curve
 --------------------------
 
-PyUmbral uses dependency injection internally to pass elliptic curve context.
+pyUmbral uses dependency injection internally to manage elliptic curve context.
 This allows flexibility with regard to pyUmbral's ability to peform
 elliptic curve operations and re-encryption with alternate curve specifications.
 
 If a default curve is not manually specified, SECP256K1 will be used with the caveat of
-a small net performace loss, and the raising of a `RuntimeWarning`.
+a small performance penalty, and the raising of a `RuntimeWarning`.
 
 .. code-block:: python
 
@@ -30,9 +32,10 @@ a small net performace loss, and the raising of a `RuntimeWarning`.
   RuntimeWarning: No default curve has been set.  Using SECP256K1.  A slight performance penalty has been incurred for only this call.  Set a default curve with umbral.config.set_default_curve().
 
 
-To silence the warning, configure pyUmbral by invoking `umbral.config.set_default_curve`.
+To silence the warning, configure pyUmbral to use a default curve
+by invoking `umbral.config.set_default_curve`.
 
-To configure pyUmbral to use the default curve (SECP256K1):
+Configure pyUmbral to use the default curve (SECP256K1):
 
 .. code-block:: python
 
@@ -49,13 +52,13 @@ a `UmbralConfigurationError`.
   umbral.config.UmbralConfigurationError: You can only set the default curve once.  Do it once and then leave it alone.
 
 
-Public Key Encryption
-======================
+Encryption and Encapsulation
+=============================
 
 
-Generate an umbral key pair
+Generate an Umbral key pair
 -----------------------------
-Let's generate an asymmetric key pair for Alice.
+First, Let's generate an asymmetric key pair for Alice.
 
 .. code-block:: python
 
@@ -64,7 +67,12 @@ Let's generate an asymmetric key pair for Alice.
 
 
 Encrypt with a public key
--------------------------------
+--------------------------
+Now let's encrypt data with Alice's public key.
+Invocation of `umbral.encrypt` returns both the `ciphertext`,
+and a `capsule`, Anyone with Alice's public key can perform
+this operation.
+
 .. code-block:: python
 
   plaintext = b'Proxy Re-encryption is cool!'
@@ -73,17 +81,43 @@ Encrypt with a public key
 
 
 Decrypt with a private key
---------------------------------
+---------------------------
+Since data was encrypted with Alice's public key,
+Alice can open the capsule and decrypt the ciphertext with her private key.
+
 .. code-block:: python
 
     cleartext = umbral.decrypt(capsule, alices_private_key,
                                ciphertext, alices_public_key)
 
 
-Split key re-encryption
-=========================
-Let's generate a key pair for Bob, and pretend to send send him the capsule
-through a side channel like S3, ipfs, Google Cloud, etc.
+Threshold split-key re-encryption
+==================================
+
+
+Alice generates kfrags for Bob
+-------------------------------
+When Alice wants to send a re-encrypted message to Bob,
+*threshold split re-encryption keys*, or *"kfrags"*, are created for
+distribution and later reconstruction via "Shamir's Secret Sharing".
+
+| Generate re-encryption key fragments with "`M` of `N`":
+| `M` - Minimum threshold of key fragments needed to activate a capsule.
+| `N` - Total number of key fragments to generate.
+
+.. code-block:: python
+
+   kfrags, _ = umbral.split_rekey(alices_private_key,
+                                  bobs_public_key,
+                                  10,    # M - Threshold
+                                  20)    # N - Total
+
+
+Bob recieves a capsule
+-----------------------
+Next, let's generate a key pair for Bob, and pretend to send
+him the capsule through a side channel like
+S3, IPFS, Google Cloud, Sneakernet, etc.
 
 .. code-block:: python
 
@@ -96,7 +130,9 @@ through a side channel like S3, ipfs, Google Cloud, etc.
 
 
 Bob fails to open the capsule
-----------------------------------
+-------------------------------
+If Bob attempts to open a capsule that was not encrypted for his public key,
+or re-encrypted for him by Ursula, He will not be able to open it.
 
 .. code-block:: python
 
@@ -109,27 +145,12 @@ Bob fails to open the capsule
       print("Decryption failed!")
 
 
-Alice generates re-encryption keys for Bob
---------------------------------------------
-When Alice wants to send a re-encrypted message to bob,
-*threshold split re-encryption keys* can be distributed,
-and reconstructed with Shamir's Secret Sharing.
 
-| Generate split re-encryption keys with "`M` of `N`":
-| A minimum threshold of 10 ("M") - and 20 total shares ("N").
-
-.. code-block:: python
-
-   kfrags, _ = umbral.split_rekey(alices_private_key,
-                                  bobs_public_key,
-                                  10,    # M - Threshold
-                                  20)    # N - Total
-
-
-Bob gathers re-encryption key fragments (kfrags)
--------------------------------------------------
-Bob gathers at least `M` re-encryption key fragments or "kfrags".
-Let's mock a network  or transport layer by sampling `M` random `kfrags`.
+Bob gathers kfrags
+-------------------
+After alice generates (and distributes) re-encryption keys,
+Bob must gather at least `M` `kfrags` in order to activate the capsule.
+Let's mock a network or transport layer by sampling `M` random `kfrags`.
 
 .. code-block:: python
 
@@ -142,24 +163,26 @@ Let's mock a network  or transport layer by sampling `M` random `kfrags`.
 
 Ursula performs re-encryption
 ------------------------------
-After Bob gathers at leats `M` re-encryption keys, He presents them to Ursula,
-a proxy re-encryption actor.
+After Bob gathers at least `M` re-encryption keys,
+He presents them to *Ursula*, a proxy re-encryption actor.
 
-Ursula exchanges `kfrags` for `cfrags` with Bob,
-altering the state of the `capsule`. Bob collects the resulting `cfrags` from Ursula.
+Ursula exchanges Bob's `kfrags` for "capsule fragments", or `cfrags`,
+performing re-encryption with the capsule.
+
+Bob collects the resulting `cfrags` from Ursula.
 
 .. code-block:: python
 
-   cfrags = []                 # Bob's cfrag collection
+   cfrags = list()             # Bob's cfrag collection
    for kfrag in kfrags:
        cfrag = umbral.reencrypt(kfrag, capsule)
-       cfrags.append(cfrag)    # Bob collects the cfrags
+       cfrags.append(cfrag)    # Bob collects a cfrag
 
 
 Bob attches cfrags to the capsule
 ----------------------------------
-Bob attaches at least `M` `cfrags` to the capsule. Then the capsule
-can be *activated*.
+Bob attaches at least `M` `cfrags` to the capsule;
+Then it can then become *activated*.
 
 .. code-block:: python
 
@@ -167,10 +190,10 @@ can be *activated*.
        capsule.attach_cfrag(cfrag)
 
 
-Bob opens the capsule
-------------------------
-Bob activates the capsule, opens it, and decrypts the re-encrypted ciphertext,
-revealing the message.
+Bob activates and opens the capsule
+------------------------------------
+Finally, Bob activates and opens the capsule,
+then decrypts the re-encrypted ciphertext.
 
 .. code-block:: python
 

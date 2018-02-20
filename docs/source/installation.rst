@@ -20,7 +20,7 @@ Once you have aquired the source code, you can...
 
 .. code-block:: python
 
-   from umbral import umbral, keys
+   from umbral import umbral, keys, config
 
 *...install pyUmbral with pipenv...*
 

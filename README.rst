@@ -8,11 +8,16 @@ pyUmbral
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
     :target: https://travis-ci.org/nucypher/pyUmbral
 
-pyUmbral is a python implementation of Umbral using OpenSSL and Cryptography.io,
-enabling users to perform *split-key proxy-rencryption* and public key encryption
-in an understandable and usable manner.
+pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
+Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
+continuing Alice and Bob's cryptological narrative with the introduction of *Ursula*.
 
-**Public Key Encryption**
+.. _Umbral: https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
+.. _Cryptography.io: https://cryptography.io/en/latest/
+.. _OpenSSL: https://www.openssl.org/
+
+
+**Encapsulation**
 
 .. code-block:: python
 
@@ -30,7 +35,7 @@ in an understandable and usable manner.
     cleartext = umbral.decrypt(capsule, alices_private_key,
                                ciphertext, alices_public_key)
 
-**Generate Split Re-Encryption Keys**
+**Fragmentation**
 
 .. code-block:: python
 
@@ -38,11 +43,11 @@ in an understandable and usable manner.
     bobs_private_key = keys.UmbralPrivateKey.gen_key()
     bobs_public_key = private_key.get_pubkey()
 
-    # Generate split re-encryption keys with "M of N".
+    # Alice generates split re-encryption keys for Bob with "M of N".
     kfrags, _ = umbral.split_rekey(alices_private_key, bobs_public_key, 10, 20)
 
 
-**Proxy Re-encryption**
+**Re-encryption**
 
 .. code-block:: python
 
@@ -59,10 +64,10 @@ in an understandable and usable manner.
 
 Features
 ==========
-- Proxy Re-encryption
-- Threshold Proxy Re-encryption Key Splitting
-- Data and Key Encapsulation
-- Public Key Encryption & Decryption
+- Re-encryption Toolkit
+- Re-encryption Key Fragmentation
+- Key Encapsulation
+- Elliptic Curve Arithmetic
 
 
 Quick Installation
@@ -82,13 +87,17 @@ in your current terminal session by running :bash:`pipenv shell`.
 For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
 
 
-Technical Documentation
-========================
-  "Umbral: A Threshold Proxy Re-Encryption Scheme"
-  by David Nuñez
+Academic Whitepaper
+====================
 
-Technical documentation and cryptographic specifications
-are availible on GitHub https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
+The Umbral scheme academic whitepaper and cryptographic specifications
+are availible on GitHub_.
+
+  "Umbral A Threshold Proxy Re-Encryption Scheme"
+  *by David Nuñez*
+  https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
+
+.. _GitHub: https://github.com/nucypher/umbral-doc/
 
 
 Support & Contribute

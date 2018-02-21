@@ -147,6 +147,14 @@ class Capsule(object):
             return False
         return hmac.compare_digest(our_bytes, other_bytes)
 
+    def __hash__(self):
+        # We only ever want to store in a hash table based on original components;
+        # A Capsule that is part of a dict needs to continue to be lookup-able even
+        # after activation.
+        # Note: In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
+        component_bytes = tuple([component.to_bytes() for component in self.original_components()])
+        return hash(component_bytes)
+
 
 class ChallengeResponse(object):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):

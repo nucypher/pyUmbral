@@ -31,9 +31,9 @@ class Capsule(object):
                  v_prime=None,
                  noninteractive_point=None):
 
-        if not point_eph_e and not e_prime:
+        if not isinstance(point_eph_e, Point) and not isinstance(e_prime, Point):
             raise ValueError(
-                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                "Need Points to make a Capsule.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
                 Passing both is also fine.")
 
         self._point_eph_e = point_eph_e

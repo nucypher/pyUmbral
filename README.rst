@@ -8,9 +8,10 @@ pyUmbral
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
     :target: https://travis-ci.org/nucypher/pyUmbral
 
-pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
+pyUmbral is a python implementation of David Nuñez's threshold proxy rencryption scheme: Umbral_.
 Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
-continuing Alice and Bob's cryptological narrative with the introduction of *Ursula*.
+extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
+*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
 
 .. _Umbral: https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 .. _Cryptography.io: https://cryptography.io/en/latest/

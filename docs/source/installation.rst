@@ -58,15 +58,21 @@ If your installation is successful, the following command will succeed without e
 
 For more information on pipenv, The official documentation is located here: https://docs.pipenv.org/.
 
+
 Development Installation
 -------------------------
 
-If you need to execute the test suite or build documentation,
-be sure to install the additional development requirements.
+If you want to participate in developing pyUmbral, you'll probably want to run the test suite and / or
+build the documentation, and for that, you must install some additional development requirements.
 
 .. code-block:: bash
 
    $ pipenv install --dev --three
 
 
-To build the documentation locally
+To build the documentation locally:
+
+.. code-block:: bash
+
+   $ pipenv run make html --directory=docs
+

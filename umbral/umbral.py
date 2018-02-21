@@ -1,3 +1,5 @@
+import hmac
+
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -20,6 +22,7 @@ class GenericUmbralError(Exception):
 
 
 class Capsule(object):
+
     def __init__(self,
                  point_eph_e=None,
                  point_eph_v=None,
@@ -129,14 +132,20 @@ class Capsule(object):
         return self.to_bytes()
 
     def __eq__(self, other):
+        """
+        If both Capsules are activated, we compare only the activated components.
+        Otherwise, we compare only original components.
+        Done in constant time.
+        """
         if all(self.activated_components() + other.activated_components()):
-            activated_match = self.activated_components() == other.activated_components()
-            return activated_match
+            our_bytes = bytes().join(c.to_bytes() for c in  self.activated_components())
+            other_bytes = bytes().join(c.to_bytes() for c in  other.activated_components())
         elif all(self.original_components() + other.original_components()):
-            original_match = self.original_components() == other.original_components()
-            return original_match
+            our_bytes = bytes().join(c.to_bytes() for c in self.original_components())
+            other_bytes = bytes().join(c.to_bytes() for c in other.original_components())
         else:
             return False
+        return hmac.compare_digest(our_bytes, other_bytes)
 
 
 class ChallengeResponse(object):

@@ -412,7 +412,7 @@ def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     h = hash_to_bn([e, v], params)
     inv_d = ~d
 
-    if not (s*inv_d) * orig_pub_key == (h*e_prime) + v_prime:
+    if not (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime:
         raise GenericUmbralError()
     return key
 

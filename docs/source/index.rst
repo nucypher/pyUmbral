@@ -53,7 +53,6 @@ Support & Contribute
 - Source Code: https://github.com/nucypher/pyUmbral
 
 
-
 Indices and Tables
 ==================
 

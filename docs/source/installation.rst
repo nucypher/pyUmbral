@@ -3,7 +3,7 @@ Installing pyUmbral
 ====================
 
 
-Aquire the source code
+Acquire the source code
 -------------------------
 
 pyUmbral is maintained on GitHub https://github.com/nucypher/pyUmbral.
@@ -14,7 +14,7 @@ Clone the repository to download the source code.
 
   $ git clone https://github.com/nucypher/pyUmbral.git
 
-Once you have aquired the source code, you can...
+Once you have acquired the source code, you can...
 
 *...embed pyUmbral modules into your own codebase...*
 

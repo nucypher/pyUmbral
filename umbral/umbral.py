@@ -1,3 +1,5 @@
+import hmac
+
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -20,6 +22,7 @@ class GenericUmbralError(Exception):
 
 
 class Capsule(object):
+
     def __init__(self,
                  point_eph_e=None,
                  point_eph_v=None,
@@ -28,9 +31,9 @@ class Capsule(object):
                  v_prime=None,
                  noninteractive_point=None):
 
-        if not point_eph_e and not e_prime:
+        if not isinstance(point_eph_e, Point) and not isinstance(e_prime, Point):
             raise ValueError(
-                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                "Need Points to make a Capsule.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
                 Passing both is also fine.")
 
         self._point_eph_e = point_eph_e
@@ -129,14 +132,28 @@ class Capsule(object):
         return self.to_bytes()
 
     def __eq__(self, other):
+        """
+        If both Capsules are activated, we compare only the activated components.
+        Otherwise, we compare only original components.
+        Done in constant time.
+        """
         if all(self.activated_components() + other.activated_components()):
-            activated_match = self.activated_components() == other.activated_components()
-            return activated_match
+            our_bytes = bytes().join(c.to_bytes() for c in  self.activated_components())
+            other_bytes = bytes().join(c.to_bytes() for c in  other.activated_components())
         elif all(self.original_components() + other.original_components()):
-            original_match = self.original_components() == other.original_components()
-            return original_match
+            our_bytes = bytes().join(c.to_bytes() for c in self.original_components())
+            other_bytes = bytes().join(c.to_bytes() for c in other.original_components())
         else:
             return False
+        return hmac.compare_digest(our_bytes, other_bytes)
+
+    def __hash__(self):
+        # We only ever want to store in a hash table based on original components;
+        # A Capsule that is part of a dict needs to continue to be lookup-able even
+        # after activation.
+        # Note: In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
+        component_bytes = tuple([component.to_bytes() for component in self.original_components()])
+        return hash(component_bytes)
 
 
 class ChallengeResponse(object):
@@ -403,7 +420,7 @@ def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     h = hash_to_bn([e, v], params)
     inv_d = ~d
 
-    if not (s*inv_d) * orig_pub_key == (h*e_prime) + v_prime:
+    if not (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime:
         raise GenericUmbralError()
     return key
 

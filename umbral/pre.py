@@ -1,3 +1,5 @@
+import hmac
+
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -20,6 +22,7 @@ class GenericUmbralError(Exception):
 
 
 class Capsule(object):
+
     def __init__(self,
                  point_eph_e=None,
                  point_eph_v=None,
@@ -28,10 +31,16 @@ class Capsule(object):
                  v_prime=None,
                  noninteractive_point=None):
 
-        if not point_eph_e and not e_prime:
-            raise ValueError(
-                "Can't make a Capsule from nothing.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
-                Passing both is also fine.")
+        if isinstance(point_eph_e, Point):
+            if not isinstance(point_eph_v, Point) or not isinstance(bn_sig, BigNum):
+                raise TypeError("Need point_eph_e, point_eph_v, and bn_sig to make a Capsule.")
+        elif isinstance(e_prime, Point):
+            if not isinstance(v_prime, Point) or not isinstance(noninteractive_point, Point):
+                raise TypeError("Need e_prime, v_prime, and noninteractive_point to make an activated Capsule.")
+        else:
+            raise TypeError(
+                "Need proper Points and/or BigNums to make a Capsule.  Pass either Alice's data or Bob's. " \
+                "Passing both is also fine.")
 
         self._point_eph_e = point_eph_e
         self._point_eph_v = point_eph_v
@@ -129,6 +138,11 @@ class Capsule(object):
         return self.to_bytes()
 
     def __eq__(self, other):
+        """
+        If both Capsules are activated, we compare only the activated components.
+        Otherwise, we compare only original components.
+        Each component is compared to its counterpart in constant time per the __eq__ of Point and BigNum.
+        """
         if all(self.activated_components() + other.activated_components()):
             activated_match = self.activated_components() == other.activated_components()
             return activated_match
@@ -136,7 +150,21 @@ class Capsule(object):
             original_match = self.original_components() == other.original_components()
             return original_match
         else:
+            # This is not constant time obviously, but it's hard to imagine how this is valuable as
+            # an attacker already knows about her own Capsule.  It's possible that a Bob, having
+            # activated a Capsule, will make it available for comparison via an API amidst other
+            # (dormat) Capsules.  Then an attacker can, by alternating between activated and dormant
+            # Capsules, determine if a given Capsule is activated.  Do we care about this?
+            # Again, it's hard to imagine why.
             return False
+
+    def __hash__(self):
+        # We only ever want to store in a hash table based on original components;
+        # A Capsule that is part of a dict needs to continue to be lookup-able even
+        # after activation.
+        # Note: In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
+        component_bytes = tuple(component.to_bytes() for component in self.original_components())
+        return hash(component_bytes)
 
 
 class ChallengeResponse(object):

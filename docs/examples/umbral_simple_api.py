@@ -1,7 +1,7 @@
 #1
 # Sets a default curve (secp256k1)
 import random
-from umbral import umbral, keys, config
+from umbral import pre, keys, config
 
 config.set_default_curve()
 
@@ -16,12 +16,12 @@ bob_pub_key = bob_priv_key.get_pubkey()
 #3
 # Encrypt some data for Alice
 plaintext = b'Proxy Re-encryption is cool!!'
-alice_ciphertext, umbral_capsule = umbral.encrypt(alice_pub_key, plaintext)
+alice_ciphertext, umbral_capsule = pre.encrypt(alice_pub_key, plaintext)
 print(alice_ciphertext)
 
 #4
 # Decrypt data for Alice
-alice_decrypted_data = umbral.decrypt(umbral_capsule, alice_priv_key, alice_ciphertext, alice_pub_key)
+alice_decrypted_data = pre.decrypt(umbral_capsule, alice_priv_key, alice_ciphertext, alice_pub_key)
 print(alice_decrypted_data)
 
 #5
@@ -31,7 +31,7 @@ bob_capsule = umbral_capsule
 #6
 # Attempt Bob's decryption (fail)
 try:
-    fail_decrypted_data = umbral.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pubkey)
+    fail_decrypted_data = pre.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pubkey)
 except:
     print("Decryption failed!")
 
@@ -40,7 +40,7 @@ except:
 # verification not ready yet, don't store vKeys
 # Use Alice's private key, and Bob's public key.
 # Use a minimum threshold of 10, and create 20 total shares
-kfrags, _ = umbral.split_rekey(alice_priv_key, bob_pub_key, 10, 20)
+kfrags, _ = pre.split_rekey(alice_priv_key, bob_pub_key, 10, 20)
 
 #8
 # Have Ursula perform re-encrypton.
@@ -49,10 +49,10 @@ rand_min_shares = random.sample(kfrags, 10)
 
 # Have Ursula re-encrypt the shares and attach them to the capsule:
 for kfrag in kfrags:
-    cfrag = umbral.reencrypt(kfrag, umbral_capsule)
+    cfrag = pre.reencrypt(kfrag, umbral_capsule)
     bob_capsule.attach_cfrag(cfrag)
 
 #9
 # Bob reconstructs the capsule and decrypts the ciphertext:
-bob_plaintext = umbral.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pub_key)
+bob_plaintext = pre.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pub_key)
 print(bob_plaintext)

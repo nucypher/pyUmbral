@@ -57,3 +57,26 @@ def test_activated_capsule_serialization():
     assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
     assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
     assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
+
+
+def test_cannot_create_capsule_from_bogus_material(alices_keys):
+
+    with pytest.raises(TypeError):
+        capsule_of_questionable_parentage = Capsule(point_eph_e=Point.gen_rand(),
+                                                    point_eph_v=42,
+                                                    bn_sig=BigNum.gen_rand())
+
+    with pytest.raises(TypeError):
+        capsule_of_questionable_parentage = Capsule(point_eph_e=Point.gen_rand(),
+                                                    point_eph_v=Point.gen_rand(),
+                                                    bn_sig=42)
+
+    with pytest.raises(TypeError):
+        capsule_of_questionable_parentage = Capsule(e_prime=Point.gen_rand(),
+                                                    v_prime=42,
+                                                    noninteractive_point=Point.gen_rand())
+
+    with pytest.raises(TypeError):
+        capsule_of_questionable_parentage = Capsule(e_prime=Point.gen_rand(),
+                                                    v_prime=Point.gen_rand(),
+                                                    noninteractive_point=42)

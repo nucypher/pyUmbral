@@ -163,7 +163,7 @@ class Capsule(object):
         # A Capsule that is part of a dict needs to continue to be lookup-able even
         # after activation.
         # Note: In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
-        component_bytes = tuple([component.to_bytes() for component in self.original_components()])
+        component_bytes = tuple(component.to_bytes() for component in self.original_components())
         return hash(component_bytes)
 
 

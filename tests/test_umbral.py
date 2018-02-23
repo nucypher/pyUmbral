@@ -89,6 +89,33 @@ def test_create_capsule_from_nothing():
         rare_capsule = Capsule()
 
 
+def test_capsule_as_dict_key(alices_keys):
+    priv_key_alice, pub_key_alice = alices_keys
+    plain_data = b'attack at dawn'
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+
+    # We can use the capsule as a key, and successfully lookup using it.
+    some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
+    assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
+
+    kfrags, _vkeys = pre.split_rekey(alices_keys.priv, alices_keys.pub, 1, 2)
+    cfrag = pre.reencrypt(kfrags[0], capsule)
+    capsule.attach_cfrag(cfrag)
+
+    cfrag = pre.reencrypt(kfrags[1], capsule)
+    capsule.attach_cfrag(cfrag)
+
+    # Even if we activate the capsule, it still serves as the same key.
+    cleartext = pre.decrypt(capsule, alices_keys.priv, ciphertext, alices_keys.pub)
+    assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
+    assert cleartext == plain_data
+
+    # And if we change the value for this key, all is still well.
+    some_dict[capsule] = "Bob has changed his mind."
+    assert some_dict[capsule] == "Bob has changed his mind."
+    assert len(some_dict.keys()) == 1
+
+
 def test_decapsulation_by_alice(alices_keys):
     alice_priv, alice_pub = alices_keys
 

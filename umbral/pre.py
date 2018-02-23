@@ -32,15 +32,15 @@ class Capsule(object):
                  noninteractive_point=None):
 
         if isinstance(point_eph_e, Point):
-            if not isinstance(point_eph_v, Point) and isinstance(bn_sig, BigNum):
+            if not isinstance(point_eph_v, Point) or not isinstance(bn_sig, BigNum):
                 raise TypeError("Need point_eph_e, point_eph_v, and bn_sig to make a Capsule.")
         elif isinstance(e_prime, Point):
-            if not isinstance(v_prime, Point) and isinstance(noninteractive_point, Point):
+            if not isinstance(v_prime, Point) or not isinstance(noninteractive_point, Point):
                 raise TypeError("Need e_prime, v_prime, and noninteractive_point to make an activated Capsule.")
         else:
-            raise ValueError(
-                "Need proper Points and/or BigNums to make a Capsule.  Pass either Alice's data or Bob's. \
-                Passing both is also fine.")
+            raise TypeError(
+                "Need proper Points and/or BigNums to make a Capsule.  Pass either Alice's data or Bob's. " \
+                "Passing both is also fine.")
 
         self._point_eph_e = point_eph_e
         self._point_eph_v = point_eph_v

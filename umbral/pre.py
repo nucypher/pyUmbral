@@ -31,9 +31,15 @@ class Capsule(object):
                  v_prime=None,
                  noninteractive_point=None):
 
-        if not isinstance(point_eph_e, Point) and not isinstance(e_prime, Point):
+        if isinstance(point_eph_e, Point):
+            if not isinstance(point_eph_v, Point) and isinstance(bn_sig, BigNum):
+                raise TypeError("Need point_eph_e, point_eph_v, and bn_sig to make a Capsule.")
+        elif isinstance(e_prime, Point):
+            if not isinstance(v_prime, Point) and isinstance(noninteractive_point, Point):
+                raise TypeError("Need e_prime, v_prime, and noninteractive_point to make an activated Capsule.")
+        else:
             raise ValueError(
-                "Need Points to make a Capsule.  Pass either Alice's data (ie, point_eph_e) or Bob's (e_prime). \
+                "Need proper Points and/or BigNums to make a Capsule.  Pass either Alice's data or Bob's. \
                 Passing both is also fine.")
 
         self._point_eph_e = point_eph_e
@@ -135,17 +141,22 @@ class Capsule(object):
         """
         If both Capsules are activated, we compare only the activated components.
         Otherwise, we compare only original components.
-        Done in constant time.
+        Each component is compared to its counterpart in constant time per the __eq__ of Point and BigNum.
         """
         if all(self.activated_components() + other.activated_components()):
-            our_bytes = bytes().join(c.to_bytes() for c in  self.activated_components())
-            other_bytes = bytes().join(c.to_bytes() for c in  other.activated_components())
+            activated_match = self.activated_components() == other.activated_components()
+            return activated_match
         elif all(self.original_components() + other.original_components()):
-            our_bytes = bytes().join(c.to_bytes() for c in self.original_components())
-            other_bytes = bytes().join(c.to_bytes() for c in other.original_components())
+            original_match = self.original_components() == other.original_components()
+            return original_match
         else:
+            # This is not constant time obviously, but it's hard to imagine how this is valuable as
+            # an attacker already knows about her own Capsule.  It's possible that a Bob, having
+            # activated a Capsule, will make it available for comparison via an API amidst other
+            # (dormat) Capsules.  Then an attacker can, by alternating between activated and dormant
+            # Capsules, determine if a given Capsule is activated.  Do we care about this?
+            # Again, it's hard to imagine why.
             return False
-        return hmac.compare_digest(our_bytes, other_bytes)
 
     def __hash__(self):
         # We only ever want to store in a hash table based on original components;

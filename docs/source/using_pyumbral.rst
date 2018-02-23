@@ -8,48 +8,23 @@ Import umbral modules
 
 .. code-block:: python
 
-  from umbral import umbral, keys, config
+  from umbral import pre, keys, config
 
 
 Configuration
 ==============
 
 
-
 Setting the default curve
 --------------------------
 
-pyUmbral uses dependency injection internally to manage elliptic curve context.
-This allows flexibility with regard to pyUmbral's ability to peform
-elliptic curve operations and re-encryption with alternate curve specifications.
-
-If a default curve is not manually specified, SECP256K1 will be used with the caveat of
-a small performance penalty, and the raising of a `RuntimeWarning`.
+The best way to start using pyUmbral is to decide on a elliptic curve to use and set it as your default.
 
 .. code-block:: python
 
-  keys.UmbralPrivateKey.gen_key()
-  RuntimeWarning: No default curve has been set.  Using SECP256K1.  A slight performance penalty has been incurred for only this call.  Set a default curve with umbral.config.set_default_curve().
+    config.set_default_curve(ec.SECP256K1)
 
-
-To silence the warning, configure pyUmbral to use a default curve
-by invoking `umbral.config.set_default_curve`.
-
-Configure pyUmbral to use the default curve (SECP256K1):
-
-.. code-block:: python
-
-    config.set_default_curve()
-
-Attempting to set the default curve twice in the same runtime will raise
-a `UmbralConfigurationError`.
-
-.. code-block:: python
-
-  config.set_default_curve()
-  Traceback (most recent call last):
-  ...
-  umbral.config.UmbralConfigurationError: You can only set the default curve once.  Do it once and then leave it alone.
+For more information on curves, see :doc:`choosing_and_using_curves`.
 
 
 Encryption and Encapsulation

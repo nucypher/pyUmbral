@@ -8,7 +8,7 @@ from tests.conftest import parameters
 
 
 def test_capsule_creation(alices_keys):
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         rare_capsule = Capsule()    # Alice cannot make a capsule this way.
 
     # Some users may create capsules their own way.

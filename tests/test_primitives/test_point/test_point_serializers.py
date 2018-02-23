@@ -110,3 +110,21 @@ def test_generator_point():
     g3 = Point.from_bytes(g_uncompressed)
     assert g1 == g3
     assert g2 == g3
+
+
+def test_point_not_on_curve():
+    """
+    We want to be unable to create a Point that's not on the curve.
+
+    When we try, we get cryptography.exceptions.InternalError - is that specifically because it isn't
+    on the curve?  It seems to be reliably raised in the event of the Point being off the curve.
+
+    The OpenSSL docs don't explicitly say that they raise an error for this reason:
+    https://www.openssl.org/docs/man1.1.0/crypto/EC_GFp_simple_method.html
+    """
+    point_on_koblitz256_but_not_P256 = Point.from_bytes(b'\x03%\x98Dk\x88\xe2\x97\xab?\xabZ\xef\xd4' \
+    b'\x9e\xaa\xc6\xb3\xa4\xa3\x89\xb2\xd7b.\x8f\x16Ci_&\xe0\x7f', curve=ec.SECP256K1)
+
+    from cryptography.exceptions import InternalError
+    with pytest.raises(InternalError):
+        Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=ec.SECP256R1)

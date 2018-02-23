@@ -1,5 +1,4 @@
 from umbral.bignum import BigNum
-from umbral.config import default_curve
 from umbral.point import Point
 
 
@@ -18,7 +17,7 @@ def test_mocked_openssl_point_arithmetic(mock_openssl, random_ec_point1, random_
             assert isinstance(operator_result, Point)
 
 
-def test_point_curve_mult_regression():
+def test_point_curve_multiplication_regression():
     k256_point_bytes = b'\x03\xe0{\x1bQ\xbf@\x1f\x95\x8d\xe1\x17\xa7\xbe\x9e-G`T\xbf\xd7\x9e\xa7\x10\xc8uA\xc0z$\xc0\x92\x8a'
     k256_bn_bytes = b'4u\xd70-\xa0h\xdeG\xf0\x143\x06!\x91\x05{\xe4jC\n\xf1h\xed7a\xf8\x9d\xec^\x19\x8c'
 

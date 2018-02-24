@@ -48,7 +48,7 @@ kfrags, _ = pre.split_rekey(alice_priv_key, bob_pub_key, 10, 20)
 rand_min_shares = random.sample(kfrags, 10)
 
 # Have Ursula re-encrypt the shares and attach them to the capsule:
-for kfrag in kfrags:
+for kfrag in rand_min_shares:
     cfrag = pre.reencrypt(kfrag, umbral_capsule)
     bob_capsule.attach_cfrag(cfrag)
 

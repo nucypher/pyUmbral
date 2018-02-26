@@ -68,23 +68,6 @@ class KFrag(object):
 
         return check_kfrag_1 & check_kfrag_2
 
-    def is_consistent(self, vKeys, params: "UmbralParameters"=None):
-        params = params if params is not None else default_params()
-
-        if vKeys is None or len(vKeys) == 0:
-            raise ValueError('vKeys must not be empty')
-
-        h = params.h
-        lh_exp = self.bn_key * h
-
-        rh_exp = vKeys[0]
-        i_j = self.bn_id
-        for vKey in vKeys[1:]:
-            rh_exp = rh_exp + (i_j * vKey)
-            i_j = i_j * self.bn_id
-
-        return lh_exp == rh_exp
-
     def __bytes__(self):
         return self.to_bytes()
 

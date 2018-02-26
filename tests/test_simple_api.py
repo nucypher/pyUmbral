@@ -31,7 +31,7 @@ def test_simple_api(N, M, curve=default_curve()):
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
-    rekeys, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
+    rekeys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
     for rekey in rekeys:
         c_frag = pre.reencrypt(rekey, capsule, params=params)
         capsule.attach_cfrag(c_frag)

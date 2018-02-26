@@ -240,12 +240,13 @@ def priv2pub(priv: BigNum, params: UmbralParameters=None) -> Point:
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
                 pub_b: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
-                params: UmbralParameters=None) -> Tuple[List[KFrag], List[Point]]:
+                params: UmbralParameters=None) -> List[KFrag]:
     """
-    Creates a re-encryption key and splits it using Shamir's Secret Sharing.
-    Requires a threshold number of fragments out of N to rebuild rekey.
+    Creates a re-encryption key from Alice to Bob and splits it in KFrags,
+    using Shamir's Secret Sharing. Requires a threshold number of KFrags 
+    out of N to guarantee correctness of re-encryption.
 
-    Returns rekeys and the vKeys.
+    Returns a list of KFrags.
     """
     params = params if params is not None else default_params()
 
@@ -265,12 +266,9 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     coeffs = [priv_a * (~d)]
     coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
 
-    h = params.h
     u = params.u
 
-    v_keys = [coeff * h for coeff in coeffs]
-
-    rk_shares = []
+    kfrags = []
     for _ in range(N):
         id_kfrag = BigNum.gen_rand(params.curve)
         rk = poly_eval(coeffs, id_kfrag)
@@ -281,10 +279,10 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
         z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
         z2 = y - priv_a * z1
 
-        kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
-        rk_shares.append(kFrag)
+        kfrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
+        kfrags.append(kfrag)
 
-    return rk_shares, v_keys
+    return kfrags
 
 
 def reencrypt(k_frag: KFrag, capsule: Capsule,

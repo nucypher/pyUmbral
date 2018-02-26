@@ -4,7 +4,7 @@ from umbral import pre
 def test_kfrag_serialization(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
 
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
@@ -23,7 +23,7 @@ def test_cfrag_serialization(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
 
     _unused_key, capsule = pre._encapsulate(pub_key_alice.point_key)
-    k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+    k_frags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
     c_frag = pre.reencrypt(k_frags[0], capsule)
     c_frag_bytes = c_frag.to_bytes()

@@ -37,10 +37,9 @@ except:
 
 #7
 # Generate threshold split re-encryption keys via Shamir's Secret Sharing
-# verification not ready yet, don't store vKeys
 # Use Alice's private key, and Bob's public key.
 # Use a minimum threshold of 10, and create 20 total shares
-kfrags, _ = pre.split_rekey(alice_priv_key, bob_pub_key, 10, 20)
+kfrags = pre.split_rekey(alice_priv_key, bob_pub_key, 10, 20)
 
 #8
 # Have Ursula perform re-encrypton.

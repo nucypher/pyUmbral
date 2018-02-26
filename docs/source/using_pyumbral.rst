@@ -82,13 +82,13 @@ distribution and later reconstruction via "Shamir's Secret Sharing".
 
 .. code-block:: python
 
-   kfrags, _ = umbral.split_rekey(alices_private_key,
+   kfrags = umbral.split_rekey(alices_private_key,
                                   bobs_public_key,
                                   10,    # M - Threshold
                                   20)    # N - Total
 
 
-Bob recieves a capsule
+Bob receives a capsule
 -----------------------
 Next, let's generate a key pair for Bob, and pretend to send
 him the capsule through a side channel like
@@ -154,7 +154,7 @@ Bob collects the resulting `cfrags` from Ursula.
        cfrags.append(cfrag)    # Bob collects a cfrag
 
 
-Bob attches cfrags to the capsule
+Bob attaches cfrags to the capsule
 ----------------------------------
 Bob attaches at least `M` `cfrags` to the capsule;
 Then it can then become *activated*.

@@ -85,11 +85,14 @@ class Capsule(object):
         return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
                    e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
 
+    def _original_to_bytes(self) -> bytes:
+        return bytes().join(c.to_bytes() for c in self.original_components())
+
     def to_bytes(self) -> bytes:
         """
         Serialize the Capsule into a bytestring.
         """
-        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
+        bytes_representation = self._original_to_bytes()
         if all(self.activated_components()):
             bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
         return bytes_representation

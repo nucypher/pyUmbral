@@ -70,11 +70,11 @@ Threshold split-key re-encryption
 ==================================
 
 
-Alice generates kfrags for Bob
--------------------------------
-When Alice wants to send a re-encrypted message to Bob,
-*threshold split re-encryption keys*, or *"kfrags"*, are created for
-distribution and later reconstruction via "Shamir's Secret Sharing".
+Alice grants access to Bob by generating kfrags 
+-----------------------------------------------
+When Alice wants to grant Bob access to open her encrypted messages, 
+she creates *threshold split re-encryption keys*, or *"kfrags"*, 
+which are next sent to N proxies or *Ursulas*. 
 
 | Generate re-encryption key fragments with "`M` of `N`":
 | `M` - Minimum threshold of key fragments needed to activate a capsule.
@@ -107,7 +107,7 @@ S3, IPFS, Google Cloud, Sneakernet, etc.
 Bob fails to open the capsule
 -------------------------------
 If Bob attempts to open a capsule that was not encrypted for his public key,
-or re-encrypted for him by Ursula, He will not be able to open it.
+or re-encrypted for him by Ursula, he will not be able to open it.
 
 .. code-block:: python
 
@@ -120,44 +120,35 @@ or re-encrypted for him by Ursula, He will not be able to open it.
       print("Decryption failed!")
 
 
-
-Bob gathers kfrags
--------------------
-After alice generates (and distributes) re-encryption keys,
-Bob must gather at least `M` `kfrags` in order to activate the capsule.
-Let's mock a network or transport layer by sampling `M` random `kfrags`.
-
-.. code-block:: python
-
-    import random
-
-    kfrags = random.sample(kfrags,    # All kfrags from above
-                           10)        # M - Threshold
-
-
-
-Ursula performs re-encryption
+Ursulas perform re-encryption
 ------------------------------
-After Bob gathers at least `M` re-encryption keys,
-He presents them to *Ursula*, a proxy re-encryption actor.
+Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
+Each Ursula performs re-encryption on the capsule using the `kfrag` 
+provided by Alice, obtaining this way a "capsule fragment", or `cfrag`,
+Let's mock a network or transport layer by sampling `M` random `kfrags`,
+one for each required Ursula.
 
-Ursula exchanges Bob's `kfrags` for "capsule fragments", or `cfrags`,
-performing re-encryption with the capsule.
+Bob collects the resulting `cfrags` from several Ursulas. 
+Bob must gather at least `M` `cfrags` in order to activate the capsule.
 
-Bob collects the resulting `cfrags` from Ursula.
 
 .. code-block:: python
 
-   cfrags = list()             # Bob's cfrag collection
-   for kfrag in kfrags:
-       cfrag = umbral.reencrypt(kfrag, capsule)
-       cfrags.append(cfrag)    # Bob collects a cfrag
+  import random
+
+  kfrags = random.sample(kfrags,    # All kfrags from above
+                         10)        # M - Threshold
+
+  cfrags = list()             # Bob's cfrag collection
+  for kfrag in kfrags:
+      cfrag = umbral.reencrypt(kfrag, capsule)
+      cfrags.append(cfrag)    # Bob collects a cfrag
 
 
 Bob attaches cfrags to the capsule
 ----------------------------------
 Bob attaches at least `M` `cfrags` to the capsule;
-Then it can then become *activated*.
+Then it can become *activated*.
 
 .. code-block:: python
 

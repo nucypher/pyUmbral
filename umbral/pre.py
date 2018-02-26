@@ -365,8 +365,9 @@ def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
     check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
     check32 = z3 * e == e2 + (h * e1)
     check33 = z3 * u == u2 + (h * u1)
+    check34 = z3 * v == v2 + (h * v1)
 
-    return check31 & check32 & check33
+    return check31 & check32 & check33 & check34
 
 
 def _encapsulate(alice_pub_key: Point, key_length=32,

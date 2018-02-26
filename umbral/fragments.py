@@ -53,14 +53,20 @@ class KFrag(object):
     def verify(self, pub_a, pub_b, params: "UmbralParameters"=None):
         params = params if params is not None else default_params()
 
+        u = params.u
+
         u1 = self.point_commitment
         z1 = self.bn_sig1
         z2 = self.bn_sig2
         x = self.point_eph_ni
+        key = self.bn_key
 
         g_y = (z2 * params.g) + (z1 * pub_a)
 
-        return z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
+        check_kfrag_1 = z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
+        check_kfrag_2 = u1 == key * u
+
+        return check_kfrag_1 & check_kfrag_2
 
     def is_consistent(self, vKeys, params: "UmbralParameters"=None):
         params = params if params is not None else default_params()

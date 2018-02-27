@@ -61,10 +61,13 @@ class KFrag(object):
         x = self.point_eph_ni
         key = self.bn_key
 
-        g_y = (z2 * params.g) + (z1 * pub_a)
+        # We check that the commitment u1 is in fact 
+        check_kfrag_1 = u1 == key * u
 
-        check_kfrag_1 = z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
-        check_kfrag_2 = u1 == key * u
+        # We check the Schnorr signature over the kfrag components
+        g_y = (z2 * params.g) + (z1 * pub_a)
+        check_kfrag_2 = z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
+        
 
         return check_kfrag_1 & check_kfrag_2
 

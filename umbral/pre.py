@@ -447,10 +447,10 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
     """
     key, capsule = _encapsulate(alice_pubkey.point_key, SecretBox.KEY_SIZE)
 
-    bytes_capsule = bytes(capsule)
+    capsule_bytes = bytes(capsule)
 
     dem = UmbralDEM(key)
-    ciphertext = dem.encrypt(plaintext, authenticated_data=bytes_capsule)
+    ciphertext = dem.encrypt(plaintext, authenticated_data=capsule_bytes)
 
     return ciphertext, capsule
 
@@ -487,13 +487,13 @@ def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
         key = _open_capsule(capsule, bob_priv_key, alice_pub_key)
         dem = UmbralDEM(key)
 
-        bytes_original_capsule = capsule._original_to_bytes()
-        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes_original_capsule)
+        original_capsule_bytes = capsule._original_to_bytes()
+        cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         key = _decapsulate_original(priv_key.bn_key, capsule)
         dem = UmbralDEM(key)
 
-        bytes_capsule = bytes(capsule)
-        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes_capsule)
+        capsule_bytes = bytes(capsule)
+        cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
 
     return cleartext

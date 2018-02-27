@@ -31,10 +31,10 @@ def test_simple_api(N, M, curve=default_curve()):
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data
 
-    rekeys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
-    for rekey in rekeys:
-        c_frag = pre.reencrypt(rekey, capsule, params=params)
-        capsule.attach_cfrag(c_frag)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule, params=params)
+        capsule.attach_cfrag(cfrag)
 
     reenc_cleartext = pre.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice)
     assert reenc_cleartext == plain_data

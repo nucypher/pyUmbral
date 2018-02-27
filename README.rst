@@ -52,7 +52,7 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 
 .. code-block:: python
 
-  # Ursula exchanges key fragments with Bob.
+  # Ursula re-encrypts the capsule to obtain a cfrag.
   # Bob attaches the cfrags to the capsule.
   for kfrag in kfrags:
       cfrag = umbral.reencrypt(kfrag, capsule)

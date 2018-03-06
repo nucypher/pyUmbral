@@ -85,11 +85,14 @@ class Capsule(object):
         return cls(point_eph_e=eph_e, point_eph_v=eph_v, bn_sig=sig,
                    e_prime=e_prime, v_prime=v_prime, noninteractive_point=eph_ni)
 
+    def _original_to_bytes(self) -> bytes:
+        return bytes().join(c.to_bytes() for c in self.original_components())
+
     def to_bytes(self) -> bytes:
         """
         Serialize the Capsule into a bytestring.
         """
-        bytes_representation = bytes().join(c.to_bytes() for c in self.original_components())
+        bytes_representation = self._original_to_bytes()
         if all(self.activated_components()):
             bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
         return bytes_representation
@@ -237,12 +240,13 @@ def priv2pub(priv: BigNum, params: UmbralParameters=None) -> Point:
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
                 pub_b: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
-                params: UmbralParameters=None) -> Tuple[List[KFrag], List[Point]]:
+                params: UmbralParameters=None) -> List[KFrag]:
     """
-    Creates a re-encryption key and splits it using Shamir's Secret Sharing.
-    Requires a threshold number of fragments out of N to rebuild rekey.
+    Creates a re-encryption key from Alice to Bob and splits it in KFrags,
+    using Shamir's Secret Sharing. Requires a threshold number of KFrags 
+    out of N to guarantee correctness of re-encryption.
 
-    Returns rekeys and the vKeys.
+    Returns a list of KFrags.
     """
     params = params if params is not None else default_params()
 
@@ -262,12 +266,9 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     coeffs = [priv_a * (~d)]
     coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
 
-    h = params.h
     u = params.u
 
-    v_keys = [coeff * h for coeff in coeffs]
-
-    rk_shares = []
+    kfrags = []
     for _ in range(N):
         id_kfrag = BigNum.gen_rand(params.curve)
         rk = poly_eval(coeffs, id_kfrag)
@@ -278,10 +279,10 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
         z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
         z2 = y - priv_a * z1
 
-        kFrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
-        rk_shares.append(kFrag)
+        kfrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
+        kfrags.append(kfrag)
 
-    return rk_shares, v_keys
+    return kfrags
 
 
 def reencrypt(k_frag: KFrag, capsule: Capsule,
@@ -365,8 +366,9 @@ def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
     check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
     check32 = z3 * e == e2 + (h * e1)
     check33 = z3 * u == u2 + (h * u1)
+    check34 = z3 * v == v2 + (h * v1)
 
-    return check31 & check32 & check33
+    return check31 & check32 & check33 & check34
 
 
 def _encapsulate(alice_pub_key: Point, key_length=32,
@@ -445,8 +447,10 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
     """
     key, capsule = _encapsulate(alice_pubkey.point_key, SecretBox.KEY_SIZE)
 
+    capsule_bytes = bytes(capsule)
+
     dem = UmbralDEM(key)
-    ciphertext = dem.encrypt(plaintext)
+    ciphertext = dem.encrypt(plaintext, authenticated_data=capsule_bytes)
 
     return ciphertext, capsule
 
@@ -482,10 +486,14 @@ def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
         bob_priv_key = priv_key
         key = _open_capsule(capsule, bob_priv_key, alice_pub_key)
         dem = UmbralDEM(key)
-        cleartext = dem.decrypt(ciphertext)
+
+        original_capsule_bytes = capsule._original_to_bytes()
+        cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         key = _decapsulate_original(priv_key.bn_key, capsule)
         dem = UmbralDEM(key)
-        cleartext = dem.decrypt(ciphertext)
+
+        capsule_bytes = bytes(capsule)
+        cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
 
     return cleartext

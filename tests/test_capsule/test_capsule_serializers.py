@@ -37,7 +37,7 @@ def test_activated_capsule_serialization():
     pub_key = pre.priv2pub(priv_key)
 
     _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrags = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 

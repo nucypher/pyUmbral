@@ -10,7 +10,7 @@ def test_challenge_response_serialization():
     pub_key = pre.priv2pub(priv_key)
 
     _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags, _unused_vkeys = pre.split_rekey(priv_key, pub_key, 1, 2)
+    kfrags = pre.split_rekey(priv_key, pub_key, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -44,10 +44,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     sym_key_alice1, capsule_alice1 = pre._encapsulate(pub_key_alice.point_key)
     sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice.point_key)
 
-    k_frags, v_keys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
-
-    for k_frag in k_frags:
-        assert k_frag.is_consistent(v_keys)
+    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     c_frags, challenges = [], []
     for index, k_frag in enumerate(k_frags):
@@ -100,10 +97,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = pre._encapsulate(pub_key_alice.point_key)
-    k_frags, v_keys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
-
-    for k_frag in k_frags:
-        assert k_frag.is_consistent(v_keys)
+    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     c_frags, challenges = [], []
     for k_frag in k_frags[0:M]:
@@ -147,11 +141,10 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     priv_key_bob, pub_key_bob = bobs_keys
 
     sym_key, capsule = pre._encapsulate(pub_key_alice.point_key)
-    kfrags, vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     for kfrag in kfrags:
         assert kfrag.verify(pub_key_alice.point_key, pub_key_bob.point_key)
-        assert kfrag.is_consistent(vkeys)
 
     for kfrag in kfrags[:M]:
         cfrag = pre.reencrypt(kfrag, capsule)

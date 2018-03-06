@@ -58,14 +58,14 @@ def test_decapsulation_by_alice(alices_keys):
 def test_bad_capsule_fails_reencryption(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
 
-    k_frags, _unused_vkeys = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
     bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(),
                                point_eph_v=Point.gen_rand(),
                                bn_sig=BigNum.gen_rand())
 
     with pytest.raises(Capsule.NotValid):
-        pre.reencrypt(k_frags[0], bollocks_capsule)
+        pre.reencrypt(kfrags[0], bollocks_capsule)
 
 
 def test_capsule_as_dict_key(alices_keys):
@@ -77,7 +77,7 @@ def test_capsule_as_dict_key(alices_keys):
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
 
-    kfrags, _vkeys = pre.split_rekey(alices_keys.priv, alices_keys.pub, 1, 2)
+    kfrags = pre.split_rekey(alices_keys.priv, alices_keys.pub, 1, 2)
     cfrag = pre.reencrypt(kfrags[0], capsule)
     capsule.attach_cfrag(cfrag)
 
@@ -110,7 +110,7 @@ def test_alice_sends_fake_kfrag_to_ursula(N, M):
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plaintext
 
-    k_frags, vkeys = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     # Alice tries to frame the first Ursula by sending her a random kFrag
     k_frags[0].bn_key = BigNum.gen_rand()

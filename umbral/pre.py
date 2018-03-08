@@ -3,7 +3,6 @@ import hmac
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.primitives.asymmetric import ec
-from nacl.secret import SecretBox
 
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_params, default_curve
@@ -15,6 +14,9 @@ from umbral.point import Point
 from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
 
 from io import BytesIO
+
+
+CHACHA20_KEY_SIZE = 32
 
 
 class GenericUmbralError(Exception):
@@ -445,7 +447,7 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
 
     Returns the ciphertext and the KEM Capsule.
     """
-    key, capsule = _encapsulate(alice_pubkey.point_key, SecretBox.KEY_SIZE)
+    key, capsule = _encapsulate(alice_pubkey.point_key, CHACHA20_KEY_SIZE)
 
     capsule_bytes = bytes(capsule)
 

@@ -3,10 +3,13 @@ import base64
 
 from typing import Union
 
+from nacl.secret import SecretBox
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
-from nacl.secret import SecretBox
+from cryptography.hazmat.backends.openssl.ec import (
+    _EllipticCurvePublicKey, _EllipticCurvePrivateKey
+)
 
 from umbral.config import default_params
 from umbral.point import Point, BigNum
@@ -108,6 +111,43 @@ class UmbralPrivateKey(object):
         """
         return UmbralPublicKey(self.bn_key * self.params.g)
 
+    def to_cryptography_privkey(self):
+        """
+        Returns a cryptography.io EllipticCurvePrivateKey from the Umbral key.
+        """
+        backend = default_backend()
+
+        backend.openssl_assert(self.bn_key.group != backend._ffi.NULL)
+        backend.openssl_assert(self.bn_key.bignum != backend._ffi.NULL)
+
+        ec_key = backend._lib.EC_KEY_new()
+        backend.openssl_assert(ec_key != backend._ffi.NULL)
+        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+
+        res = backend._lib.EC_KEY_set_group(ec_key, self.bn_key.group)
+        backend.openssl_assert(res == 1)
+
+        res = backend._lib.EC_KEY_set_private_key(ec_key, self.bn_key.bignum)
+        backend.openssl_assert(res == 1)
+
+        # Get public key
+        point = backend._lib.EC_POINT_new(self.bn_key.group)
+        backend.openssl_assert(point != backend._ffi.NULL)
+        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
+
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_mul(
+                self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,
+                backend._ffi.NULL, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+            res = backend._lib.EC_KEY_set_public_key(ec_key, point)
+            backend.openssl_assert(res == 1)
+
+        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
+        return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)
+
 
 class UmbralPublicKey(object):
     def __init__(self, point_key, params: UmbralParameters=None):
@@ -151,6 +191,28 @@ class UmbralPublicKey(object):
 
     def get_pubkey(self):
         raise NotImplementedError
+
+    def to_cryptography_pubkey(self):
+        """
+        Returns a cryptography.io EllipticCurvePublicKey from the Umbral key.
+        """
+        backend = default_backend()
+
+        backend.openssl_assert(self.point_key.group != backend._ffi.NULL)
+        backend.openssl_assert(self.point_key.ec_point != backend._ffi.NULL)
+
+        ec_key = backend._lib.EC_KEY_new()
+        backend.openssl_assert(ec_key != backend._ffi.NULL)
+        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+
+        res = backend._lib.EC_KEY_set_group(ec_key, self.point_key.group)
+        backend.openssl_assert(res == 1)
+
+        res = backend._lib.EC_KEY_set_public_key(ec_key, self.point_key.ec_point)
+        backend.openssl_assert(res == 1)
+
+        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
+        return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)
 
     def __bytes__(self):
         """

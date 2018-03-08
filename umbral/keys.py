@@ -120,30 +120,30 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(self.bn_key.group != backend._ffi.NULL)
         backend.openssl_assert(self.bn_key.bignum != backend._ffi.NULL)
 
-        ec_key = backend._lib.EC_KEY_new()
-        backend.openssl_assert(ec_key != backend._ffi.NULL)
-        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+        new_ec_key = backend._lib.EC_KEY_new()
+        backend.openssl_assert(new_ec_key != backend._ffi.NULL)
+        ec_key = backend._ffi.gc(new_ec_key, backend._lib.EC_KEY_free)
 
-        res = backend._lib.EC_KEY_set_group(ec_key, self.bn_key.group)
-        backend.openssl_assert(res == 1)
+        set_group_result = backend._lib.EC_KEY_set_group(ec_key, self.bn_key.group)
+        backend.openssl_assert(set_group_result == 1)
 
-        res = backend._lib.EC_KEY_set_private_key(ec_key, self.bn_key.bignum)
-        backend.openssl_assert(res == 1)
+        set_private_key_result = backend._lib.EC_KEY_set_private_key(ec_key, self.bn_key.bignum)
+        backend.openssl_assert(set_private_key_result == 1)
 
         # Get public key
-        point = backend._lib.EC_POINT_new(self.bn_key.group)
-        backend.openssl_assert(point != backend._ffi.NULL)
-        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
+        new_point = backend._lib.EC_POINT_new(self.bn_key.group)
+        backend.openssl_assert(new_point != backend._ffi.NULL)
+        point = backend._ffi.gc(new_point, backend._lib.EC_POINT_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_POINT_mul(
+            multiplication_result = backend._lib.EC_POINT_mul(
                 self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,
                 backend._ffi.NULL, bn_ctx
             )
-            backend.openssl_assert(res == 1)
+        backend.openssl_assert(multiplication_result == 1)
 
-            res = backend._lib.EC_KEY_set_public_key(ec_key, point)
-            backend.openssl_assert(res == 1)
+        set_public_key_result = backend._lib.EC_KEY_set_public_key(ec_key, point)
+        backend.openssl_assert(set_public_key_result == 1)
 
         evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
         return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)

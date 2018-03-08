@@ -209,11 +209,15 @@ class UmbralPublicKey(object):
         backend.openssl_assert(ec_key != backend._ffi.NULL)
         ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
 
-        res = backend._lib.EC_KEY_set_group(ec_key, self.point_key.group)
-        backend.openssl_assert(res == 1)
+        set_group_result = backend._lib.EC_KEY_set_group(
+            ec_key, self.point_key.group
+        )
+        backend.openssl_assert(set_group_result == 1)
 
-        res = backend._lib.EC_KEY_set_public_key(ec_key, self.point_key.ec_point)
-        backend.openssl_assert(res == 1)
+        set_pubkey_result = backend._lib.EC_KEY_set_public_key(
+            ec_key, self.point_key.ec_point
+        )
+        backend.openssl_assert(set_pubkey_result == 1)
 
         evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
         return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)

@@ -65,14 +65,6 @@ def test_affine(point_affine, nid, curve):
     assert point_affine == point_affine2
 
 
-def test_point_to_cryptography_pubkey(random_ec_point2):
-    crypto_pub_key = random_ec_point2.to_cryptography_pub_key()
-    p_affine = random_ec_point2.to_affine()
-    x, y = crypto_pub_key.public_numbers().x, crypto_pub_key.public_numbers().y
-    crypto_affine = (x, y)
-    assert p_affine == crypto_affine
-
-
 def test_invalid_points(random_ec_point2):
 
     point_bytes = bytearray(random_ec_point2.to_bytes(is_compressed=False))

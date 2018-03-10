@@ -11,9 +11,3 @@ def test_cast_bignum_to_int():
 
     y = BigNum.from_int(x)
     assert x == y
-
-
-def test_bignum_to_cryptography_privkey():
-    bn = BigNum.gen_rand()
-    crypto_privkey = bn.to_cryptography_priv_key()
-    assert int(bn) == crypto_privkey.private_numbers().private_value

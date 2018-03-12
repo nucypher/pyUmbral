@@ -3,7 +3,6 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InternalError
-from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePublicKey
 
 from umbral.config import default_curve
 from umbral.utils import get_curve_keysize_bytes
@@ -213,26 +212,6 @@ class Point(object):
             backend.openssl_assert(res == 1)
 
         return BigNum(order, curve_nid, group, order)
-
-    def to_cryptography_pub_key(self):
-        """
-        Converts the Point object to a cryptography.io EllipticCurvePublicKey
-        """
-        backend.openssl_assert(self.group != backend._ffi.NULL)
-        backend.openssl_assert(self.ec_point != backend._ffi.NULL)
-
-        ec_key = backend._lib.EC_KEY_new()
-        backend.openssl_assert(ec_key != backend._ffi.NULL)
-        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
-
-        res = backend._lib.EC_KEY_set_group(ec_key, self.group)
-        backend.openssl_assert(res == 1)
-
-        res = backend._lib.EC_KEY_set_public_key(ec_key, self.ec_point)
-        backend.openssl_assert(res == 1)
-
-        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
-        return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)
 
     def __eq__(self, other):
         """

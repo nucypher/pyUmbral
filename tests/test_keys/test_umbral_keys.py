@@ -50,3 +50,16 @@ def test_public_key_to_bytes():
     key_bytes = bytes(umbral_key)
 
     assert type(key_bytes) == bytes
+
+
+def test_umbral_key_to_cryptography_keys():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
+
+    crypto_privkey = umbral_priv_key.to_cryptography_privkey()
+    assert int(umbral_priv_key.bn_key) == crypto_privkey.private_numbers().private_value
+
+    crypto_pubkey = umbral_pub_key.to_cryptography_pubkey()
+    umbral_affine = umbral_pub_key.point_key.to_affine()
+    x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
+    assert umbral_affine == (x, y)

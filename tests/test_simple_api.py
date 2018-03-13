@@ -25,7 +25,7 @@ def test_simple_api(N, M, curve=default_curve()):
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params=params)
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    plain_data = b'attack at dawn'
+    plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
@@ -49,7 +49,7 @@ def test_simple_api_on_multiple_curves(N, M, curve):
 
 def test_public_key_encryption(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
-    plain_data = b'attack at dawn'
+    plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data

@@ -20,7 +20,7 @@ def test_capsule_creation(alices_keys):
 
     # Typical Alice, constructing a typical capsule
     _, alices_public_key = alices_keys
-    plaintext = b'attack at dawn'
+    plaintext = b'peace at dawn'
     ciphertext, typical_capsule = pre.encrypt(alices_public_key, plaintext)
 
     assert isinstance(typical_capsule, Capsule)
@@ -70,7 +70,7 @@ def test_bad_capsule_fails_reencryption(alices_keys):
 
 def test_capsule_as_dict_key(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
-    plain_data = b'attack at dawn'
+    plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
     # We can use the capsule as a key, and successfully lookup using it.
@@ -104,7 +104,7 @@ def test_alice_sends_fake_kfrag_to_ursula(N, M):
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    plaintext = b'attack at dawn'
+    plaintext = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plaintext)
 
     cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)

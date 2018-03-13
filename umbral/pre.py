@@ -136,11 +136,11 @@ class Capsule(object):
         pub_b = g * priv_b
         g_ab = pub_a * priv_b
 
-        sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
-        sha_512.update(pub_a.to_bytes())
-        sha_512.update(pub_b.to_bytes())
-        sha_512.update(g_ab.to_bytes())
-        hashed_dh_tuple = sha_512.finalize()
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        blake2b.update(pub_a.to_bytes())
+        blake2b.update(pub_b.to_bytes())
+        blake2b.update(g_ab.to_bytes())
+        hashed_dh_tuple = blake2b.finalize()
 
         id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
@@ -298,11 +298,11 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
     g_ab = pub_b * priv_a
 
-    sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
-    sha_512.update(pub_a.to_bytes())
-    sha_512.update(pub_b.to_bytes())
-    sha_512.update(g_ab.to_bytes())
-    hashed_dh_tuple = sha_512.finalize()
+    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+    blake2b.update(pub_a.to_bytes())
+    blake2b.update(pub_b.to_bytes())
+    blake2b.update(g_ab.to_bytes())
+    hashed_dh_tuple = blake2b.finalize()
 
     kfrags = []
     for _ in range(N):

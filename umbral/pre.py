@@ -338,7 +338,8 @@ def reencrypt(k_frag: KFrag, capsule: Capsule,
     return c_frag
 
 
-def challenge(k_frag: KFrag, capsule: Capsule, c_frag: CapsuleFrag,
+def challenge(k_frag: KFrag, capsule: Capsule, 
+              c_frag: CapsuleFrag, challenge_metadata: bytes=None,
               params: UmbralParameters=None) -> ChallengeResponse:
     params = params if params is not None else default_params()
 
@@ -356,7 +357,11 @@ def challenge(k_frag: KFrag, capsule: Capsule, c_frag: CapsuleFrag,
     v2 = t * v
     u2 = t * u
 
-    h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], params)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+    if challenge_metadata is not None:
+        hash_input.append(challenge_metadata)
+    
+    h = hash_to_bn(hash_input, params)
 
     z3 = t + h * k_frag.bn_key
 
@@ -372,8 +377,8 @@ def challenge(k_frag: KFrag, capsule: Capsule, c_frag: CapsuleFrag,
 
 
 def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
-                    challenge_resp: ChallengeResponse,
-                    pub_a: Point, pub_b: Point,
+                    challenge_resp: ChallengeResponse, 
+                    pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:
     params = params if params is not None else default_params()
 
@@ -400,7 +405,11 @@ def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
 
     g_y = (z2 * g) + (z1 * pub_a)
 
-    h = hash_to_bn([e, e1, e2, v, v1, v2, u, u1, u2], params)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+    if challenge_metadata is not None:
+        hash_input.append(challenge_metadata)
+    
+    h = hash_to_bn(hash_input, params)
 
     check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
     check32 = z3 * e == e2 + (h * e1)

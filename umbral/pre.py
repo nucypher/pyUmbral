@@ -2,7 +2,9 @@ import hmac
 
 from typing import Tuple, Union, List
 
+from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
 
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_params, default_curve
@@ -118,17 +120,41 @@ class Capsule(object):
     def activated_components(self) -> Union[Tuple[None, None, None], Tuple[Point, Point, Point]]:
         return self._point_eph_e_prime, self._point_eph_v_prime, self._point_noninteractive
 
-    def _reconstruct_shamirs_secret(self) -> None:
+    def _reconstruct_shamirs_secret(self, 
+                                    pub_a: Union[UmbralPublicKey, Point], 
+                                    priv_b: Union[UmbralPrivateKey, BigNum]) -> None:
+
+        params = default_params()
+
+        if isinstance(priv_b, UmbralPrivateKey):
+            priv_b = priv_b.bn_key
+
+        if isinstance(pub_a, UmbralPublicKey):
+            pub_a = pub_a.point_key
+
+        g = params.g
+        pub_b = g * priv_b
+        g_ab = pub_a * priv_b
+
+        sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+        sha_512.update(pub_a.to_bytes())
+        sha_512.update(pub_b.to_bytes())
+        sha_512.update(g_ab.to_bytes())
+        hashed_dh_tuple = sha_512.finalize()
+
         id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
+        x_0 = hash_to_bn([id_0, hashed_dh_tuple], params)
         if len(id_cfrag_pairs) > 1:
-            ids = self._attached_cfrags.keys()
-            lambda_0 = lambda_coeff(id_0, ids)
+            xs = [hash_to_bn([_id, hashed_dh_tuple], params) 
+                    for _id in self._attached_cfrags.keys()]
+            lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
 
             for id_i, cfrag in id_cfrag_pairs[1:]:
-                lambda_i = lambda_coeff(id_i, ids)
+                x_i = hash_to_bn([id_i, hashed_dh_tuple], params)
+                lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag.point_eph_e1)
                 v = v + (lambda_i * cfrag.point_eph_v1)
         else:
@@ -270,10 +296,21 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
     u = params.u
 
+    g_ab = pub_b * priv_a
+
+    sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+    sha_512.update(pub_a.to_bytes())
+    sha_512.update(pub_b.to_bytes())
+    sha_512.update(g_ab.to_bytes())
+    hashed_dh_tuple = sha_512.finalize()
+
     kfrags = []
     for _ in range(N):
         id_kfrag = BigNum.gen_rand(params.curve)
-        rk = poly_eval(coeffs, id_kfrag)
+
+        share_x = hash_to_bn([id_kfrag, hashed_dh_tuple], params)
+
+        rk = poly_eval(coeffs, share_x)
 
         u1 = rk * u
         y = BigNum.gen_rand(params.curve)
@@ -465,13 +502,17 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
 
     This will often be a symmetric key.
     """
-    recp_pub_key = bob_private_key.get_pubkey()
-    capsule._reconstruct_shamirs_secret()
 
-    key = decapsulate_reencrypted(
-        recp_pub_key.point_key, bob_private_key.bn_key,
-        alice_pub_key.point_key, capsule
-    )
+    params = default_params()
+
+    priv_b = bob_private_key.bn_key
+    pub_b = params.g * priv_b
+
+    pub_a = alice_pub_key.point_key
+
+    capsule._reconstruct_shamirs_secret(pub_a, priv_b)
+
+    key = decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule)
     return key
 
 

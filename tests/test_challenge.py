@@ -60,7 +60,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
         challenges.append(challenge)
         c_frags.append(c_frag)
 
-    capsule_alice1._reconstruct_shamirs_secret()    # activate capsule
+    capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
 
     with pytest.raises(pre.GenericUmbralError):
         sym_key = pre.decapsulate_reencrypted(pub_key_bob.point_key,
@@ -119,7 +119,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     c_frags[0].point_eph_e1 = Point.gen_rand()
     c_frags[0].point_eph_v1 = Point.gen_rand()
 
-    capsule_alice._reconstruct_shamirs_secret()    # activate capsule
+    capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
 
     with pytest.raises(pre.GenericUmbralError):
         sym_key2 = pre.decapsulate_reencrypted(pub_key_bob.point_key,
@@ -155,7 +155,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
-    capsule._reconstruct_shamirs_secret()
+    capsule._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)
     sym_key_from_capsule = pre.decapsulate_reencrypted(pub_key_bob.point_key,
                                                        priv_key_bob.bn_key,
                                                        pub_key_alice.point_key,

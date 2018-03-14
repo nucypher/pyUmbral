@@ -542,6 +542,7 @@ def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
         original_capsule_bytes = capsule._original_to_bytes()
         cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
+        # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
         key = _decapsulate_original(priv_key.bn_key, capsule)
         dem = UmbralDEM(key)
 

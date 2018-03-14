@@ -77,28 +77,28 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                               capsule_alice1)
         assert not sym_key == sym_key_alice1
 
-        metadata = b"Challenge metadata: index 0"
+    metadata = b"Challenge metadata: index 0"
 
-        assert not pre.check_challenge(capsule_alice1,
-                                       c_frags[0],
-                                       challenges[0],
-                                       pub_key_alice.point_key,
-                                       pub_key_bob.point_key,
-                                       metadata
-                                       )
+    assert not pre.check_challenge(capsule_alice1,
+                                   c_frags[0],
+                                   challenges[0],
+                                   pub_key_alice.point_key,
+                                   pub_key_bob.point_key,
+                                   metadata
+                                   )
 
-        # The response of cheating Ursula is in capsules[0],
-        # so the rest of challenges chould be correct:
-        for i, challenge in enumerate(challenges, 1):
-            c_frag = c_frags[i]
-            metadata = ("Challenge metadata: index {}".format(i)).encode()
-            assert pre.check_challenge(capsule_alice1,
-                                       c_frag,
-                                       ch,
-                                       pub_key_alice.point_key,
-                                       pub_key_bob.point_key,
-                                       metadata
-                                       )
+    # The response of cheating Ursula is in capsules[0],
+    # so the rest of challenges chould be correct:
+    for i, challenge in enumerate(challenges[1:], 1):
+        c_frag = c_frags[i]
+        metadata = ("Challenge metadata: index {}".format(i)).encode()
+        assert pre.check_challenge(capsule_alice1,
+                                   c_frag,
+                                   challenge,
+                                   pub_key_alice.point_key,
+                                   pub_key_bob.point_key,
+                                   metadata
+                                   )
 
 
 @pytest.mark.parametrize("N, M", parameters)
@@ -143,27 +143,28 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                pub_key_alice.point_key,
                                                capsule_alice)
         assert sym_key2 != sym_key
-        metadata = b"Challenge metadata: index 0"
-        assert not pre.check_challenge(capsule_alice, 
-                                       c_frags[0], 
-                                       challenges[0], 
-                                       pub_key_alice.point_key, 
-                                       pub_key_bob.point_key,
-                                       metadata
-                                       )
+        
+    metadata = b"Challenge metadata: index 0"
+    assert not pre.check_challenge(capsule_alice, 
+                                   c_frags[0], 
+                                   challenges[0], 
+                                   pub_key_alice.point_key, 
+                                   pub_key_bob.point_key,
+                                   metadata
+                                   )
 
-        # The response of cheating Ursula is in capsules[0],
-        # so the rest of challenges chould be correct:
-        for i, challenge in enumerate(challenges, 1):
-            c_frag = c_frags[i]
-            metadata = ("Challenge metadata: index {}".format(i)).encode()
-            assert pre.check_challenge(capsule_alice, 
-                                       c_frag, 
-                                       ch, 
-                                       pub_key_alice.point_key, 
-                                       pub_key_bob.point_key,
-                                       metadata
-                                       )
+    # The response of cheating Ursula is in capsules[0],
+    # so the rest of challenges chould be correct:
+    for i, challenge in enumerate(challenges[1:], 1):
+        c_frag = c_frags[i]
+        metadata = ("Challenge metadata: index {}".format(i)).encode()
+        assert pre.check_challenge(capsule_alice, 
+                                   c_frag, 
+                                   challenge, 
+                                   pub_key_alice.point_key, 
+                                   pub_key_bob.point_key,
+                                   metadata
+                                   )
 
 
 @pytest.mark.parametrize("N, M", parameters)

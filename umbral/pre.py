@@ -133,8 +133,8 @@ class Capsule(object):
             pub_a = pub_a.point_key
 
         g = params.g
-        pub_b = g * priv_b
-        g_ab = pub_a * priv_b
+        pub_b = priv_b * g
+        g_ab = priv_b * pub_a
 
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         blake2b.update(pub_a.to_bytes())
@@ -296,7 +296,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
     u = params.u
 
-    g_ab = pub_b * priv_a
+    g_ab = priv_a * pub_b
 
     blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
     blake2b.update(pub_a.to_bytes())
@@ -466,7 +466,7 @@ def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     params = params if params is not None else default_params()
 
     xcomp = capsule._point_noninteractive
-    d = hash_to_bn([xcomp, pub_key, xcomp * priv_key], params)
+    d = hash_to_bn([xcomp, pub_key, priv_key * xcomp], params)
 
     e_prime = capsule._point_eph_e_prime
     v_prime = capsule._point_eph_v_prime
@@ -515,7 +515,7 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     params = default_params()
 
     priv_b = bob_private_key.bn_key
-    pub_b = params.g * priv_b
+    pub_b = priv_b * params.g
 
     pub_a = alice_pub_key.point_key
 

@@ -10,7 +10,7 @@ def test_encrypt_decrypt():
 
     dem = UmbralDEM(key)
 
-    plaintext = b'attack at dawn'
+    plaintext = b'peace at dawn'
 
     ciphertext0 = dem.encrypt(plaintext)
     ciphertext1 = dem.encrypt(plaintext)
@@ -33,11 +33,11 @@ def test_encrypt_decrypt():
 
 def test_encrypt_decrypt_associated_data():
     key = os.urandom(32)
-    aad = b'launch code 0000'
+    aad = b'secret code 1234'
 
     dem = UmbralDEM(key)
 
-    plaintext = b'attack at dawn'
+    plaintext = b'peace at dawn'
 
     ciphertext0 = dem.encrypt(plaintext, authenticated_data=aad)
     ciphertext1 = dem.encrypt(plaintext, authenticated_data=aad)

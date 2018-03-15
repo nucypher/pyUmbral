@@ -75,7 +75,6 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                               priv_key_bob.bn_key,
                                               pub_key_alice.point_key,
                                               capsule_alice1)
-        assert not sym_key == sym_key_alice1
 
     metadata = b"Challenge metadata: index 0"
 
@@ -142,8 +141,7 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                priv_key_bob.bn_key,
                                                pub_key_alice.point_key,
                                                capsule_alice)
-        assert sym_key2 != sym_key
-        
+
     metadata = b"Challenge metadata: index 0"
     assert not pre.check_challenge(capsule_alice, 
                                    c_frags[0], 

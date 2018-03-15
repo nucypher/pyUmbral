@@ -255,16 +255,6 @@ class ChallengeResponse(object):
         return self.to_bytes()
 
 
-def gen_priv(curve: ec.EllipticCurve=None) -> BigNum:
-    curve = curve if curve is not None else default_curve()
-    return BigNum.gen_rand(curve)
-
-
-def priv2pub(priv: BigNum, params: UmbralParameters=None) -> Point:
-    params = params if params is not None else default_params()
-    return priv * params.g
-
-
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
                 pub_b: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,

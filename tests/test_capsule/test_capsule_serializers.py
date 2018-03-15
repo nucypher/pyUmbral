@@ -32,13 +32,11 @@ def test_capsule_serialization(alices_keys):
     assert new_capsule._bn_sig == capsule._bn_sig
 
 
-def test_activated_capsule_serialization(alices_keys):
+def test_activated_capsule_serialization(alices_keys, bobs_keys):
     priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
 
-    priv_key_bob = pre.gen_priv()
-    pub_key_bob = pre.priv2pub(priv_key_bob)
-
-    _unused_key, capsule = pre._encapsulate(pub_key_bob)
+    _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)

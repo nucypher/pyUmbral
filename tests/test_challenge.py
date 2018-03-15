@@ -49,23 +49,23 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     sym_key_alice1, capsule_alice1 = pre._encapsulate(pub_key_alice.point_key)
     sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice.point_key)
 
-    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
-    c_frags, challenges = [], []
-    for index, k_frag in enumerate(k_frags):
+    cfrags, challenges = [], []
+    for index, kfrag in enumerate(kfrags):
         if index == 0:
             # Let's put the re-encryption of a different Alice ciphertext
-            c_frag = pre.reencrypt(k_frag, capsule_alice2)
+            cfrag = pre.reencrypt(kfrag, capsule_alice2)
         else:
-            c_frag = pre.reencrypt(k_frag, capsule_alice1)
+            cfrag = pre.reencrypt(kfrag, capsule_alice1)
 
         metadata = ("Challenge metadata: index {}".format(index)).encode()
 
-        challenge = pre.challenge(k_frag, capsule_alice1, c_frag, metadata)
-        capsule_alice1.attach_cfrag(c_frag)
+        challenge = pre.challenge(kfrag, capsule_alice1, cfrag, metadata)
+        capsule_alice1.attach_cfrag(cfrag)
 
         challenges.append(challenge)
-        c_frags.append(c_frag)
+        cfrags.append(cfrag)
 
     # Let's activate the capsule
     capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    
@@ -79,7 +79,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     metadata = b"Challenge metadata: index 0"
 
     assert not pre.check_challenge(capsule_alice1,
-                                   c_frags[0],
+                                   cfrags[0],
                                    challenges[0],
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
@@ -89,10 +89,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     # The response of cheating Ursula is in capsules[0],
     # so the rest of challenges chould be correct:
     for i, challenge in enumerate(challenges[1:], 1):
-        c_frag = c_frags[i]
+        cfrag = cfrags[i]
         metadata = ("Challenge metadata: index {}".format(i)).encode()
         assert pre.check_challenge(capsule_alice1,
-                                   c_frag,
+                                   cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
@@ -110,29 +110,29 @@ def test_cheating_ursula_sends_garbage(N, M):
     pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = pre._encapsulate(pub_key_alice.point_key)
-    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
-    c_frags, challenges = [], []
-    for i, k_frag in enumerate(k_frags[:M]):
-        c_frag = pre.reencrypt(k_frag, capsule_alice)
+    cfrags, challenges = [], []
+    for i, kfrag in enumerate(kfrags[:M]):
+        cfrag = pre.reencrypt(kfrag, capsule_alice)
         metadata = ("Challenge metadata: index {}".format(i)).encode()
-        challenge = pre.challenge(k_frag, capsule_alice, c_frag, metadata)
-        capsule_alice.attach_cfrag(c_frag)
+        challenge = pre.challenge(kfrag, capsule_alice, cfrag, metadata)
+        capsule_alice.attach_cfrag(cfrag)
 
         assert pre.check_challenge(capsule_alice,
-                                   c_frag,
+                                   cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
                                    metadata
                                    )
 
-        c_frags.append(c_frag)
+        cfrags.append(cfrag)
         challenges.append(challenge)
 
-    # Let's put random garbage in one of the c_frags
-    c_frags[0].point_eph_e1 = Point.gen_rand()
-    c_frags[0].point_eph_v1 = Point.gen_rand()
+    # Let's put random garbage in one of the cfrags
+    cfrags[0].point_eph_e1 = Point.gen_rand()
+    cfrags[0].point_eph_v1 = Point.gen_rand()
 
     capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
 
@@ -144,7 +144,7 @@ def test_cheating_ursula_sends_garbage(N, M):
 
     metadata = b"Challenge metadata: index 0"
     assert not pre.check_challenge(capsule_alice, 
-                                   c_frags[0], 
+                                   cfrags[0], 
                                    challenges[0], 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,
@@ -154,10 +154,10 @@ def test_cheating_ursula_sends_garbage(N, M):
     # The response of cheating Ursula is in capsules[0],
     # so the rest of challenges chould be correct:
     for i, challenge in enumerate(challenges[1:], 1):
-        c_frag = c_frags[i]
+        cfrag = cfrags[i]
         metadata = ("Challenge metadata: index {}".format(i)).encode()
         assert pre.check_challenge(capsule_alice, 
-                                   c_frag, 
+                                   cfrag, 
                                    challenge, 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,

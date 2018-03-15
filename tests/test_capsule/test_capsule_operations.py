@@ -119,5 +119,5 @@ def test_alice_sends_fake_kfrag_to_ursula(N, M):
         c_frag = pre.reencrypt(k_frag, capsule)
         capsule.attach_cfrag(c_frag)
 
-    with pytest.raises(Exception):
+    with pytest.raises(pre.GenericUmbralError):
         _ = pre.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice)

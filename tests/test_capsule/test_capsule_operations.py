@@ -93,31 +93,3 @@ def test_capsule_as_dict_key(alices_keys):
     some_dict[capsule] = "Bob has changed his mind."
     assert some_dict[capsule] == "Bob has changed his mind."
     assert len(some_dict.keys()) == 1
-
-
-@pytest.mark.parametrize("N, M", parameters)
-def test_alice_sends_fake_kfrag_to_ursula(N, M):
-
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pubkey()
-
-    priv_key_bob = keys.UmbralPrivateKey.gen_key()
-    pub_key_bob = priv_key_bob.get_pubkey()
-
-    plaintext = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plaintext)
-
-    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
-    assert cleartext == plaintext
-
-    k_frags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
-
-    # Alice tries to frame the first Ursula by sending her a random kFrag
-    k_frags[0].bn_key = BigNum.gen_rand()
-
-    for k_frag in k_frags:
-        c_frag = pre.reencrypt(k_frag, capsule)
-        capsule.attach_cfrag(c_frag)
-
-    with pytest.raises(pre.GenericUmbralError):
-        _ = pre.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice)

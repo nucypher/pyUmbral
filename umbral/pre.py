@@ -328,7 +328,7 @@ def reencrypt(k_frag: KFrag, capsule: Capsule,
     return c_frag
 
 
-def challenge(k_frag: KFrag, capsule: Capsule, 
+def _challenge(k_frag: KFrag, capsule: Capsule, 
               c_frag: CapsuleFrag, challenge_metadata: bytes=None,
               params: UmbralParameters=None) -> ChallengeResponse:
     params = params if params is not None else default_params()
@@ -366,7 +366,7 @@ def challenge(k_frag: KFrag, capsule: Capsule,
     return ch_resp
 
 
-def check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
+def _check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
                     challenge_resp: ChallengeResponse, 
                     pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:

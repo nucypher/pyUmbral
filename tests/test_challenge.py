@@ -20,7 +20,7 @@ def test_challenge_response_serialization():
     capsule.attach_cfrag(cfrag)
 
     metadata = b"Challenge metadata"
-    ch_resp = pre.challenge(kfrags[0], capsule, cfrag, metadata)
+    ch_resp = pre._challenge(kfrags[0], capsule, cfrag, metadata)
 
     ch_resp_bytes = ch_resp.to_bytes()
 
@@ -61,7 +61,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
         metadata = ("Challenge metadata: index {}".format(index)).encode()
 
-        challenge = pre.challenge(kfrag, capsule_alice1, cfrag, metadata)
+        challenge = pre._challenge(kfrag, capsule_alice1, cfrag, metadata)
         capsule_alice1.attach_cfrag(cfrag)
 
         challenges.append(challenge)
@@ -78,7 +78,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
     metadata = b"Challenge metadata: index 0"
 
-    assert not pre.check_challenge(capsule_alice1,
+    assert not pre._check_challenge(capsule_alice1,
                                    cfrags[0],
                                    challenges[0],
                                    pub_key_alice.point_key,
@@ -91,7 +91,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
         metadata = ("Challenge metadata: index {}".format(i)).encode()
-        assert pre.check_challenge(capsule_alice1,
+        assert pre._check_challenge(capsule_alice1,
                                    cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
@@ -116,10 +116,10 @@ def test_cheating_ursula_sends_garbage(N, M):
     for i, kfrag in enumerate(kfrags[:M]):
         cfrag = pre.reencrypt(kfrag, capsule_alice)
         metadata = ("Challenge metadata: index {}".format(i)).encode()
-        challenge = pre.challenge(kfrag, capsule_alice, cfrag, metadata)
+        challenge = pre._challenge(kfrag, capsule_alice, cfrag, metadata)
         capsule_alice.attach_cfrag(cfrag)
 
-        assert pre.check_challenge(capsule_alice,
+        assert pre._check_challenge(capsule_alice,
                                    cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
@@ -143,7 +143,7 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                capsule_alice)
 
     metadata = b"Challenge metadata: index 0"
-    assert not pre.check_challenge(capsule_alice, 
+    assert not pre._check_challenge(capsule_alice, 
                                    cfrags[0], 
                                    challenges[0], 
                                    pub_key_alice.point_key, 
@@ -156,7 +156,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
         metadata = ("Challenge metadata: index {}".format(i)).encode()
-        assert pre.check_challenge(capsule_alice, 
+        assert pre._check_challenge(capsule_alice, 
                                    cfrag, 
                                    challenge, 
                                    pub_key_alice.point_key, 
@@ -180,9 +180,9 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
         cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
         metadata = ("Challenge metadata: index {}".format(i)).encode()
-        ch = pre.challenge(kfrag, capsule, cfrag, metadata)
+        ch = pre._challenge(kfrag, capsule, cfrag, metadata)
 
-        assert pre.check_challenge(capsule, 
+        assert pre._check_challenge(capsule, 
                                    cfrag, 
                                    ch, 
                                    pub_key_alice.point_key, 

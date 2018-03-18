@@ -18,7 +18,7 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 .. _OpenSSL: https://www.openssl.org/
 
 
-**Encapsulation**
+**Encryption**
 
 .. code-block:: python
 
@@ -45,7 +45,7 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
     bobs_public_key = private_key.get_pubkey()
 
     # Alice generates split re-encryption keys for Bob with "M of N".
-    kfrags, _ = umbral.split_rekey(alices_private_key, bobs_public_key, 10, 20)
+    kfrags = umbral.split_rekey(alices_private_key, bobs_public_key, 10, 20)
 
 
 **Re-encryption**
@@ -94,7 +94,7 @@ Academic Whitepaper
 The Umbral scheme academic whitepaper and cryptographic specifications
 are availible on GitHub_.
 
-  "Umbral A Threshold Proxy Re-Encryption Scheme"
+  "Umbral: A Threshold Proxy Re-Encryption Scheme"
   *by David Nuñez*
   https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 

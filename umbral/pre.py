@@ -515,8 +515,8 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     return key
 
 
-def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
-            ciphertext: bytes, alice_pub_key: UmbralPublicKey=None) -> bytes:
+def decrypt(ciphertext: bytes, capsule: Capsule, 
+        priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None) -> bytes:
     """
     Opens the capsule and gets what's inside.
 

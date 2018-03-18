@@ -71,7 +71,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    
 
     with pytest.raises(pre.GenericUmbralError):
-        sym_key = pre.decapsulate_reencrypted(pub_key_bob.point_key,
+        sym_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                               priv_key_bob.bn_key,
                                               pub_key_alice.point_key,
                                               capsule_alice1)
@@ -137,7 +137,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
 
     with pytest.raises(pre.GenericUmbralError):
-        sym_key2 = pre.decapsulate_reencrypted(pub_key_bob.point_key,
+        sym_key2 = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                priv_key_bob.bn_key,
                                                pub_key_alice.point_key,
                                                capsule_alice)
@@ -194,7 +194,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     # capsule.open(pub_bob, priv_bob, pub_alice)
 
     capsule._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)
-    sym_key_from_capsule = pre.decapsulate_reencrypted(pub_key_bob.point_key,
+    sym_key_from_capsule = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                        priv_key_bob.bn_key,
                                                        pub_key_alice.point_key,
                                                        capsule)

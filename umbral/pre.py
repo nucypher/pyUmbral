@@ -449,7 +449,7 @@ def _decapsulate_original(priv_key: BigNum, capsule: Capsule, key_length=32,
     return key
 
 
-def decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
+def _decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
                             orig_pub_key: Point, capsule: Capsule,
                             key_length=32, params: UmbralParameters=None) -> bytes:
     """Derive the same symmetric key"""
@@ -511,7 +511,7 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b)
 
-    key = decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule)
+    key = _decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule)
     return key
 
 

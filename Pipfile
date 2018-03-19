@@ -7,7 +7,7 @@ name = "pypi"
 
 [packages]
 
-cryptography = "*"
+cryptography = "==2.2"
 pynacl = "*"
 
 
@@ -22,3 +22,4 @@ pytest-mock = "*"
 codecov = "*"
 sphinx = "*"
 sphinx-autobuild = "*"
+cryptography = "==2.2"

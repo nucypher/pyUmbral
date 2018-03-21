@@ -22,19 +22,19 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 
 .. code-block:: python
 
-    from umbral import umbral, keys
+    from umbral import pre, keys
 
     # Generate umbral keys for Alice.
     alices_private_key = keys.UmbralPrivateKey.gen_key()
-    alices_public_key = private_key.get_pubkey()
+    alices_public_key = alices_private_key.get_pubkey()
 
     # Encrypt data with Alice's public key.
     plaintext = b'Proxy Re-encryption is cool!'
-    ciphertext, capsule = umbral.encrypt(alices_public_key, plaintext)
+    ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = umbral.decrypt(capsule, alices_private_key,
-                               ciphertext, alices_public_key)
+    cleartext = pre.decrypt(capsule, alices_private_key,
+                            ciphertext, alices_public_key)
 
 **Fragmentation**
 
@@ -42,10 +42,10 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 
     # Generate umbral keys for Bob.
     bobs_private_key = keys.UmbralPrivateKey.gen_key()
-    bobs_public_key = private_key.get_pubkey()
+    bobs_public_key = bobs_private_key.get_pubkey()
 
     # Alice generates split re-encryption keys for Bob with "M of N".
-    kfrags, _ = umbral.split_rekey(alices_private_key, bobs_public_key, 10, 20)
+    kfrags = pre.split_rekey(alices_private_key, bobs_public_key, 10, 20)
 
 
 **Re-encryption**
@@ -55,12 +55,12 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
   # Ursula re-encrypts the capsule to obtain a cfrag.
   # Bob attaches the cfrags to the capsule.
   for kfrag in kfrags:
-      cfrag = umbral.reencrypt(kfrag, capsule)
+      cfrag = pre.reencrypt(kfrag, capsule)
       capsule.attach_cfrag(cfrag)
 
   # Bob activates and opens the capsule.
-  cleartext = umbral.decrypt(capsule, bobs_private_key,
-                             ciphertext, alices_public_key)
+  cleartext = pre.decrypt(capsule, bobs_private_key,
+                          ciphertext, alices_public_key)
 
 
 Features

@@ -35,7 +35,8 @@ class Point(object):
 
         rand_point = backend._lib.EC_POINT_new(group)
         backend.openssl_assert(rand_point != backend._ffi.NULL)
-        rand_point = backend._ffi.gc(rand_point, backend._lib.EC_POINT_free)
+        rand_point = backend._ffi.gc(rand_point,
+                                     backend._lib.EC_POINT_clear_free)
 
         rand_bn = BigNum.gen_rand(curve).bignum
 
@@ -63,11 +64,11 @@ class Point(object):
         affine_x, affine_y = coords
         if type(affine_x) == int:
             affine_x = backend._int_to_bn(affine_x)
-            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
 
         if type(affine_y) == int:
             affine_y = backend._int_to_bn(affine_y)
-            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
 
         group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
         backend.openssl_assert(group != backend._ffi.NULL)
@@ -90,11 +91,11 @@ class Point(object):
         """
         affine_x = backend._lib.BN_new()
         backend.openssl_assert(affine_x != backend._ffi.NULL)
-        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_free)
+        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
 
         affine_y = backend._lib.BN_new()
         backend.openssl_assert(affine_y != backend._ffi.NULL)
-        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_free)
+        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_get_affine_coordinates_GFp(
@@ -126,7 +127,8 @@ class Point(object):
 
             ec_point = backend._lib.EC_POINT_new(affine_x.group)
             backend.openssl_assert(ec_point != backend._ffi.NULL)
-            ec_point = backend._ffi.gc(ec_point, backend._lib.EC_POINT_free)
+            ec_point = backend._ffi.gc(ec_point,
+                                       backend._lib.EC_POINT_clear_free)
 
             with backend._tmp_bn_ctx() as bn_ctx:
                 res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
@@ -205,7 +207,7 @@ class Point(object):
 
         order = backend._lib.BN_new()
         backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_free)
+        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
@@ -233,7 +235,7 @@ class Point(object):
 
         prod = backend._lib.EC_POINT_new(self.group)
         backend.openssl_assert(prod != backend._ffi.NULL)
-        prod = backend._ffi.gc(prod, backend._lib.EC_POINT_free)
+        prod = backend._ffi.gc(prod, backend._lib.EC_POINT_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
@@ -251,7 +253,7 @@ class Point(object):
         """
         sum = backend._lib.EC_POINT_new(self.group)
         backend.openssl_assert(sum != backend._ffi.NULL)
-        sum = backend._ffi.gc(sum, backend._lib.EC_POINT_free)
+        sum = backend._ffi.gc(sum, backend._lib.EC_POINT_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_add(
@@ -273,7 +275,7 @@ class Point(object):
         """
         inv = backend._lib.EC_POINT_dup(self.ec_point, self.group)
         backend.openssl_assert(inv != backend._ffi.NULL)
-        inv = backend._ffi.gc(inv, backend._lib.EC_POINT_free)
+        inv = backend._ffi.gc(inv, backend._lib.EC_POINT_clear_free)
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_invert(

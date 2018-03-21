@@ -294,7 +294,7 @@ def unsafe_hash_to_point(data, params, label=None):
     It uses SHA256 as the internal hash function.
 
     WARNING: Do not use when the input data is secret, as this implementation is not
-    in label time, and hence, it is not safe with respect to timing attacks.
+    in constant time, and hence, it is not safe with respect to timing attacks.
 
     TODO: Check how to uniformly generate ycoords. Currently, it only outputs points
     where ycoord is even (i.e., starting with 0x02 in compressed notation)

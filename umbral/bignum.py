@@ -39,16 +39,12 @@ class BigNum(object):
             res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
             backend.openssl_assert(res == 1)
 
-        order_int = backend._bn_to_int(order)
-
-        # Generate random number on curve
-        key_size = get_curve_keysize_bytes(curve)
-        rand_num = int.from_bytes(os.urandom(key_size), 'big')
-        while rand_num >= order_int or rand_num <= 0:
-            rand_num = int.from_bytes(os.urandom(key_size), 'big')
-
-        new_rand_bn = backend._int_to_bn(rand_num)
+        new_rand_bn = backend._lib.BN_new()
+        backend.openssl_assert(new_rand_bn != backend._ffi.NULL)
         new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_clear_free)
+
+        rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
+        backend.openssl_assert(rand_res == 1)
 
         return cls(new_rand_bn, curve_nid, group, order)
 

@@ -314,33 +314,33 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     return kfrags
 
 
-def reencrypt(k_frag: KFrag, capsule: Capsule,
+def reencrypt(kfrag: KFrag, capsule: Capsule,
               params: UmbralParameters=None) -> CapsuleFrag:
     params = params if params is not None else default_params()
 
     if not capsule.verify(params):
         raise capsule.NotValid
 
-    e1 = k_frag.bn_key * capsule._point_eph_e
-    v1 = k_frag.bn_key * capsule._point_eph_v
+    e1 = kfrag.bn_key * capsule._point_eph_e
+    v1 = kfrag.bn_key * capsule._point_eph_v
 
-    c_frag = CapsuleFrag(e1=e1, v1=v1, id_=k_frag.bn_id, x=k_frag.point_eph_ni)
-    return c_frag
+    cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
+    return cfrag
 
 
-def _challenge(k_frag: KFrag, capsule: Capsule, 
-              c_frag: CapsuleFrag, challenge_metadata: bytes=None,
+def _challenge(kfrag: KFrag, capsule: Capsule, 
+              cfrag: CapsuleFrag, challenge_metadata: bytes=None,
               params: UmbralParameters=None) -> ChallengeResponse:
     params = params if params is not None else default_params()
 
-    e1 = c_frag.point_eph_e1
-    v1 = c_frag.point_eph_v1
+    e1 = cfrag.point_eph_e1
+    v1 = cfrag.point_eph_v1
 
     e = capsule._point_eph_e
     v = capsule._point_eph_v
 
     u = params.u
-    u1 = k_frag.point_commitment
+    u1 = kfrag.point_commitment
 
     t = BigNum.gen_rand(params.curve)
     e2 = t * e
@@ -353,10 +353,10 @@ def _challenge(k_frag: KFrag, capsule: Capsule,
     
     h = hash_to_bn(hash_input, params)
 
-    z3 = t + h * k_frag.bn_key
+    z3 = t + h * kfrag.bn_key
 
     ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2,
-                                z1=k_frag.bn_sig1, z2=k_frag.bn_sig2, z3=z3)
+                                z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
@@ -366,7 +366,7 @@ def _challenge(k_frag: KFrag, capsule: Capsule,
     return ch_resp
 
 
-def _check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
+def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
                     challenge_resp: ChallengeResponse, 
                     pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:
@@ -375,10 +375,10 @@ def _check_challenge(capsule: Capsule, c_frag: CapsuleFrag,
     e = capsule._point_eph_e
     v = capsule._point_eph_v
 
-    e1 = c_frag.point_eph_e1
-    v1 = c_frag.point_eph_v1
-    xcomp = c_frag.point_eph_ni
-    kfrag_id = c_frag.bn_kfrag_id
+    e1 = cfrag.point_eph_e1
+    v1 = cfrag.point_eph_v1
+    xcomp = cfrag.point_eph_ni
+    kfrag_id = cfrag.bn_kfrag_id
 
     e2 = challenge_resp.point_eph_e2
     v2 = challenge_resp.point_eph_v2

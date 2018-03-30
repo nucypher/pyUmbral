@@ -63,13 +63,6 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
                           ciphertext, alices_public_key)
 
 
-Features
-==========
-- Proxy Re-encryption Toolkit
-- Re-encryption Key Fragmentation
-- Elliptic Curve Arithmetic
-
-
 Quick Installation
 ==================
 

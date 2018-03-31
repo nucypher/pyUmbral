@@ -26,9 +26,9 @@ def test_simple_api(N, M, curve=default_curve()):
     pub_key_bob = priv_key_bob.get_pubkey()
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data, params=params)
 
-    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice)
+    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext, pub_key_alice, params=params)
     assert cleartext == plain_data
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
@@ -36,11 +36,10 @@ def test_simple_api(N, M, curve=default_curve()):
         cfrag = pre.reencrypt(kfrag, capsule, params=params)
         capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice)
+    reenc_cleartext = pre.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice, params=params)
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.xfail(raises=InvalidTag)    # remove this mark to fail instead of ignore
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
@@ -51,5 +50,5 @@ def test_public_key_encryption(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
-    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice)
+    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
     assert cleartext == plain_data

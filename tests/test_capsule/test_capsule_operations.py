@@ -85,7 +85,7 @@ def test_capsule_as_dict_key(alices_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, alices_keys.priv, alices_keys.pub)
+    cleartext = pre.decrypt(capsule, alices_keys.priv, ciphertext, alices_keys.pub)
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 

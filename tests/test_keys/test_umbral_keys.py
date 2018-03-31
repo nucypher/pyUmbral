@@ -1,5 +1,5 @@
 from umbral import pre, keys
-
+from umbral.config import default_params
 
 def test_gen_key():
     # Pass in the parameters to test that manual param selection works
@@ -10,8 +10,8 @@ def test_gen_key():
     assert type(umbral_pub_key) == keys.UmbralPublicKey
 
 
-def test_private_key_serialization():
-    priv_key = pre.gen_priv()
+def test_private_key_serialization(random_ec_bignum1):
+    priv_key = random_ec_bignum1
     umbral_key = keys.UmbralPrivateKey(priv_key)
 
     encoded_key = umbral_key.to_bytes()
@@ -20,8 +20,8 @@ def test_private_key_serialization():
     assert priv_key == decoded_key.bn_key
 
 
-def test_private_key_serialization_with_encryption():
-    priv_key = pre.gen_priv()
+def test_private_key_serialization_with_encryption(random_ec_bignum1):
+    priv_key = random_ec_bignum1
     umbral_key = keys.UmbralPrivateKey(priv_key)
 
     encoded_key = umbral_key.to_bytes(password=b'test')
@@ -30,9 +30,11 @@ def test_private_key_serialization_with_encryption():
     assert priv_key == decoded_key.bn_key
 
 
-def test_public_key_serialization():
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+def test_public_key_serialization(random_ec_bignum1):
+    priv_key = random_ec_bignum1
+
+    params = default_params()
+    pub_key = priv_key * params.g
 
     umbral_key = keys.UmbralPublicKey(pub_key)
 
@@ -42,9 +44,11 @@ def test_public_key_serialization():
     assert pub_key == decoded_key.point_key
 
 
-def test_public_key_to_bytes():
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+def test_public_key_to_bytes(random_ec_bignum1):
+    priv_key = random_ec_bignum1
+    
+    params = default_params()
+    pub_key = priv_key * params.g
 
     umbral_key = keys.UmbralPublicKey(pub_key)
     key_bytes = bytes(umbral_key)

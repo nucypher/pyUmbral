@@ -32,7 +32,7 @@ def kdf(ecpoint, key_length):
     data = ecpoint.to_bytes(is_compressed=True)
 
     return HKDF(
-        algorithm=hashes.SHA512(),
+        algorithm=hashes.BLAKE2b(64),
         length=key_length,
         salt=None,
         info=None,

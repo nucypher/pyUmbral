@@ -8,7 +8,7 @@ pyUmbral
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
     :target: https://travis-ci.org/nucypher/pyUmbral
 
-pyUmbral is a python implementation of David Nuñez's threshold proxy rencryption scheme: Umbral_.
+pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
 Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
 extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
 *Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
@@ -18,7 +18,7 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 .. _OpenSSL: https://www.openssl.org/
 
 
-**Encapsulation**
+**Encryption**
 
 .. code-block:: python
 
@@ -63,14 +63,6 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
                           ciphertext, alices_public_key)
 
 
-Features
-==========
-- Re-encryption Toolkit
-- Re-encryption Key Fragmentation
-- Key Encapsulation
-- Elliptic Curve Arithmetic
-
-
 Quick Installation
 ==================
 
@@ -82,7 +74,7 @@ The recommended installation procedure is as follows:
     $ sudo pip3 install pipenv
     $ pipenv install
 
-Post-installation, you can activate the project virtual enviorment
+Post-installation, you can activate the project virtual environment
 in your current terminal session by running :bash:`pipenv shell`.
 
 For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
@@ -92,9 +84,9 @@ Academic Whitepaper
 ====================
 
 The Umbral scheme academic whitepaper and cryptographic specifications
-are availible on GitHub_.
+are available on GitHub_.
 
-  "Umbral A Threshold Proxy Re-Encryption Scheme"
+  "Umbral: A Threshold Proxy Re-Encryption Scheme"
   *by David Nuñez*
   https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 

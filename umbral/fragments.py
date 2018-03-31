@@ -61,7 +61,7 @@ class KFrag(object):
         x = self.point_eph_ni
         key = self.bn_key
 
-        # We check that the commitment u1 is in fact 
+        # We check that the commitment u1 is well-formed
         check_kfrag_1 = u1 == key * u
 
         # We check the Schnorr signature over the kfrag components

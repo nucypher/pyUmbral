@@ -253,20 +253,20 @@ class BigNum(object):
 
 
 def hash_to_bn(crypto_items, params):
-    sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
+    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
     for item in crypto_items:
         try:
             data_bytes = item.to_bytes()
         except AttributeError:
             data_bytes = item
-        sha_512.update(data_bytes)
+        blake2b.update(data_bytes)
 
     i = 0
     h = 0
-    while h < params.CURVE_MINVAL_SHA512:
-        sha_512_i = sha_512.copy()
-        sha_512_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
-        hash_digest = sha_512_i.finalize()
+    while h < params.CURVE_MINVAL_HASH_512:
+        blake2b_i = blake2b.copy()
+        blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+        hash_digest = blake2b_i.finalize()
         h = int.from_bytes(hash_digest, byteorder='big', signed=False)
         i += 1
     hash_bn = h % int(params.order)

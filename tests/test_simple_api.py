@@ -28,7 +28,7 @@ def test_simple_api(N, M, curve=default_curve()):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
-    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
+    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice)
     assert cleartext == plain_data
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
@@ -36,7 +36,7 @@ def test_simple_api(N, M, curve=default_curve()):
         cfrag = pre.reencrypt(kfrag, capsule, params=params)
         capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(capsule, priv_key_bob, ciphertext, pub_key_alice)
+    reenc_cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice)
     assert reenc_cleartext == plain_data
 
 
@@ -51,5 +51,5 @@ def test_public_key_encryption(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
-    cleartext = pre.decrypt(capsule, priv_key_alice, ciphertext)
+    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice)
     assert cleartext == plain_data

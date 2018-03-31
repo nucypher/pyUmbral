@@ -32,18 +32,18 @@ def test_capsule_serialization(alices_keys):
     assert new_capsule._bn_sig == capsule._bn_sig
 
 
-def test_activated_capsule_serialization():
-    priv_key = pre.gen_priv()
-    pub_key = pre.priv2pub(priv_key)
+def test_activated_capsule_serialization(alices_keys, bobs_keys):
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
 
-    _unused_key, capsule = pre._encapsulate(pub_key)
-    kfrags = pre.split_rekey(priv_key, pub_key, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
     capsule.attach_cfrag(cfrag)
 
-    capsule._reconstruct_shamirs_secret()
+    capsule._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)
     rec_capsule_bytes = capsule.to_bytes()
 
     # An activated Capsule is:

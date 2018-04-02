@@ -122,9 +122,10 @@ class Capsule(object):
 
     def _reconstruct_shamirs_secret(self, 
                                     pub_a: Union[UmbralPublicKey, Point], 
-                                    priv_b: Union[UmbralPrivateKey, BigNum]) -> None:
+                                    priv_b: Union[UmbralPrivateKey, BigNum],
+                                    params: UmbralParameters=None) -> None:
 
-        params = default_params()
+        params = params if params is not None else default_params()
 
         if isinstance(priv_b, UmbralPrivateKey):
             priv_b = priv_b.bn_key
@@ -476,14 +477,17 @@ def _decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     return key
 
 
-def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Capsule]:
+def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes,
+            params: UmbralParameters=None) -> Tuple[bytes, Capsule]:
     """
     Performs an encryption using the UmbralDEM object and encapsulates a key
     for the sender using the public key provided.
 
     Returns the ciphertext and the KEM Capsule.
     """
-    key, capsule = _encapsulate(alice_pubkey.point_key, CHACHA20_KEY_SIZE)
+    params = params if params is not None else default_params()
+
+    key, capsule = _encapsulate(alice_pubkey.point_key, CHACHA20_KEY_SIZE, params=params)
 
     capsule_bytes = bytes(capsule)
 
@@ -494,46 +498,48 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
 
 
 def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
-                  alice_pub_key: UmbralPublicKey) -> bytes:
+                  alice_pub_key: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
 
     This will often be a symmetric key.
     """
-
-    params = default_params()
+    params = params if params is not None else default_params()
 
     priv_b = bob_private_key.bn_key
     pub_b = priv_b * params.g
 
     pub_a = alice_pub_key.point_key
 
-    capsule._reconstruct_shamirs_secret(pub_a, priv_b)
+    capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 
-    key = _decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule)
+    key = _decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule, params=params)
     return key
 
 
-def decrypt(ciphertext: bytes, capsule: Capsule, 
-        priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None) -> bytes:
+def decrypt(capsule: Capsule, priv_key: UmbralPrivateKey,
+            ciphertext: bytes, alice_pub_key: UmbralPublicKey=None,
+            params: UmbralParameters=None) -> bytes:
     """
     Opens the capsule and gets what's inside.
 
     We hope that's a symmetric key, which we use to decrypt the ciphertext
     and return the resulting cleartext.
     """
+    params = params if params is not None else default_params()
+
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
         bob_priv_key = priv_key
-        key = _open_capsule(capsule, bob_priv_key, alice_pub_key)
+        key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
         dem = UmbralDEM(key)
 
         original_capsule_bytes = capsule._original_to_bytes()
         cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
-        key = _decapsulate_original(priv_key.bn_key, capsule)
+        key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
         dem = UmbralDEM(key)
 
         capsule_bytes = bytes(capsule)

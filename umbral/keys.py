@@ -230,3 +230,12 @@ class UmbralPublicKey(object):
 
     def __repr__(self):
         return "{}:{}".format(self.__class__, self.point_key.to_bytes().hex()[:15])
+
+    def __eq__(self, other):
+        if type(other) == bytes:
+            is_eq = bytes(other) == self
+        elif hasattr(other, "point_key"):
+            is_eq = self.point_key == other.point_key
+        else:
+            is_eq = False
+        return is_eq

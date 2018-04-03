@@ -1,10 +1,9 @@
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.bignum import BigNum
 from umbral.point import Point
 from umbral.pre import Capsule
-from tests.conftest import parameters
 
 
 def test_capsule_creation(alices_keys):
@@ -85,7 +84,7 @@ def test_capsule_as_dict_key(alices_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(capsule, alices_keys.priv, ciphertext, alices_keys.pub)
+    cleartext = pre.decrypt(ciphertext, capsule, alices_keys.priv, alices_keys.pub)
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 

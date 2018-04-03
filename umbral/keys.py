@@ -1,10 +1,7 @@
 import os
 import base64
 
-from typing import Union
-
 from nacl.secret import SecretBox
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import (
@@ -14,9 +11,10 @@ from cryptography.hazmat.backends.openssl.ec import (
 from umbral.config import default_params
 from umbral.point import Point, BigNum
 from umbral.params import UmbralParameters
+from umbral.utils import AbstractCryptoEntity
 
 
-class UmbralPrivateKey(object):
+class UmbralPrivateKey(AbstractCryptoEntity):
     def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.

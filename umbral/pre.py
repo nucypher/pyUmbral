@@ -13,10 +13,9 @@ from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
-from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
+from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes, AbstractCryptoEntity
 
 from io import BytesIO
-
 
 CHACHA20_KEY_SIZE = 32
 
@@ -25,7 +24,7 @@ class GenericUmbralError(Exception):
     pass
 
 
-class Capsule(object):
+class Capsule(AbstractCryptoEntity):
 
     def __init__(self,
                  point_eph_e=None,
@@ -166,9 +165,6 @@ class Capsule(object):
         self._point_eph_v_prime = v
         self._point_noninteractive = cfrag_0.point_eph_ni
 
-    def __bytes__(self):
-        return self.to_bytes()
-
     def __eq__(self, other):
         """
         If both Capsules are activated, we compare only the activated components.
@@ -199,7 +195,7 @@ class Capsule(object):
         return hash(component_bytes)
 
 
-class ChallengeResponse(object):
+class ChallengeResponse(AbstractCryptoEntity):
     def __init__(self, e2, v2, u1, u2, z1, z2, z3):
         self.point_eph_e2 = e2
         self.point_eph_v2 = v2
@@ -251,9 +247,6 @@ class ChallengeResponse(object):
             + sig
 
         return result
-
-    def __bytes__(self):
-        return self.to_bytes()
 
 
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],

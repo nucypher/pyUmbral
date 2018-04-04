@@ -1,10 +1,9 @@
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.bignum import BigNum
 from umbral.point import Point
 from umbral.pre import Capsule
-from tests.conftest import parameters
 
 
 def test_capsule_creation(alices_keys):

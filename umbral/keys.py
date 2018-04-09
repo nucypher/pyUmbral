@@ -59,7 +59,6 @@ class UmbralPrivateKey(object):
                     backend=default_backend()
                     )
 
-        #import pdb; pdb.set_trace()
         bn_key = hash_to_bn(hkdf.derive(master_secret), params)
         return cls(bn_key, params)
 

@@ -10,9 +10,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import (
     _EllipticCurvePublicKey, _EllipticCurvePrivateKey
 )
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
 
 from umbral.config import default_params
-from umbral.point import Point, BigNum
+from umbral.point import Point
+from umbral.bignum import BigNum, hash_to_bn
 from umbral.params import UmbralParameters
 
 
@@ -36,6 +40,27 @@ class UmbralPrivateKey(object):
             params = default_params()
 
         bn_key = BigNum.gen_rand(params.curve)
+        return cls(bn_key, params)
+
+    @classmethod
+    def derive_key_from_label(cls, master_secret: bytes, label: bytes, 
+            salt: bytes=None, params: UmbralParameters=None):
+        """
+        Derives a private key using the KDF from a master secret, 
+        a label, and an optional salt.
+        """
+        if params is None:
+            params = default_params()
+
+        hkdf = HKDF(algorithm=hashes.BLAKE2b(64),
+                    length=64,
+                    salt=salt,
+                    info=b"NuCypherKMS/KeyDerivation/"+label,
+                    backend=default_backend()
+                    )
+
+        #import pdb; pdb.set_trace()
+        bn_key = hash_to_bn(hkdf.derive(master_secret), params)
         return cls(bn_key, params)
 
     @classmethod

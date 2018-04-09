@@ -4,6 +4,8 @@ from umbral import pre, keys
 from umbral.point import Point
 from .conftest import parameters
 
+import time
+
 
 def test_challenge_response_serialization():
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
@@ -19,8 +21,16 @@ def test_challenge_response_serialization():
 
     capsule.attach_cfrag(cfrag)
 
-    metadata = b"Challenge metadata"
-    ch_resp = pre._challenge(kfrags[0], capsule, cfrag, metadata)
+    # Example of potential metadata to describe the challenge request
+    challenge_metadata = { 'ursula_id' : 0, 
+                           'timestamp' : time.time(), 
+                           'capsule' : bytes(capsule), 
+                           'cfrag' : bytes(cfrag)
+                         }
+
+    challenge_metadata = str(challenge_metadata).encode()
+
+    ch_resp = pre._challenge(kfrags[0], capsule, cfrag, challenge_metadata)
 
     ch_resp_bytes = ch_resp.to_bytes()
 
@@ -51,17 +61,24 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
-    cfrags, challenges = [], []
-    for index, kfrag in enumerate(kfrags):
-        if index == 0:
+    cfrags, challenges, metadata = [], [], []
+    for i, kfrag in enumerate(kfrags):
+        if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
             cfrag = pre.reencrypt(kfrag, capsule_alice2)
         else:
             cfrag = pre.reencrypt(kfrag, capsule_alice1)
 
-        metadata = ("Challenge metadata: index {}".format(index)).encode()
+        # Example of potential metadata to describe the challenge request
+        metadata_i = { 'ursula_id' : i, 
+                        'timestamp' : time.time(), 
+                        'capsule' : bytes(capsule_alice1), 
+                        'cfrag' : bytes(cfrag)
+                     }
 
-        challenge = pre._challenge(kfrag, capsule_alice1, cfrag, metadata)
+        metadata.append(str(metadata_i).encode())
+
+        challenge = pre._challenge(kfrag, capsule_alice1, cfrag, metadata[i])
         capsule_alice1.attach_cfrag(cfrag)
 
         challenges.append(challenge)
@@ -76,27 +93,25 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                               pub_key_alice.point_key,
                                               capsule_alice1)
 
-    metadata = b"Challenge metadata: index 0"
-
     assert not pre._check_challenge(capsule_alice1,
                                    cfrags[0],
                                    challenges[0],
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   metadata
+                                   metadata[0]
                                    )
 
     # The response of cheating Ursula is in capsules[0],
-    # so the rest of challenges chould be correct:
+    # so the rest of challenges should be correct:
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
-        metadata = ("Challenge metadata: index {}".format(i)).encode()
+
         assert pre._check_challenge(capsule_alice1,
                                    cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   metadata
+                                   metadata[i]
                                    )
 
 
@@ -112,11 +127,21 @@ def test_cheating_ursula_sends_garbage(N, M):
     sym_key, capsule_alice = pre._encapsulate(pub_key_alice.point_key)
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
-    cfrags, challenges = [], []
+    cfrags, challenges, metadata = [], [], []
     for i, kfrag in enumerate(kfrags[:M]):
         cfrag = pre.reencrypt(kfrag, capsule_alice)
-        metadata = ("Challenge metadata: index {}".format(i)).encode()
-        challenge = pre._challenge(kfrag, capsule_alice, cfrag, metadata)
+
+        # Example of potential metadata to describe the challenge request
+        metadata_i = { 'ursula_id' : i, 
+                        'timestamp' : time.time(), 
+                        'capsule' : bytes(capsule_alice), 
+                        'cfrag' : bytes(cfrag)
+                     }
+
+        metadata_i = str(metadata_i).encode()
+        metadata.append(metadata_i)
+
+        challenge = pre._challenge(kfrag, capsule_alice, cfrag, metadata_i)
         capsule_alice.attach_cfrag(cfrag)
 
         assert pre._check_challenge(capsule_alice,
@@ -124,7 +149,7 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    challenge,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   metadata
+                                   metadata_i
                                    )
 
         cfrags.append(cfrag)
@@ -142,26 +167,24 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                pub_key_alice.point_key,
                                                capsule_alice)
 
-    metadata = b"Challenge metadata: index 0"
     assert not pre._check_challenge(capsule_alice, 
                                    cfrags[0], 
                                    challenges[0], 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,
-                                   metadata
+                                   metadata[0]
                                    )
 
     # The response of cheating Ursula is in capsules[0],
     # so the rest of challenges chould be correct:
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
-        metadata = ("Challenge metadata: index {}".format(i)).encode()
         assert pre._check_challenge(capsule_alice, 
                                    cfrag, 
                                    challenge, 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,
-                                   metadata
+                                   metadata[i]
                                    )
 
 
@@ -179,7 +202,16 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     for i, kfrag in enumerate(kfrags[:M]):
         cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
-        metadata = ("Challenge metadata: index {}".format(i)).encode()
+
+        # Example of potential metadata to describe the challenge request
+        metadata = { 'ursula_id' : i, 
+                     'timestamp' : time.time(), 
+                     'capsule' : bytes(capsule), 
+                     'cfrag' : bytes(cfrag)
+                   }
+
+        metadata = str(metadata).encode()
+
         ch = pre._challenge(kfrag, capsule, cfrag, metadata)
 
         assert pre._check_challenge(capsule, 

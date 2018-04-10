@@ -1,7 +1,7 @@
 import os
 import base64
 
-from typing import Union
+from typing import Union, Callable
 
 from nacl.secret import SecretBox
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -39,8 +39,9 @@ class UmbralPrivateKey(object):
         return cls(bn_key, params)
 
     @classmethod
-    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None,
-                 password: bytes=None, _scrypt_cost: int=20):
+    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters=None,
+                   password: bytes=None, _scrypt_cost: int=20,
+                   decoder: Callable=None):
         """
         Loads an Umbral private key from a urlsafe base64 encoded string.
         Optionally, if a password is provided it will decrypt the key using
@@ -54,7 +55,8 @@ class UmbralPrivateKey(object):
         if params is None:
             params = default_params()
 
-        key_bytes = base64.urlsafe_b64decode(key_data)
+        if decoder:
+            key_bytes = decoder(key_bytes)
 
         if password:
             salt = key_bytes[-16:]
@@ -74,7 +76,8 @@ class UmbralPrivateKey(object):
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
-    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
+    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20,
+                 encoder: Callable=None):
         """
         Returns an Umbral private key as a urlsafe base64 encoded string with
         optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
@@ -85,7 +88,7 @@ class UmbralPrivateKey(object):
         files. It is NOT recommended to change the `_scrypt_cost` value unless
         you know what you are doing.
         """
-        umbral_priv_key = self.bn_key.to_bytes()
+        umbral_privkey = self.bn_key.to_bytes()
 
         if password:
             salt = os.urandom(16)
@@ -99,11 +102,13 @@ class UmbralPrivateKey(object):
                 backend=default_backend()
             ).derive(password)
 
-            umbral_priv_key = SecretBox(key).encrypt(umbral_priv_key)
-            umbral_priv_key += salt
+            umbral_privkey = SecretBox(key).encrypt(umbral_privkey)
+            umbral_privkey += salt
 
-        encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
-        return encoded_key
+        if encoder:
+            umbral_privkey = encoder(umbral_privkey)
+
+        return umbral_privkey
 
     def get_pubkey(self):
         """
@@ -169,29 +174,30 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None, as_b64=True):
+    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters=None,
+                   decoder: Callable=None):
         """
         Loads an Umbral public key from a urlsafe base64 encoded string or bytes.
         """
         if params is None:
             params = default_params()
 
-        if as_b64:
-            key_bytes = base64.urlsafe_b64decode(key_data)
-        else:
-            key_bytes = key_data
+        if decoder:
+            key_bytes = decoder(key_bytes)
 
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def to_bytes(self):
+    def to_bytes(self, encoder: Callable=None):
         """
         Returns an Umbral public key as a urlsafe base64 encoded string.
         """
-        umbral_pub_key = self.point_key.to_bytes()
+        umbral_pubkey = self.point_key.to_bytes()
 
-        encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
-        return encoded_key
+        if encoder:
+            umbral_pubkey = encoder(umbral_pubkey)
+
+        return umbral_pubkey
 
     def get_pubkey(self):
         raise NotImplementedError

@@ -5,10 +5,10 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InternalError
 
 from umbral.config import default_curve
-from umbral.utils import get_curve_keysize_bytes
+from umbral.utils import get_curve_keysize_bytes, AbstractCryptoEntity
+from umbral.utils import AbstractCryptoEntity
 
-
-class Point(object):
+class Point(AbstractCryptoEntity):
     """
     Represents an OpenSSL EC_POINT except more Pythonic
     """

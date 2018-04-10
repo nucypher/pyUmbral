@@ -1,7 +1,9 @@
 import math
+from abc import ABC, abstractmethod
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
@@ -42,3 +44,23 @@ def kdf(ecpoint, key_length):
 
 def get_curve_keysize_bytes(curve):
     return int(math.ceil(curve.key_size / 8.00))
+
+
+class AbstractCryptoEntity(ABC):
+    @classmethod
+    @abstractmethod
+    def from_bytes(cls, *args, **kwargs):
+        """
+        Instantiate a split-key fragment object from the serialised data.
+        """
+        raise NotImplementedError("Derived classes should implement this method")
+
+    @abstractmethod
+    def to_bytes(self):
+        """
+        Serialize a split-key into a bytestring.
+        """
+        raise NotImplementedError("Derived classes should implement this method")
+
+    def __bytes__(self):
+        return self.to_bytes()

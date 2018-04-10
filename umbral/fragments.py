@@ -3,12 +3,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_curve, default_params
 from umbral.point import Point
-from umbral.utils import get_curve_keysize_bytes
+from umbral.utils import get_curve_keysize_bytes, AbstractCryptoEntity
+
 
 from io import BytesIO
 
 
-class KFrag(object):
+class KFrag(AbstractCryptoEntity):
     def __init__(self, id_, key, x, u1, z1, z2):
         self.bn_id = id_
         self.bn_key = key
@@ -17,8 +18,8 @@ class KFrag(object):
         self.bn_sig1 = z1
         self.bn_sig2 = z2
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate a KFrag object from the serialized data.
         """
@@ -35,7 +36,7 @@ class KFrag(object):
         sig1 = BigNum.from_bytes(data.read(key_size), curve)
         sig2 = BigNum.from_bytes(data.read(key_size), curve)
 
-        return KFrag(id, key, eph_ni, commitment, sig1, sig2)
+        return cls(id, key, eph_ni, commitment, sig1, sig2)
 
     def to_bytes(self):
         """
@@ -67,23 +68,19 @@ class KFrag(object):
         # We check the Schnorr signature over the kfrag components
         g_y = (z2 * params.g) + (z1 * pub_a)
         check_kfrag_2 = z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
-        
+
 
         return check_kfrag_1 & check_kfrag_2
 
-    def __bytes__(self):
-        return self.to_bytes()
-
-
-class CapsuleFrag(object):
+class CapsuleFrag(AbstractCryptoEntity):
     def __init__(self, e1, v1, id_, x):
         self.point_eph_e1 = e1
         self.point_eph_v1 = v1
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiates a CapsuleFrag object from the serialized data.
         """
@@ -98,7 +95,7 @@ class CapsuleFrag(object):
         kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
         eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
 
-        return CapsuleFrag(e1, v1, kfrag_id, eph_ni)
+        return cls(e1, v1, kfrag_id, eph_ni)
 
     def to_bytes(self):
         """
@@ -110,6 +107,3 @@ class CapsuleFrag(object):
         eph_ni = self.point_eph_ni.to_bytes()
 
         return e1 + v1 + kfrag_id + eph_ni
-
-    def __bytes__(self):
-        return self.to_bytes()

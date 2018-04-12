@@ -1,5 +1,8 @@
+import base64
+
 from umbral import pre, keys
 from umbral.config import default_params
+
 
 def test_gen_key():
     # Pass in the parameters to test that manual param selection works
@@ -54,6 +57,17 @@ def test_public_key_to_bytes(random_ec_bignum1):
     key_bytes = bytes(umbral_key)
 
     assert type(key_bytes) == bytes
+
+
+def test_key_encoder_decoder(random_ec_bignum1):
+    priv_key = random_ec_bignum1
+    umbral_key = keys.UmbralPrivateKey(priv_key)
+
+    encoded_key = umbral_key.to_bytes(encoder=base64.urlsafe_b64encode)
+
+    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key,
+                                                   decoder=base64.urlsafe_b64decode)
+    assert decoded_key.to_bytes() == umbral_key.to_bytes()
 
 
 def test_umbral_key_to_cryptography_keys():

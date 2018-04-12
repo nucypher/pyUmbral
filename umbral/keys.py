@@ -1,10 +1,9 @@
 import os
 import base64
-
 from typing import Union, Callable
 
+
 from nacl.secret import SecretBox
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import (

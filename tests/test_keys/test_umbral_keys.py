@@ -1,7 +1,10 @@
 import base64
 
+import pytest
+
 from umbral import pre, keys
 from umbral.config import default_params
+from umbral.keys import UmbralPublicKey
 
 
 def test_gen_key():
@@ -81,3 +84,24 @@ def test_umbral_key_to_cryptography_keys():
     umbral_affine = umbral_pub_key.point_key.to_affine()
     x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
     assert umbral_affine == (x, y)
+
+
+def test_umbral_public_key_equality():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
+
+    as_bytes = bytes(umbral_pub_key)
+    assert umbral_pub_key == as_bytes
+
+    reconstructed = UmbralPublicKey.from_bytes(as_bytes)
+    assert reconstructed == umbral_pub_key
+
+    assert not umbral_pub_key == b"some whatever bytes"
+
+    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
+
+    assert not umbral_pub_key == another_umbral_pub_key
+
+    # Also not equal to a totally disparate type.
+    assert not umbral_pub_key == 47

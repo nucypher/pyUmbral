@@ -105,3 +105,24 @@ def test_umbral_public_key_equality():
 
     # Also not equal to a totally disparate type.
     assert not umbral_pub_key == 47
+
+
+def test_umbral_public_key_as_dict_key():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
+
+    d = {umbral_pub_key: 19}
+    assert d[umbral_pub_key] == 19
+
+    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
+
+    with pytest.raises(KeyError):
+        d[another_umbral_pub_key]
+
+    d[another_umbral_pub_key] = False
+
+    assert d[umbral_pub_key] == 19
+    d[umbral_pub_key] = 20
+    assert d[umbral_pub_key] == 20
+    assert d[another_umbral_pub_key] is False

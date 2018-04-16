@@ -18,68 +18,8 @@ from umbral.point import Point
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.params import UmbralParameters
 
-from abc import ABC, abstractmethod
- 
-class AbstractUmbralKeyingMaterial(ABC):
-
-    @abstractmethod
-    def _get_keying_material(self):
-        pass
-
-    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
-        """
-        Returns an Umbral private key as a urlsafe base64 encoded string with
-        optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
-        key derivation. If a password is provided, the user must encode it to
-        bytes.
-
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. It is NOT recommended to change the `_scrypt_cost` value unless
-        you know what you are doing.
-        """
-        umbral_get_keying_material = self._get_keying_material()
-
-        if password:
-            salt = os.urandom(16)
-
-            key = Scrypt(
-                salt=salt,
-                length=SecretBox.KEY_SIZE,
-                n=2**_scrypt_cost,
-                r=8,
-                p=1,
-                backend=default_backend()
-            ).derive(password)
-
-            umbral_get_keying_material = SecretBox(key).encrypt(umbral_get_keying_material)
-            umbral_get_keying_material += salt
-
-        encoded_key = umbral_get_keying_material
-        return encoded_key
-
-    @classmethod
-    def _decode_get_keying_material(cls, key_bytes: bytes, 
-                                password: bytes=None, _scrypt_cost: int=20):
-
-        if password:
-            salt = key_bytes[-16:]
-            key_bytes = key_bytes[:-16]
-
-            key = Scrypt(
-                salt=salt,
-                length=SecretBox.KEY_SIZE,
-                n=2**_scrypt_cost,
-                r=8,
-                p=1,
-                backend=default_backend()
-            ).derive(password)
-
-            key_bytes = SecretBox(key).decrypt(key_bytes)
-
-        return key_bytes
-
     
-class UmbralPrivateKey(AbstractUmbralKeyingMaterial):
+class UmbralPrivateKey():
     def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.
@@ -123,13 +63,23 @@ class UmbralPrivateKey(AbstractUmbralKeyingMaterial):
         if decoder:
             key_bytes = decoder(key_bytes)
 
-        key_bytes = cls._decode_get_keying_material(key_bytes, password, _scrypt_cost)
+        if password:
+            salt = key_bytes[-16:]
+            key_bytes = key_bytes[:-16]
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            key_bytes = SecretBox(key).decrypt(key_bytes)
 
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
-
-    def _get_keying_material(self):
-        return self.bn_key.to_bytes()
 
     def to_bytes(self, password: bytes=None, _scrypt_cost: int=20,
                  encoder: Callable=None):
@@ -309,7 +259,7 @@ class UmbralPublicKey(object):
     def __hash__(self):
         return int.from_bytes(self, byteorder="big")
 
-class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
+class UmbralKeyingMaterial():
     """
     This class handles keying material for Umbral, by allowing deterministic
     derivation of UmbralPrivateKeys based on labels. 
@@ -327,9 +277,6 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
             self.keying_material = keying_material
         else:
             self.keying_material = os.urandom(32)
-
-    def _get_keying_material(self):
-        return self.keying_material
 
     def derive_privkey_by_label(self, label: bytes, salt: bytes=None, 
                                 params: UmbralParameters=None):
@@ -351,7 +298,7 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod
-    def from_bytes(cls, key_data: bytes, password: bytes=None, _scrypt_cost: int=20):
+    def from_bytes(cls, key_bytes: bytes, password: bytes=None, _scrypt_cost: int=20):
         """
         Loads an UmbralKeyingMaterial from a urlsafe base64 encoded string.
         Optionally, if a password is provided it will decrypt the key using
@@ -363,7 +310,51 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
         value unless you know what you're doing.
         """
 
-        key_bytes = cls._decode_get_keying_material(key_data, password, _scrypt_cost)
+        if password:
+            salt = key_bytes[-16:]
+            key_bytes = key_bytes[:-16]
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            key_bytes = SecretBox(key).decrypt(key_bytes)
+
         return cls(key_bytes)
 
+    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
+        """
+        Returns an UmbralKeyingMaterial as a urlsafe base64 encoded string with
+        optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
+        key derivation. If a password is provided, the user must encode it to
+        bytes.
 
+        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+        files. It is NOT recommended to change the `_scrypt_cost` value unless
+        you know what you are doing.
+        """
+
+        umbral_keying_material = self.keying_material
+
+        if password:
+            salt = os.urandom(16)
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            umbral_keying_material = SecretBox(key).encrypt(umbral_keying_material)
+            umbral_keying_material += salt
+
+        encoded_key = umbral_keying_material
+        return encoded_key

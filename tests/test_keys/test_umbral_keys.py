@@ -95,3 +95,21 @@ def test_umbral_key_to_cryptography_keys():
     umbral_affine = umbral_pub_key.point_key.to_affine()
     x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
     assert umbral_affine == (x, y)
+
+def test_keying_material_serialization():
+    umbral_keying_material = keys.UmbralKeyingMaterial()
+
+    encoded_key = umbral_keying_material.to_bytes()
+
+    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key)
+    assert umbral_keying_material.keying_material == decoded_key.keying_material
+
+
+def test_keying_material_serialization_with_encryption():
+    
+    umbral_keying_material = keys.UmbralKeyingMaterial()
+
+    encoded_key = umbral_keying_material.to_bytes(password=b'test')
+
+    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key, password=b'test')
+    assert umbral_keying_material.keying_material == decoded_key.keying_material

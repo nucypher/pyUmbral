@@ -98,3 +98,8 @@ Support & Contribute
 
 - Issue Tracker: https://github.com/nucypher/pyUmbral/issues
 - Source Code: https://github.com/nucypher/pyUmbral
+
+OFAC Sanctions Disclaimer
+=========================
+
+By using this software, you hereby affirm you are not an individual or entity subject to economic sanctions administered by the U.S. Government or any other applicable authority, including but not limited to, sanctioned party lists administered by the U.S. Treasury Department’s Office of Foreign Assets Control (OFAC), the U.S. State Department, and the U.S. Commerce Department.  You further affirm you are not located in, or ordinarily resident in, any country, territory or region subject to comprehensive economic sanctions administered by OFAC, which are subject to change but currently include Cuba, Iran, North Korea, Syria and the Crimea region.

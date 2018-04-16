@@ -17,8 +17,8 @@ class KFrag(object):
         self.bn_sig1 = z1
         self.bn_sig2 = z2
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate a KFrag object from the serialized data.
         """
@@ -35,7 +35,7 @@ class KFrag(object):
         sig1 = BigNum.from_bytes(data.read(key_size), curve)
         sig2 = BigNum.from_bytes(data.read(key_size), curve)
 
-        return KFrag(id, key, eph_ni, commitment, sig1, sig2)
+        return cls(id, key, eph_ni, commitment, sig1, sig2)
 
     def to_bytes(self):
         """
@@ -82,8 +82,8 @@ class CapsuleFrag(object):
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
 
-    @staticmethod
-    def from_bytes(data: bytes, curve: ec.EllipticCurve = None):
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiates a CapsuleFrag object from the serialized data.
         """
@@ -98,7 +98,7 @@ class CapsuleFrag(object):
         kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
         eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
 
-        return CapsuleFrag(e1, v1, kfrag_id, eph_ni)
+        return cls(e1, v1, kfrag_id, eph_ni)
 
     def to_bytes(self):
         """

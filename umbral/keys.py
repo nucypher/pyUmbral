@@ -1,10 +1,9 @@
 import os
 import base64
+from typing import Callable
 
-from typing import Union
 
 from nacl.secret import SecretBox
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import (
@@ -55,13 +54,12 @@ class AbstractUmbralKeyingMaterial(ABC):
             umbral_get_keying_material = SecretBox(key).encrypt(umbral_get_keying_material)
             umbral_get_keying_material += salt
 
-        encoded_key = base64.urlsafe_b64encode(umbral_get_keying_material)
+        encoded_key = umbral_get_keying_material
         return encoded_key
 
     @classmethod
-    def _decode_get_keying_material(cls, key_data: bytes, 
+    def _decode_get_keying_material(cls, key_bytes: bytes, 
                                 password: bytes=None, _scrypt_cost: int=20):
-        key_bytes = base64.urlsafe_b64decode(key_data)
 
         if password:
             salt = key_bytes[-16:]
@@ -104,10 +102,13 @@ class UmbralPrivateKey(AbstractUmbralKeyingMaterial):
         return cls(bn_key, params)
 
     @classmethod
-    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None,
-                 password: bytes=None, _scrypt_cost: int=20):
+    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters=None,
+                   password: bytes=None, _scrypt_cost: int=20,
+                   decoder: Callable=None):
         """
-        Loads an Umbral private key from a urlsafe base64 encoded string.
+        Loads an Umbral private key from bytes.
+        Optionally, allows a decoder function to be passed as a param to decode
+        the data provided before converting to an Umbral key.
         Optionally, if a password is provided it will decrypt the key using
         nacl's Salsa20-Poly1305 and Scrypt key derivation.
 
@@ -119,13 +120,51 @@ class UmbralPrivateKey(AbstractUmbralKeyingMaterial):
         if params is None:
             params = default_params()
 
-        key_bytes = cls._decode_get_keying_material(key_data, password, _scrypt_cost)
+        if decoder:
+            key_bytes = decoder(key_bytes)
+
+        key_bytes = cls._decode_get_keying_material(key_bytes, password, _scrypt_cost)
 
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
     def _get_keying_material(self):
         return self.bn_key.to_bytes()
+
+    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20,
+                 encoder: Callable=None):
+        """
+        Returns an Umbral private key as bytes optional symmetric encryption
+        via nacl's Salsa20-Poly1305 and Scrypt key derivation. If a password
+        is provided, the user must encode it to bytes.
+        Optionally, allows an encoder to be passed in as a param to encode the
+        data before returning it.
+
+        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+        files. It is NOT recommended to change the `_scrypt_cost` value unless
+        you know what you are doing.
+        """
+        umbral_privkey = self.bn_key.to_bytes()
+
+        if password:
+            salt = os.urandom(16)
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            umbral_privkey = SecretBox(key).encrypt(umbral_privkey)
+            umbral_privkey += salt
+
+        if encoder:
+            umbral_privkey = encoder(umbral_privkey)
+
+        return umbral_privkey
 
     def get_pubkey(self):
         """
@@ -191,29 +230,34 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None, as_b64=True):
+    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters=None,
+                   decoder: Callable=None):
         """
-        Loads an Umbral public key from a urlsafe base64 encoded string or bytes.
+        Loads an Umbral public key from bytes.
+        Optionally, if an decoder function is provided it will be used to decode
+        the data before returning it as an Umbral key.
         """
         if params is None:
             params = default_params()
 
-        if as_b64:
-            key_bytes = base64.urlsafe_b64decode(key_data)
-        else:
-            key_bytes = key_data
+        if decoder:
+            key_bytes = decoder(key_bytes)
 
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def to_bytes(self):
+    def to_bytes(self, encoder: Callable=None):
         """
-        Returns an Umbral public key as a urlsafe base64 encoded string.
+        Returns an Umbral public key as bytes.
+        Optionally, if an encoder function is provided it will be used to encode
+        the data before returning it.
         """
-        umbral_pub_key = self.point_key.to_bytes()
+        umbral_pubkey = self.point_key.to_bytes()
 
-        encoded_key = base64.urlsafe_b64encode(umbral_pub_key)
-        return encoded_key
+        if encoder:
+            umbral_pubkey = encoder(umbral_pubkey)
+
+        return umbral_pubkey
 
     def get_pubkey(self):
         raise NotImplementedError
@@ -255,13 +299,15 @@ class UmbralPublicKey(object):
 
     def __eq__(self, other):
         if type(other) == bytes:
-            is_eq = bytes(other) == self
+            is_eq = bytes(other) == bytes(self)
         elif hasattr(other, "point_key"):
             is_eq = self.point_key == other.point_key
         else:
             is_eq = False
         return is_eq
 
+    def __hash__(self):
+        return int.from_bytes(self, byteorder="big")
 
 class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
     """
@@ -319,3 +365,5 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
 
         key_bytes = cls._decode_get_keying_material(key_data, password, _scrypt_cost)
         return cls(key_bytes)
+
+

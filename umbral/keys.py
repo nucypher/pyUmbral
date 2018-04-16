@@ -264,6 +264,12 @@ class UmbralPublicKey(object):
 
 
 class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
+    """
+    This class handles keying material for Umbral, by allowing deterministic
+    derivation of UmbralPrivateKeys based on labels. 
+    Don't use this key material directly as a key.
+    
+    """
 
     def __init__(self, keying_material: bytes=None):
         """

@@ -21,26 +21,26 @@ def test_derive_key_from_label():
 
     label = b"my_healthcare_information"
 
-    priv_key1 = umbral_keying_material.derive_private_key_from_label(label)
+    priv_key1 = umbral_keying_material.derive_privkey_by_label(label)
     assert type(priv_key1) == keys.UmbralPrivateKey
 
     pub_key1 = priv_key1.get_pubkey()
     assert type(pub_key1) == keys.UmbralPublicKey
 
     # Check that key derivation is reproducible
-    priv_key2 = umbral_keying_material.derive_private_key_from_label(label)
+    priv_key2 = umbral_keying_material.derive_privkey_by_label(label)
     pub_key2 = priv_key2.get_pubkey()
     assert priv_key1.bn_key == priv_key2.bn_key
     assert pub_key1 == pub_key2
 
     # A salt can be used too, but of course it affects the derived key
     salt = b"optional, randomly generated salt"
-    priv_key3 = umbral_keying_material.derive_private_key_from_label(label, salt=salt)
+    priv_key3 = umbral_keying_material.derive_privkey_by_label(label, salt=salt)
     assert priv_key3.bn_key != priv_key1.bn_key
 
     # Different labels on the same master secret create different keys
     label = b"my_tax_information"
-    priv_key4 = umbral_keying_material.derive_private_key_from_label(label)
+    priv_key4 = umbral_keying_material.derive_privkey_by_label(label)
     pub_key4 = priv_key4.get_pubkey()
     assert priv_key1.bn_key != priv_key4.bn_key
 

@@ -331,8 +331,8 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
     def _get_keying_material(self):
         return self.keying_material
 
-    def derive_private_key_from_label(self, label: bytes, 
-                                    salt: bytes=None, params: UmbralParameters=None):
+    def derive_privkey_by_label(self, label: bytes, salt: bytes=None, 
+                                params: UmbralParameters=None):
         """
         Derives an UmbralPrivateKey using a KDF from this instance of 
         UmbralKeyingMaterial, a label, and an optional salt.

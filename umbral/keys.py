@@ -19,8 +19,46 @@ from umbral.point import Point
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.params import UmbralParameters
 
+from abc import ABC, abstractmethod
+ 
+class AbstractUmbralKeyingMaterial(ABC):
 
-class UmbralPrivateKey(object):
+    @abstractmethod
+    def _keying_material(self):
+        pass
+
+    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
+        """
+        Returns an Umbral private key as a urlsafe base64 encoded string with
+        optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
+        key derivation. If a password is provided, the user must encode it to
+        bytes.
+
+        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+        files. It is NOT recommended to change the `_scrypt_cost` value unless
+        you know what you are doing.
+        """
+        umbral_keying_material = self._keying_material()
+
+        if password:
+            salt = os.urandom(16)
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            umbral_keying_material = SecretBox(key).encrypt(umbral_keying_material)
+            umbral_keying_material += salt
+
+        encoded_key = base64.urlsafe_b64encode(umbral_keying_material)
+        return encoded_key
+    
+class UmbralPrivateKey(AbstractUmbralKeyingMaterial):
     def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.
@@ -98,36 +136,39 @@ class UmbralPrivateKey(object):
         bn_key = BigNum.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
-    def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
-        """
-        Returns an Umbral private key as a urlsafe base64 encoded string with
-        optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
-        key derivation. If a password is provided, the user must encode it to
-        bytes.
+    def _keying_material(self):
+        return self.bn_key.to_bytes()
 
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. It is NOT recommended to change the `_scrypt_cost` value unless
-        you know what you are doing.
-        """
-        umbral_priv_key = self.bn_key.to_bytes()
+    # def to_bytes(self, password: bytes=None, _scrypt_cost: int=20):
+    #     """
+    #     Returns an Umbral private key as a urlsafe base64 encoded string with
+    #     optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt
+    #     key derivation. If a password is provided, the user must encode it to
+    #     bytes.
 
-        if password:
-            salt = os.urandom(16)
+    #     WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+    #     files. It is NOT recommended to change the `_scrypt_cost` value unless
+    #     you know what you are doing.
+    #     """
+    #     umbral_priv_key = self.bn_key.to_bytes()
 
-            key = Scrypt(
-                salt=salt,
-                length=SecretBox.KEY_SIZE,
-                n=2**_scrypt_cost,
-                r=8,
-                p=1,
-                backend=default_backend()
-            ).derive(password)
+    #     if password:
+    #         salt = os.urandom(16)
 
-            umbral_priv_key = SecretBox(key).encrypt(umbral_priv_key)
-            umbral_priv_key += salt
+    #         key = Scrypt(
+    #             salt=salt,
+    #             length=SecretBox.KEY_SIZE,
+    #             n=2**_scrypt_cost,
+    #             r=8,
+    #             p=1,
+    #             backend=default_backend()
+    #         ).derive(password)
 
-        encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
-        return encoded_key
+    #         umbral_priv_key = SecretBox(key).encrypt(umbral_priv_key)
+    #         umbral_priv_key += salt
+
+    #     encoded_key = base64.urlsafe_b64encode(umbral_priv_key)
+    #     return encoded_key
 
     def get_pubkey(self):
         """
@@ -263,3 +304,82 @@ class UmbralPublicKey(object):
         else:
             is_eq = False
         return is_eq
+
+
+class UmbralKeyingMaterial(object):
+    def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
+        """
+        Initializes an Umbral private key.
+        """
+        if params is None:
+            params = default_params()
+
+        self.params = params
+        self.bn_key = bn_key
+
+    @classmethod
+    def gen_key(cls, params: UmbralParameters=None):
+        """
+        Generates a private key and returns it.
+        """
+        if params is None:
+            params = default_params()
+
+        bn_key = BigNum.gen_rand(params.curve)
+        return cls(bn_key, params)
+
+    @classmethod
+    def derive_key_from_label(cls, master_secret: bytes, label: bytes, 
+            salt: bytes=None, params: UmbralParameters=None):
+        """
+        Derives a private key using the KDF from a master secret, 
+        a label, and an optional salt.
+        """
+        if params is None:
+            params = default_params()
+
+        hkdf = HKDF(algorithm=hashes.BLAKE2b(64),
+                    length=64,
+                    salt=salt,
+                    info=b"NuCypherKMS/KeyDerivation/"+label,
+                    backend=default_backend()
+                    )
+
+        bn_key = hash_to_bn(hkdf.derive(master_secret), params)
+        return cls(bn_key, params)
+
+    @classmethod
+    def from_bytes(cls, key_data: bytes, params: UmbralParameters=None,
+                 password: bytes=None, _scrypt_cost: int=20):
+        """
+        Loads an Umbral private key from a urlsafe base64 encoded string.
+        Optionally, if a password is provided it will decrypt the key using
+        nacl's Salsa20-Poly1305 and Scrypt key derivation.
+
+        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+        files. Unless you changed this when you called `to_bytes`, you should
+        not change it here. It is NOT recommended to change the `_scrypt_cost`
+        value unless you know what you're doing.
+        """
+        if params is None:
+            params = default_params()
+
+        key_bytes = base64.urlsafe_b64decode(key_data)
+
+        if password:
+            salt = key_bytes[-16:]
+            key_bytes = key_bytes[:-16]
+
+            key = Scrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2**_scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+
+            key_bytes = SecretBox(key).decrypt(key_bytes)
+
+        bn_key = BigNum.from_bytes(key_bytes, params.curve)
+        return cls(bn_key, params)

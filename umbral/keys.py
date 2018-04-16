@@ -347,7 +347,7 @@ class UmbralKeyingMaterial(AbstractUmbralKeyingMaterial):
                     backend=default_backend()
                     )
 
-        bn_key = hash_to_bn(hkdf.derive(self.keying_material), params)
+        bn_key = hash_to_bn([hkdf.derive(self.keying_material)], params)
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod

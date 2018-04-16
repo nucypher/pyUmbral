@@ -6,7 +6,6 @@ from cryptography.hazmat.primitives import hashes
 
 from umbral.config import default_curve
 from umbral.utils import get_curve_keysize_bytes
-import umbral.point
 
 
 class BigNum(object):
@@ -252,18 +251,12 @@ class BigNum(object):
     def __hash__(self):
         return hash(int(self))
 
-
 def hash_to_bn(crypto_items, params):
-    if not isinstance(crypto_items, list):
-        crypto_items = [crypto_items]
-
-    valid_instance_types = (BigNum, umbral.point.Point)
-
     blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
     for item in crypto_items:
-        if isinstance(item, valid_instance_types):
+        try:
             data_bytes = item.to_bytes()
-        else:
+        except AttributeError:
             data_bytes = item
         blake2b.update(data_bytes)
 

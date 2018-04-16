@@ -19,7 +19,7 @@ from umbral.bignum import BigNum, hash_to_bn
 from umbral.params import UmbralParameters
 
     
-class UmbralPrivateKey():
+class UmbralPrivateKey(object):
     def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.
@@ -259,7 +259,8 @@ class UmbralPublicKey(object):
     def __hash__(self):
         return int.from_bytes(self, byteorder="big")
 
-class UmbralKeyingMaterial():
+
+class UmbralKeyingMaterial(object):
     """
     This class handles keying material for Umbral, by allowing deterministic
     derivation of UmbralPrivateKeys based on labels. 

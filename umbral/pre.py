@@ -320,9 +320,14 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
 
 
 def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
-                    proof: CorrectnessProof, 
                     pub_a: Point, pub_b: Point, proof_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:
+    
+    try:
+        proof = cfrag.proof
+    except AttributeError:
+        raise ValueError("CFrag doesn't have a correctnes proof attached")
+
     params = params if params is not None else default_params()
 
     e = capsule._point_eph_e

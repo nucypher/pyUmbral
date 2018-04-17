@@ -1,5 +1,11 @@
+import base64
+
+import pytest
+
 from umbral import pre, keys
 from umbral.config import default_params
+from umbral.keys import UmbralPublicKey
+
 
 def test_gen_key():
     # Pass in the parameters to test that manual param selection works
@@ -56,6 +62,17 @@ def test_public_key_to_bytes(random_ec_bignum1):
     assert type(key_bytes) == bytes
 
 
+def test_key_encoder_decoder(random_ec_bignum1):
+    priv_key = random_ec_bignum1
+    umbral_key = keys.UmbralPrivateKey(priv_key)
+
+    encoded_key = umbral_key.to_bytes(encoder=base64.urlsafe_b64encode)
+
+    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key,
+                                                   decoder=base64.urlsafe_b64decode)
+    assert decoded_key.to_bytes() == umbral_key.to_bytes()
+
+
 def test_umbral_key_to_cryptography_keys():
     umbral_priv_key = keys.UmbralPrivateKey.gen_key()
     umbral_pub_key = umbral_priv_key.get_pubkey()
@@ -67,3 +84,45 @@ def test_umbral_key_to_cryptography_keys():
     umbral_affine = umbral_pub_key.point_key.to_affine()
     x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
     assert umbral_affine == (x, y)
+
+
+def test_umbral_public_key_equality():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
+
+    as_bytes = bytes(umbral_pub_key)
+    assert umbral_pub_key == as_bytes
+
+    reconstructed = UmbralPublicKey.from_bytes(as_bytes)
+    assert reconstructed == umbral_pub_key
+
+    assert not umbral_pub_key == b"some whatever bytes"
+
+    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
+
+    assert not umbral_pub_key == another_umbral_pub_key
+
+    # Also not equal to a totally disparate type.
+    assert not umbral_pub_key == 47
+
+
+def test_umbral_public_key_as_dict_key():
+    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_pub_key = umbral_priv_key.get_pubkey()
+
+    d = {umbral_pub_key: 19}
+    assert d[umbral_pub_key] == 19
+
+    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
+
+    with pytest.raises(KeyError):
+        d[another_umbral_pub_key]
+
+    d[another_umbral_pub_key] = False
+
+    assert d[umbral_pub_key] == 19
+    d[umbral_pub_key] = 20
+    assert d[umbral_pub_key] == 20
+    assert d[another_umbral_pub_key] is False

@@ -4,7 +4,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
 
 
@@ -82,14 +82,20 @@ class BigNum(object):
         return cls(bignum, curve_nid, group, order)
 
     @classmethod
-    def hash_to_bn(cls, crypto_items, params):
+    def hash_to_bn(cls, *crypto_items, params=None):
+        params = params if params is not None else default_params()
+
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         for item in crypto_items:
             try:
                 data_bytes = item.to_bytes()
             except AttributeError:
-                data_bytes = item
-            blake2b.update(data_bytes)
+                if isinstance(item, bytes):
+                    data_bytes = item
+                else:
+                    raise TypeError("{} is not bytes, got {} instead.".format(item, type(item)))
+            else:
+                blake2b.update(data_bytes)
 
         i = 0
         h = 0
@@ -99,9 +105,10 @@ class BigNum(object):
             hash_digest = blake2b_i.finalize()
             h = int.from_bytes(hash_digest, byteorder='big', signed=False)
             i += 1
-        hash_bn = h % int(params.order)
 
+        hash_bn = h % int(params.order)
         res = cls.from_int(hash_bn, params.curve)
+
         return res
 
     @classmethod

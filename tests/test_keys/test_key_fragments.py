@@ -29,6 +29,7 @@ def test_cfrag_serialization(alices_keys):
     c_frag_bytes = c_frag.to_bytes()
 
     # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
+    # TODO: Figure out final size for CFrags with proofs
     #assert len(c_frag_bytes) == 33 + 33 + 33 + 32 == 131
 
     new_cfrag = pre.CapsuleFrag.from_bytes(c_frag_bytes)

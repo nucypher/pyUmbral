@@ -262,7 +262,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
 
 def reencrypt(kfrag: KFrag, capsule: Capsule,
-              params: UmbralParameters=None, challenge_metadata: bytes=None) -> CapsuleFrag:
+              params: UmbralParameters=None, proof_metadata: bytes=None) -> CapsuleFrag:
     if params is None:
         params = default_params()
 
@@ -274,7 +274,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
 
-    proof = _prove_correctness(kfrag, capsule, cfrag, challenge_metadata, params)
+    proof = _prove_correctness(kfrag, capsule, cfrag, proof_metadata, params)
 
     cfrag.attach_correctness_proof(proof)
 
@@ -282,7 +282,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
 
 def _prove_correctness(kfrag: KFrag, capsule: Capsule, 
-              cfrag: CapsuleFrag, challenge_metadata: bytes=None,
+              cfrag: CapsuleFrag, proof_metadata: bytes=None,
               params: UmbralParameters=None) -> CorrectnessProof:
     params = params if params is not None else default_params()
 
@@ -301,8 +301,8 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata:
-        hash_input.append(challenge_metadata)
+    if proof_metadata:
+        hash_input.append(proof_metadata)
     
     h = hash_to_bn(hash_input, params)
 
@@ -320,8 +320,8 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
 
 
 def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
-                    challenge_resp: CorrectnessProof, 
-                    pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
+                    proof: CorrectnessProof, 
+                    pub_a: Point, pub_b: Point, proof_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:
     params = params if params is not None else default_params()
 
@@ -333,24 +333,24 @@ def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
     xcomp = cfrag.point_eph_ni
     kfrag_id = cfrag.bn_kfrag_id
 
-    e2 = challenge_resp.point_eph_e2
-    v2 = challenge_resp.point_eph_v2
+    e2 = proof.point_eph_e2
+    v2 = proof.point_eph_v2
 
     g = params.g
     u = params.u
 
-    u1 = challenge_resp.point_kfrag_commitment
-    u2 = challenge_resp.point_kfrag_pok
+    u1 = proof.point_kfrag_commitment
+    u2 = proof.point_kfrag_pok
 
-    z1 = challenge_resp.bn_kfrag_sig1
-    z2 = challenge_resp.bn_kfrag_sig2
-    z3 = challenge_resp.bn_sig
+    z1 = proof.bn_kfrag_sig1
+    z2 = proof.bn_kfrag_sig2
+    z3 = proof.bn_sig
 
     g_y = (z2 * g) + (z1 * pub_a)
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata:
-        hash_input.append(challenge_metadata)
+    if proof_metadata:
+        hash_input.append(proof_metadata)
     
     h = hash_to_bn(hash_input, params)
 

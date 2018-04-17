@@ -8,7 +8,7 @@ from .conftest import parameters
 import time
 
 
-def test_challenge_response_serialization():
+def test_correctness_proof_serialization():
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
     pub_key_alice = priv_key_alice.get_pubkey()
 

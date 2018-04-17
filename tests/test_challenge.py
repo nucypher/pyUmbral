@@ -2,6 +2,7 @@ import pytest
 
 from umbral import pre, keys
 from umbral.point import Point
+from umbral.fragments import CorrectnessProof
 from .conftest import parameters
 
 import time
@@ -34,11 +35,11 @@ def test_challenge_response_serialization():
 
     ch_resp_bytes = ch_resp.to_bytes()
 
-    # A ChallengeResponse can be represented as
+    # A CorrectnessProof can be represented as
     # the 228 total bytes of four Points (33 each) and three BigNums (32 each).
     assert len(ch_resp_bytes) == (33 * 4) + (32 * 3) == 228
 
-    new_ch_resp = pre.ChallengeResponse.from_bytes(ch_resp_bytes)
+    new_ch_resp = pre.CorrectnessProof.from_bytes(ch_resp_bytes)
     assert new_ch_resp.point_eph_e2 == ch_resp.point_eph_e2
     assert new_ch_resp.point_eph_v2 == ch_resp.point_eph_v2
     assert new_ch_resp.point_kfrag_commitment == ch_resp.point_kfrag_commitment

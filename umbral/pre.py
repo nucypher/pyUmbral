@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from umbral.bignum import BigNum, hash_to_bn
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
-from umbral.fragments import KFrag, CapsuleFrag
+from umbral.fragments import KFrag, CapsuleFrag, CorrectnessProof
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
@@ -199,61 +199,7 @@ class Capsule(object):
         return hash(component_bytes)
 
 
-class ChallengeResponse(object):
-    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
-        self.point_eph_e2 = e2
-        self.point_eph_v2 = v2
-        self.point_kfrag_commitment = u1
-        self.point_kfrag_pok = u2
-        self.bn_kfrag_sig1 = z1
-        self.bn_kfrag_sig2 = z2
-        self.bn_sig = z3
 
-    @classmethod
-    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
-        """
-        Instantiate ChallengeResponse from serialized data.
-        """
-        curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
-        data = BytesIO(data)
-
-        # BigNums are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        e2 = Point.from_bytes(data.read(key_size + 1), curve)
-        v2 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
-        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
-        sig = BigNum.from_bytes(data.read(key_size), curve)
-
-        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
-
-    def to_bytes(self) -> bytes:
-        """
-        Serialize the ChallengeResponse to a bytestring.
-        """
-        e2 = self.point_eph_e2.to_bytes()
-        v2 = self.point_eph_v2.to_bytes()
-        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
-        kfrag_pok = self.point_kfrag_pok.to_bytes()
-        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
-        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
-        sig = self.bn_sig.to_bytes()
-
-        result = e2            \
-            + v2               \
-            + kfrag_commitment \
-            + kfrag_pok        \
-            + kfrag_sig1       \
-            + kfrag_sig2       \
-            + sig
-
-        return result
-
-    def __bytes__(self):
-        return self.to_bytes()
 
 
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
@@ -316,8 +262,9 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
 
 def reencrypt(kfrag: KFrag, capsule: Capsule,
-              params: UmbralParameters=None) -> CapsuleFrag:
-    params = params if params is not None else default_params()
+              params: UmbralParameters=None, challenge_metadata: bytes=None) -> CapsuleFrag:
+    if params is None:
+        params = default_params()
 
     if not capsule.verify(params):
         raise capsule.NotValid
@@ -326,12 +273,17 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
     v1 = kfrag.bn_key * capsule._point_eph_v
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
+
+    proof = _challenge(kfrag, capsule, cfrag, challenge_metadata, params)
+
+    cfrag.attach_correctness_proof(proof)
+
     return cfrag
 
 
 def _challenge(kfrag: KFrag, capsule: Capsule, 
               cfrag: CapsuleFrag, challenge_metadata: bytes=None,
-              params: UmbralParameters=None) -> ChallengeResponse:
+              params: UmbralParameters=None) -> CorrectnessProof:
     params = params if params is not None else default_params()
 
     e1 = cfrag.point_eph_e1
@@ -349,14 +301,14 @@ def _challenge(kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata is not None:
+    if challenge_metadata:
         hash_input.append(challenge_metadata)
     
     h = hash_to_bn(hash_input, params)
 
     z3 = t + h * kfrag.bn_key
 
-    ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2,
+    ch_resp = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
                                 z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3)
 
     # Check correctness of original ciphertext (check nº 2) at the end
@@ -368,7 +320,7 @@ def _challenge(kfrag: KFrag, capsule: Capsule,
 
 
 def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
-                    challenge_resp: ChallengeResponse, 
+                    challenge_resp: CorrectnessProof, 
                     pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:
     params = params if params is not None else default_params()
@@ -397,7 +349,7 @@ def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
     g_y = (z2 * g) + (z1 * pub_a)
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata is not None:
+    if challenge_metadata:
         hash_input.append(challenge_metadata)
     
     h = hash_to_bn(hash_input, params)

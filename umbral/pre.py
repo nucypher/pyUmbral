@@ -274,14 +274,14 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
 
-    proof = _challenge(kfrag, capsule, cfrag, challenge_metadata, params)
+    proof = _prove_correctness(kfrag, capsule, cfrag, challenge_metadata, params)
 
     cfrag.attach_correctness_proof(proof)
 
     return cfrag
 
 
-def _challenge(kfrag: KFrag, capsule: Capsule, 
+def _prove_correctness(kfrag: KFrag, capsule: Capsule, 
               cfrag: CapsuleFrag, challenge_metadata: bytes=None,
               params: UmbralParameters=None) -> CorrectnessProof:
     params = params if params is not None else default_params()

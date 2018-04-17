@@ -31,7 +31,7 @@ def test_challenge_response_serialization():
 
     challenge_metadata = str(challenge_metadata).encode()
 
-    ch_resp = pre._challenge(kfrags[0], capsule, cfrag, challenge_metadata)
+    ch_resp = pre._prove_correctness(kfrags[0], capsule, cfrag, challenge_metadata)
 
     ch_resp_bytes = ch_resp.to_bytes()
 
@@ -79,7 +79,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
         metadata.append(str(metadata_i).encode())
 
-        challenge = pre._challenge(kfrag, capsule_alice1, cfrag, metadata[i])
+        challenge = pre._prove_correctness(kfrag, capsule_alice1, cfrag, metadata[i])
         capsule_alice1.attach_cfrag(cfrag)
 
         challenges.append(challenge)
@@ -142,7 +142,7 @@ def test_cheating_ursula_sends_garbage(N, M):
         metadata_i = str(metadata_i).encode()
         metadata.append(metadata_i)
 
-        challenge = pre._challenge(kfrag, capsule_alice, cfrag, metadata_i)
+        challenge = pre._prove_correctness(kfrag, capsule_alice, cfrag, metadata_i)
         capsule_alice.attach_cfrag(cfrag)
 
         assert pre._check_challenge(capsule_alice,
@@ -213,7 +213,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
         metadata = str(metadata).encode()
 
-        ch = pre._challenge(kfrag, capsule, cfrag, metadata)
+        ch = pre._prove_correctness(kfrag, capsule, cfrag, metadata)
 
         assert pre._check_challenge(capsule, 
                                    cfrag, 

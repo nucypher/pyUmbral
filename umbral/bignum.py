@@ -82,6 +82,29 @@ class BigNum(object):
         return cls(bignum, curve_nid, group, order)
 
     @classmethod
+    def hash_to_bn(cls, crypto_items, params):
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        for item in crypto_items:
+            try:
+                data_bytes = item.to_bytes()
+            except AttributeError:
+                data_bytes = item
+            blake2b.update(data_bytes)
+
+        i = 0
+        h = 0
+        while h < params.CURVE_MINVAL_HASH_512:
+            blake2b_i = blake2b.copy()
+            blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+            hash_digest = blake2b_i.finalize()
+            h = int.from_bytes(hash_digest, byteorder='big', signed=False)
+            i += 1
+        hash_bn = h % int(params.order)
+
+        res = cls.from_int(hash_bn, params.curve)
+        return res
+
+    @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
         """
         Returns a BigNum object from the given byte data that's within the size
@@ -251,25 +274,3 @@ class BigNum(object):
     def __hash__(self):
         return hash(int(self))
 
-def hash_to_bn(crypto_items, params):
-    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-    for item in crypto_items:
-        try:
-            data_bytes = item.to_bytes()
-        except AttributeError:
-            data_bytes = item
-        blake2b.update(data_bytes)
-
-    i = 0
-    h = 0
-    while h < params.CURVE_MINVAL_HASH_512:
-        blake2b_i = blake2b.copy()
-        blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
-        hash_digest = blake2b_i.finalize()
-        h = int.from_bytes(hash_digest, byteorder='big', signed=False)
-        i += 1
-    hash_bn = h % int(params.order)
-
-    res = BigNum.from_int(hash_bn, params.curve)
-
-    return res

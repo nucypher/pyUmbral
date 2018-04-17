@@ -319,7 +319,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     return ch_resp
 
 
-def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
+def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
                     challenge_resp: CorrectnessProof, 
                     pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
                     params: UmbralParameters=None) -> bool:

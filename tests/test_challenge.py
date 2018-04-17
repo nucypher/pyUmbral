@@ -94,7 +94,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                               pub_key_alice.point_key,
                                               capsule_alice1)
 
-    assert not pre._check_challenge(capsule_alice1,
+    assert not pre._verify_correctness_proof(capsule_alice1,
                                    cfrags[0],
                                    challenges[0],
                                    pub_key_alice.point_key,
@@ -107,7 +107,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
 
-        assert pre._check_challenge(capsule_alice1,
+        assert pre._verify_correctness_proof(capsule_alice1,
                                    cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
@@ -145,7 +145,7 @@ def test_cheating_ursula_sends_garbage(N, M):
         challenge = pre._prove_correctness(kfrag, capsule_alice, cfrag, metadata_i)
         capsule_alice.attach_cfrag(cfrag)
 
-        assert pre._check_challenge(capsule_alice,
+        assert pre._verify_correctness_proof(capsule_alice,
                                    cfrag,
                                    challenge,
                                    pub_key_alice.point_key,
@@ -168,7 +168,7 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                pub_key_alice.point_key,
                                                capsule_alice)
 
-    assert not pre._check_challenge(capsule_alice, 
+    assert not pre._verify_correctness_proof(capsule_alice, 
                                    cfrags[0], 
                                    challenges[0], 
                                    pub_key_alice.point_key, 
@@ -180,7 +180,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     # so the rest of challenges chould be correct:
     for i, challenge in enumerate(challenges[1:], 1):
         cfrag = cfrags[i]
-        assert pre._check_challenge(capsule_alice, 
+        assert pre._verify_correctness_proof(capsule_alice, 
                                    cfrag, 
                                    challenge, 
                                    pub_key_alice.point_key, 
@@ -215,7 +215,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
         ch = pre._prove_correctness(kfrag, capsule, cfrag, metadata)
 
-        assert pre._check_challenge(capsule, 
+        assert pre._verify_correctness_proof(capsule, 
                                    cfrag, 
                                    ch, 
                                    pub_key_alice.point_key, 

@@ -99,8 +99,8 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                    pub_key_bob.point_key,
                                    )
 
-    # The response of cheating Ursula is in capsules[0],
-    # so the rest of challenges should be correct:
+    # The response of cheating Ursula is in cfrags[0],
+    # so the rest of CFrags should be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         assert pre._verify_correctness_proof(capsule_alice1,
                                    cfrag_i,
@@ -163,8 +163,8 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    pub_key_bob.point_key,
                                    )
 
-    # The response of cheating Ursula is in capsules[0],
-    # so the rest of challenges chould be correct:
+    # The response of cheating Ursula is in cfrags[0],
+    # so the rest of CFrags chould be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         assert pre._verify_correctness_proof(capsule_alice,
                                    cfrag_i,
@@ -186,7 +186,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
     for i, kfrag in enumerate(kfrags[:M]):
 
-        # Example of potential metadata to describe the challenge request
+        # Example of potential metadata to describe the re-encryption request
         metadata = { 'ursula_id' : i, 
                      'timestamp' : time.time(), 
                      'capsule' : bytes(capsule), 

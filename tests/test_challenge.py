@@ -97,7 +97,6 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                    cfrags[0],
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   metadata[0]
                                    )
 
     # The response of cheating Ursula is in capsules[0],
@@ -107,7 +106,6 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                    cfrag_i,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   metadata_i
                                    )
 
 
@@ -143,7 +141,6 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    cfrag,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   proof_metadata=metadata_i
                                    )
 
         cfrags.append(cfrag)
@@ -164,7 +161,6 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    cfrags[0], 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,
-                                   proof_metadata=metadata[0]
                                    )
 
     # The response of cheating Ursula is in capsules[0],
@@ -174,7 +170,6 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    cfrag_i,
                                    pub_key_alice.point_key,
                                    pub_key_bob.point_key,
-                                   proof_metadata=metadata_i
                                    )
 
 
@@ -206,7 +201,6 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
                                    cfrag, 
                                    pub_key_alice.point_key, 
                                    pub_key_bob.point_key,
-                                   proof_metadata=metadata
                                    )
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?

@@ -24,6 +24,10 @@ CHACHA20_KEY_SIZE = 32
 class GenericUmbralError(Exception):
     pass
 
+class UmbralCorrectnessError(GenericUmbralError):
+    def __init__(self, message, offending_cfrags):
+        super().__init__(message)
+        self.offending_cfrags = offending_cfrags
 
 class Capsule(object):
 
@@ -471,10 +475,13 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     pub_a = alice_pubkey.point_key
 
     # TODO: Change dict for a list if issue #116 goes through
-    # TODO: Think how to inform Bob of the offending CFrag
+    offending_cfrags = []
     for _, cfrag in capsule._attached_cfrags.items():
         if not _verify_correctness_proof(capsule, cfrag, pub_a, pub_b, params):
-            raise GenericUmbralError()
+            offending_cfrags.append(cfrag)
+
+    if offending_cfrags:
+        raise UmbralCorrectnessError("Some CFrags are not correct", offending_cfrags)
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 

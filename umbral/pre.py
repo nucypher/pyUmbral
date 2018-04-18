@@ -471,12 +471,9 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     pub_a = alice_pubkey.point_key
 
     # TODO: Change dict for a list if issue #116 goes through
+    # TODO: Think how to inform Bob of the offending CFrag
     for _, cfrag in capsule._attached_cfrags.items():
-        if not _verify_correctness_proof(capsule, 
-                                         cfrag, 
-                                         pub_a, 
-                                         pub_b, 
-                                         params):
+        if not _verify_correctness_proof(capsule, cfrag, pub_a, pub_b, params):
             raise GenericUmbralError()
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)

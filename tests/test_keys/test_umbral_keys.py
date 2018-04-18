@@ -15,6 +15,34 @@ def test_gen_key():
     umbral_pub_key = umbral_priv_key.get_pubkey()
     assert type(umbral_pub_key) == keys.UmbralPublicKey
 
+def test_derive_key_from_label():
+    
+    umbral_keying_material = keys.UmbralKeyingMaterial()
+
+    label = b"my_healthcare_information"
+
+    priv_key1 = umbral_keying_material.derive_privkey_by_label(label)
+    assert type(priv_key1) == keys.UmbralPrivateKey
+
+    pub_key1 = priv_key1.get_pubkey()
+    assert type(pub_key1) == keys.UmbralPublicKey
+
+    # Check that key derivation is reproducible
+    priv_key2 = umbral_keying_material.derive_privkey_by_label(label)
+    pub_key2 = priv_key2.get_pubkey()
+    assert priv_key1.bn_key == priv_key2.bn_key
+    assert pub_key1 == pub_key2
+
+    # A salt can be used too, but of course it affects the derived key
+    salt = b"optional, randomly generated salt"
+    priv_key3 = umbral_keying_material.derive_privkey_by_label(label, salt=salt)
+    assert priv_key3.bn_key != priv_key1.bn_key
+
+    # Different labels on the same master secret create different keys
+    label = b"my_tax_information"
+    priv_key4 = umbral_keying_material.derive_privkey_by_label(label)
+    pub_key4 = priv_key4.get_pubkey()
+    assert priv_key1.bn_key != priv_key4.bn_key
 
 def test_private_key_serialization(random_ec_bignum1):
     priv_key = random_ec_bignum1
@@ -85,6 +113,23 @@ def test_umbral_key_to_cryptography_keys():
     x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
     assert umbral_affine == (x, y)
 
+def test_keying_material_serialization():
+    umbral_keying_material = keys.UmbralKeyingMaterial()
+
+    encoded_key = umbral_keying_material.to_bytes()
+
+    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key)
+    assert umbral_keying_material.keying_material == decoded_key.keying_material
+
+
+def test_keying_material_serialization_with_encryption():
+    
+    umbral_keying_material = keys.UmbralKeyingMaterial()
+
+    encoded_key = umbral_keying_material.to_bytes(password=b'test')
+
+    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key, password=b'test')
+    assert umbral_keying_material.keying_material == decoded_key.keying_material
 
 def test_umbral_public_key_equality():
     umbral_priv_key = keys.UmbralPrivateKey.gen_key()

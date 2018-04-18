@@ -455,8 +455,8 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes,
     return ciphertext, capsule
 
 
-def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
-                  alice_pub_key: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
+def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
+                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
@@ -465,10 +465,19 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     """
     params = params if params is not None else default_params()
 
-    priv_b = bob_private_key.bn_key
-    pub_b = priv_b * params.g
+    priv_b = bob_privkey.bn_key
+    pub_b = bob_privkey.get_pubkey().point_key
 
-    pub_a = alice_pub_key.point_key
+    pub_a = alice_pubkey.point_key
+
+    # TODO: Change dict for a list if issue #116 goes through
+    for _, cfrag in capsule._attached_cfrags.items():
+        if not _verify_correctness_proof(capsule, 
+                                         cfrag, 
+                                         pub_a, 
+                                         pub_b, 
+                                         params):
+            raise GenericUmbralError()
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 
@@ -489,19 +498,19 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
         # (i.e., this is a re-encrypted capsule)
+        
         bob_priv_key = priv_key
-        key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
-        dem = UmbralDEM(key)
+
+        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
+        dem = UmbralDEM(encapsulated_key)
 
         original_capsule_bytes = capsule._original_to_bytes()
         cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
         # (i.e., this is an original capsule)
-
-
-        key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
-        dem = UmbralDEM(key)
+        encapsulated_key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
+        dem = UmbralDEM(encapsulated_key)
 
         capsule_bytes = bytes(capsule)
         cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)

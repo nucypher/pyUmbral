@@ -182,7 +182,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice1, priv_key_bob, pub_key_alice)
+        _ = pre._open_capsule(capsule_alice, priv_key_bob, pub_key_alice)
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
 

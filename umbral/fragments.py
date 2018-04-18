@@ -76,7 +76,7 @@ class KFrag(object):
 
 
 class CorrectnessProof(object):
-    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
+    def __init__(self, e2, v2, u1, u2, z1, z2, z3, metadata:bytes=None):
         self.point_eph_e2 = e2
         self.point_eph_v2 = v2
         self.point_kfrag_commitment = u1
@@ -84,6 +84,7 @@ class CorrectnessProof(object):
         self.bn_kfrag_sig1 = z1
         self.bn_kfrag_sig2 = z2
         self.bn_sig = z3
+        self.metadata = metadata
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
@@ -104,7 +105,11 @@ class CorrectnessProof(object):
         kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
         sig = BigNum.from_bytes(data.read(key_size), curve)
 
-        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
+        if data.readable():
+            metadata = data.read()
+
+        return cls(e2, v2, kfrag_commitment, kfrag_pok, 
+                   kfrag_sig1, kfrag_sig2, sig, metadata=metadata)
 
     def to_bytes(self) -> bytes:
         """
@@ -124,7 +129,10 @@ class CorrectnessProof(object):
             + kfrag_pok        \
             + kfrag_sig1       \
             + kfrag_sig2       \
-            + sig
+            + sig              
+
+        if self.metadata is not None:
+            result = result + self.metadata
 
         return result
 
@@ -172,7 +180,7 @@ class CapsuleFrag(object):
         kfrag_id = self.bn_kfrag_id.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
 
-        if self.proof:
+        if self.proof is not None:
             proof = self.proof.to_bytes()
 
         return e1 + v1 + kfrag_id + eph_ni + proof

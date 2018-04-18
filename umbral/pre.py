@@ -301,7 +301,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if proof_metadata:
+    if proof_metadata is not None:
         hash_input.append(proof_metadata)
     
     h = hash_to_bn(hash_input, params)
@@ -309,7 +309,8 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     z3 = t + h * kfrag.bn_key
 
     ch_resp = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
-                                z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3)
+                                z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3,
+                                metadata=proof_metadata)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
@@ -487,6 +488,7 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
 
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
+        # (i.e., this is a re-encrypted capsule)
         bob_priv_key = priv_key
         key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
         dem = UmbralDEM(key)
@@ -495,6 +497,9 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
         cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
+        # (i.e., this is an original capsule)
+
+
         key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
         dem = UmbralDEM(key)
 

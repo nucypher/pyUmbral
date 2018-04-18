@@ -321,7 +321,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
 
 
 def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
-                    pub_a: Point, pub_b: Point, proof_metadata: bytes=None,
+                    pub_a: Point, pub_b: Point, 
                     params: UmbralParameters=None) -> bool:
     
     try:
@@ -355,8 +355,8 @@ def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
     g_y = (z2 * g) + (z1 * pub_a)
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if proof_metadata:
-        hash_input.append(proof_metadata)
+    if proof.metadata is not None:
+        hash_input.append(proof.metadata)
     
     h = hash_to_bn(hash_input, params)
 

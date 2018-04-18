@@ -251,7 +251,6 @@ class BigNum(object):
     def __hash__(self):
         return hash(int(self))
 
-
 def hash_to_bn(crypto_items, params):
     blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
     for item in crypto_items:

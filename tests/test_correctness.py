@@ -108,6 +108,13 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                    pub_key_bob.point_key,
                                    )
 
+    # Alternatively, we can try to open the capsule directly.
+    # We should get an exception with an attached list of incorrect cfrags
+    with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
+        _ = pre._open_capsule(capsule_alice1, priv_key_bob, pub_key_alice)
+    correctness_error = exception_info.value
+    assert cfrags[0] in correctness_error.offending_cfrags
+
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_cheating_ursula_sends_garbage(N, M):
@@ -172,6 +179,12 @@ def test_cheating_ursula_sends_garbage(N, M):
                                    pub_key_bob.point_key,
                                    )
 
+    # Alternatively, we can try to open the capsule directly.
+    # We should get an exception with an attached list of incorrect cfrags
+    with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
+        _ = pre._open_capsule(capsule_alice1, priv_key_bob, pub_key_alice)
+    correctness_error = exception_info.value
+    assert cfrags[0] in correctness_error.offending_cfrags
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):

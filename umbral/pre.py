@@ -400,7 +400,7 @@ def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
     if challenge_metadata is not None:
         hash_input.append(challenge_metadata)
     
-    h = BigNum.hash_to_bn(hash_input, params=params)
+    h = BigNum.hash_to_bn(*hash_input, params=params)
 
     check31 = z1 == BigNum.hash_to_bn(g_y, kfrag_id, pub_a, pub_b, u1, xcomp, params=params)
     check32 = z3 * e == e2 + (h * e1)

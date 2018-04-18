@@ -85,17 +85,16 @@ class BigNum(object):
     def hash_to_bn(cls, *crypto_items, params=None):
         params = params if params is not None else default_params()
 
+        # TODO: Clean this in an upcoming cleanup of pyUmbral
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         for item in crypto_items:
             try:
-                data_bytes = item.to_bytes()
+                item_bytes = item.to_bytes()
             except AttributeError:
-                if isinstance(item, bytes):
-                    data_bytes = item
-                else:
-                    raise TypeError("{} is not bytes, got {} instead.".format(item, type(item)))
-            else:
-                blake2b.update(data_bytes)
+                if not isinstance(item, bytes):
+                    raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
+                item_bytes = item
+            blake2b.update(item_bytes)
 
         i = 0
         h = 0
@@ -108,7 +107,6 @@ class BigNum(object):
 
         hash_bn = h % int(params.order)
         res = cls.from_int(hash_bn, params.curve)
-
         return res
 
     @classmethod

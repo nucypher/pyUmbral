@@ -26,7 +26,7 @@ def test_correctness_proof_serialization():
 
     metadata = str(metadata).encode()
 
-    cfrag = pre.reencrypt(kfrags[0], capsule, proof_metadata=metadata)
+    cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
 
     capsule.attach_cfrag(cfrag)
 
@@ -76,9 +76,9 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
-            cfrag = pre.reencrypt(kfrag, capsule_alice2, proof_metadata=metadata_i)
+            cfrag = pre.reencrypt(kfrag, capsule_alice2, metadata=metadata_i)
         else:
-            cfrag = pre.reencrypt(kfrag, capsule_alice1, proof_metadata=metadata_i)
+            cfrag = pre.reencrypt(kfrag, capsule_alice1, metadata=metadata_i)
 
         capsule_alice1.attach_cfrag(cfrag)
 
@@ -142,7 +142,7 @@ def test_cheating_ursula_sends_garbage(N, M):
         metadata_i = str(metadata_i).encode()
         metadata.append(metadata_i)
 
-        cfrag = pre.reencrypt(kfrag, capsule_alice, proof_metadata=metadata_i)
+        cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
 
         capsule_alice.attach_cfrag(cfrag)
         cfrags.append(cfrag)
@@ -203,7 +203,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
         metadata = str(metadata).encode()
 
-        cfrag = pre.reencrypt(kfrag, capsule, proof_metadata=metadata)
+        cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)
         capsule.attach_cfrag(cfrag)
 
         assert pre._verify_correctness(capsule, cfrag,

@@ -266,7 +266,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
 
 def reencrypt(kfrag: KFrag, capsule: Capsule,
-              params: UmbralParameters=None, proof_metadata: bytes=None) -> CapsuleFrag:
+              params: UmbralParameters=None, metadata: bytes=None) -> CapsuleFrag:
     if params is None:
         params = default_params()
 
@@ -278,7 +278,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
 
-    proof = _prove_correctness(kfrag, capsule, cfrag, proof_metadata, params)
+    proof = _prove_correctness(kfrag, capsule, cfrag, metadata, params)
 
     cfrag.attach_correctness_proof(proof)
 
@@ -286,7 +286,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
 
 def _prove_correctness(kfrag: KFrag, capsule: Capsule, 
-              cfrag: CapsuleFrag, proof_metadata: bytes=None,
+              cfrag: CapsuleFrag, metadata: bytes=None,
               params: UmbralParameters=None) -> CorrectnessProof:
     params = params if params is not None else default_params()
 
@@ -305,8 +305,8 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if proof_metadata is not None:
-        hash_input.append(proof_metadata)
+    if metadata is not None:
+        hash_input.append(metadata)
     
     h = hash_to_bn(hash_input, params)
 
@@ -314,7 +314,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
 
     ch_resp = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
                                 z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3,
-                                metadata=proof_metadata)
+                                metadata=metadata)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles

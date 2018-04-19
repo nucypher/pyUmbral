@@ -324,7 +324,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
     return ch_resp
 
 
-def _verify_correctness_proof(capsule: Capsule, cfrag: CapsuleFrag,
+def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
                     pub_a: Point, pub_b: Point, 
                     params: UmbralParameters=None) -> bool:
     
@@ -477,7 +477,7 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     # TODO: Change dict for a list if issue #116 goes through
     offending_cfrags = []
     for _, cfrag in capsule._attached_cfrags.items():
-        if not _verify_correctness_proof(capsule, cfrag, pub_a, pub_b, params):
+        if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
             offending_cfrags.append(cfrag)
 
     if offending_cfrags:

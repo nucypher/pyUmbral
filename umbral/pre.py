@@ -312,7 +312,7 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
 
     z3 = t + h * kfrag.bn_key
 
-    ch_resp = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
+    proof = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
                                 z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3,
                                 metadata=metadata)
 
@@ -364,12 +364,15 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     
     h = hash_to_bn(hash_input, params)
 
-    check31 = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
-    check32 = z3 * e == e2 + (h * e1)
-    check33 = z3 * u == u2 + (h * u1)
-    check34 = z3 * v == v2 + (h * v1)
-
-    return check31 & check32 & check33 & check34
+    valid_kfrag_signature     = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
+    correct_reencryption_of_e = z3 * e == e2 + (h * e1)
+    correct_reencryption_of_v = z3 * v == v2 + (h * v1)
+    correct_rk_commitment     = z3 * u == u2 + (h * u1)
+    
+    return valid_kfrag_signature        \
+         & correct_reencryption_of_e    \
+         & correct_reencryption_of_v    \
+         & correct_rk_commitment
 
 
 def _encapsulate(alice_pub_key: Point, key_length=32,

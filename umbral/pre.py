@@ -265,8 +265,8 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     return kfrags
 
 
-def reencrypt(kfrag: KFrag, capsule: Capsule,
-              params: UmbralParameters=None, metadata: bytes=None) -> CapsuleFrag:
+def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None, 
+              provide_proof=True, metadata: bytes=None) -> CapsuleFrag:
     if params is None:
         params = default_params()
 
@@ -278,16 +278,15 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
 
-    proof = _prove_correctness(kfrag, capsule, cfrag, metadata, params)
-
-    cfrag.attach_correctness_proof(proof)
+    if provide_proof:
+        _prove_correctness(cfrag, kfrag, capsule, metadata, params)
 
     return cfrag
 
 
-def _prove_correctness(kfrag: KFrag, capsule: Capsule, 
-              cfrag: CapsuleFrag, metadata: bytes=None,
-              params: UmbralParameters=None) -> CorrectnessProof:
+def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule, 
+                       metadata: bytes=None, params: UmbralParameters=None
+                      ) -> CorrectnessProof:
     params = params if params is not None else default_params()
 
     e1 = cfrag.point_eph_e1
@@ -316,13 +315,12 @@ def _prove_correctness(kfrag: KFrag, capsule: Capsule,
                                 z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3,
                                 metadata=metadata)
 
+    cfrag.proof = proof
+
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
     if not capsule.verify(params):
         raise capsule.NotValid("Capsule verification failed.")
-
-    return ch_resp
-
 
 def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
                     pub_a: Point, pub_b: Point, 

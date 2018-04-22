@@ -105,8 +105,9 @@ class CorrectnessProof(object):
         kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
         sig = BigNum.from_bytes(data.read(key_size), curve)
 
-        if data.readable():
-            metadata = data.read()
+        metadata = data.read()
+        if metadata == bytes(0):
+            metadata = None
 
         return cls(e2, v2, kfrag_commitment, kfrag_pok, 
                    kfrag_sig1, kfrag_sig2, sig, metadata=metadata)
@@ -141,13 +142,11 @@ class CorrectnessProof(object):
 
 
 class CapsuleFrag(object):
-    def __init__(self, e1, v1, id_, x):
+    def __init__(self, e1, v1, id_, x, proof: CorrectnessProof=None):
         self.point_eph_e1 = e1
         self.point_eph_v1 = v1
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
-
-    def attach_correctness_proof(self, proof: CorrectnessProof=None):
         self.proof = proof
 
     @classmethod
@@ -166,10 +165,10 @@ class CapsuleFrag(object):
         kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
         eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
 
-        if data.readable():
-            proof = CorrectnessProof.from_bytes(data.read(), curve)
+        proof = data.read()
+        proof = CorrectnessProof.from_bytes(proof, curve) if proof != bytes(0) else None
 
-        return cls(e1, v1, kfrag_id, eph_ni)
+        return cls(e1, v1, kfrag_id, eph_ni, proof)
 
     def to_bytes(self):
         """

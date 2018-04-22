@@ -179,10 +179,12 @@ class CapsuleFrag(object):
         kfrag_id = self.bn_kfrag_id.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
 
-        if self.proof is not None:
-            proof = self.proof.to_bytes()
+        serialized_cfrag = e1 + v1 + kfrag_id + eph_ni
 
-        return e1 + v1 + kfrag_id + eph_ni + proof
+        if self.proof is not None:
+            serialized_cfrag += self.proof.to_bytes()
+
+        return serialized_cfrag
 
     def __bytes__(self):
         return self.to_bytes()

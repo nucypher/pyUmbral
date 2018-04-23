@@ -363,7 +363,7 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     
     h = BigNum.hash_to_bn(*hash_input, params=params)
 
-    valid_kfrag_signature     = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
+    valid_kfrag_signature     = z1 == BigNum.hash_to_bn(*[g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params=params)
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
     correct_reencryption_of_v = z3 * v == v2 + (h * v1)
     correct_rk_commitment     = z3 * u == u2 + (h * u1)

@@ -146,10 +146,7 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(set_privkey_result == 1)
 
         # Get public key
-        point = backend._lib.EC_POINT_new(self.bn_key.group)
-        backend.openssl_assert(point != backend._ffi.NULL)
-        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
-
+        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             mult_result = backend._lib.EC_POINT_mul(
                 self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,

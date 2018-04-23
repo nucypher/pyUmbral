@@ -9,9 +9,9 @@ from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
 
 
-class BigNum(object):
+class CurveBN(object):
     """
-    Represents an OpenSSL BIGNUM except more Pythonic
+    Represents an OpenSSL Bignum modulo the order of a curve.
     """
 
     def __init__(self, bignum, curve_nid, group, order):
@@ -23,7 +23,7 @@ class BigNum(object):
     @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve = None):
         """
-        Returns a BigNum object with a cryptographically secure BigNum based
+        Returns a CurveBN object with a cryptographically secure Bignum based
         on the given curve.
         """
         curve = curve if curve is not None else default_curve()
@@ -41,7 +41,7 @@ class BigNum(object):
     @classmethod
     def from_int(cls, num, curve: ec.EllipticCurve=None):
         """
-        Returns a BigNum object from a given integer on a curve.
+        Returns a CurveBN object from a given integer on a curve.
         """
         curve = curve if curve is not None else default_curve()
         try:
@@ -88,17 +88,17 @@ class BigNum(object):
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
         """
-        Returns a BigNum object from the given byte data that's within the size
+        Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
         """
         curve = curve if curve is not None else default_curve()
         num = int.from_bytes(data, 'big')
 
-        return BigNum.from_int(num, curve)
+        return cls.from_int(num, curve)
 
     def to_bytes(self):
         """
-        Returns the BigNum as bytes.
+        Returns the CurveBN as bytes.
         """
         size = backend._lib.BN_num_bytes(self.order)
 
@@ -106,7 +106,7 @@ class BigNum(object):
 
     def __int__(self):
         """
-        Converts the BigNum to a Python int.
+        Converts the CurveBN to a Python int.
         """
         return backend._bn_to_int(self.bignum)
 
@@ -116,7 +116,7 @@ class BigNum(object):
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = BigNum(other, None, None, None)
+            other = CurveBN(other, None, None, None)
 
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
@@ -129,7 +129,7 @@ class BigNum(object):
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = BigNum(other, None, None, None)
+            other = CurveBN(other, None, None, None)
 
         power = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -138,13 +138,13 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(power, self.curve_nid, self.group, self.order)
+        return CurveBN(power, self.curve_nid, self.group, self.order)
 
     def __mul__(self, other):
         """
         Performs a BN_mod_mul between two BIGNUMS.
         """
-        if type(other) != BigNum:
+        if type(other) != CurveBN:
             return NotImplemented
 
         product = openssl._get_new_BN()
@@ -154,7 +154,7 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve_nid, self.group, self.order)
 
     def __truediv__(self, other):
         """
@@ -174,7 +174,7 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve_nid, self.group, self.order)
 
     def __add__(self, other):
         """
@@ -187,7 +187,7 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(op_sum, self.curve_nid, self.group, self.order)
+        return CurveBN(op_sum, self.curve_nid, self.group, self.order)
 
     def __sub__(self, other):
         """
@@ -200,7 +200,7 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(diff, self.curve_nid, self.group, self.order)
+        return CurveBN(diff, self.curve_nid, self.group, self.order)
 
     def __invert__(self):
         """
@@ -215,7 +215,7 @@ class BigNum(object):
             backend.openssl_assert(inv != backend._ffi.NULL)
             inv = backend._ffi.gc(inv, backend._lib.BN_clear_free)
 
-        return BigNum(inv, self.curve_nid, self.group, self.order)
+        return CurveBN(inv, self.curve_nid, self.group, self.order)
 
     def __mod__(self, other):
         """
@@ -223,7 +223,7 @@ class BigNum(object):
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = BigNum(other, None, None, None)
+            other = CurveBN(other, None, None, None)
 
         rem = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -232,7 +232,7 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(rem, self.curve_nid, self.group, self.order)
+        return CurveBN(rem, self.curve_nid, self.group, self.order)
 
     def __hash__(self):
         return hash(int(self))

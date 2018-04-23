@@ -3,7 +3,7 @@ from collections import namedtuple
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import keys
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.config import set_default_curve
 from umbral.point import Point
 
@@ -48,11 +48,11 @@ def random_ec_point2():
 
 
 @pytest.fixture()
-def random_ec_bignum1():
-    yield BigNum.gen_rand()
+def random_ec_curvebn1():
+    yield CurveBN.gen_rand()
 
 
 @pytest.fixture()
-def random_ec_bignum2():
-    yield BigNum.gen_rand()
+def random_ec_curvebn2():
+    yield CurveBN.gen_rand()
 

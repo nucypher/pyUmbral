@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from umbral.config import default_params
 from umbral.point import Point
-from umbral.bignum import BigNum, hash_to_bn
+from umbral.bignum import BigNum
 from umbral.params import UmbralParameters
 
     
@@ -285,17 +285,17 @@ class UmbralKeyingMaterial(object):
         Derives an UmbralPrivateKey using a KDF from this instance of 
         UmbralKeyingMaterial, a label, and an optional salt.
         """
-        if params is None:
-            params = default_params()
+        params = params if params is not None else default_params()
 
-        hkdf = HKDF(algorithm=hashes.BLAKE2b(64),
-                    length=64,
-                    salt=salt,
-                    info=b"NuCypherKMS/KeyDerivation/"+label,
-                    backend=default_backend()
-                    )
+        key_material = HKDF(
+            algorithm=hashes.BLAKE2b(64),
+            length=64,
+            salt=salt,
+            info=b"NuCypherKMS/KeyDerivation/"+label,
+            backend=default_backend()
+        ).derive(self.keying_material)
 
-        bn_key = hash_to_bn([hkdf.derive(self.keying_material)], params)
+        bn_key = BigNum.hash_to_bn(key_material, params=params)
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod

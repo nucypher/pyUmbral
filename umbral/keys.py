@@ -29,6 +29,7 @@ class UmbralPrivateKey(object):
 
         self.params = params
         self.bn_key = bn_key
+        self.pubkey = self.get_pubkey()
 
     @classmethod
     def gen_key(cls, params: UmbralParameters=None):

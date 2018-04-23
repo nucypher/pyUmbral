@@ -6,7 +6,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from umbral.bignum import BigNum, hash_to_bn
+from umbral.bignum import BigNum
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
 from umbral.fragments import KFrag, CapsuleFrag, CorrectnessProof
@@ -111,7 +111,7 @@ class Capsule(object):
         e = self._point_eph_e
         v = self._point_eph_v
         s = self._bn_sig
-        h = hash_to_bn([e, v], params)
+        h = BigNum.hash_to_bn(e, v, params=params)
 
         return s * params.g == v + (h * e)
 
@@ -149,16 +149,16 @@ class Capsule(object):
 
         id_cfrag_pairs = list(self._attached_cfrags.items())
         id_0, cfrag_0 = id_cfrag_pairs[0]
-        x_0 = hash_to_bn([id_0, hashed_dh_tuple], params)
+        x_0 = BigNum.hash_to_bn(id_0, hashed_dh_tuple, params=params)
         if len(id_cfrag_pairs) > 1:
-            xs = [hash_to_bn([_id, hashed_dh_tuple], params) 
+            xs = [BigNum.hash_to_bn(_id, hashed_dh_tuple, params=params)
                     for _id in self._attached_cfrags.keys()]
             lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0.point_eph_e1
             v = lambda_0 * cfrag_0.point_eph_v1
 
             for id_i, cfrag in id_cfrag_pairs[1:]:
-                x_i = hash_to_bn([id_i, hashed_dh_tuple], params)
+                x_i = BigNum.hash_to_bn(id_i, hashed_dh_tuple, params=params)
                 lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag.point_eph_e1)
                 v = v + (lambda_i * cfrag.point_eph_v1)
@@ -230,7 +230,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
 
     x = BigNum.gen_rand(params.curve)
     xcomp = x * g
-    d = hash_to_bn([xcomp, pub_b, pub_b * x], params)
+    d = BigNum.hash_to_bn(xcomp, pub_b, pub_b * x, params=params)
 
     coeffs = [priv_a * (~d)]
     coeffs += [BigNum.gen_rand(params.curve) for _ in range(threshold - 1)]
@@ -249,14 +249,14 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     for _ in range(N):
         id_kfrag = BigNum.gen_rand(params.curve)
 
-        share_x = hash_to_bn([id_kfrag, hashed_dh_tuple], params)
+        share_x = BigNum.hash_to_bn(id_kfrag, hashed_dh_tuple, params=params)
 
         rk = poly_eval(coeffs, share_x)
 
         u1 = rk * u
         y = BigNum.gen_rand(params.curve)
 
-        z1 = hash_to_bn([y * g, id_kfrag, pub_a, pub_b, u1, xcomp], params)
+        z1 = BigNum.hash_to_bn(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
         z2 = y - priv_a * z1
 
         kfrag = KFrag(id_=id_kfrag, key=rk, x=xcomp, u1=u1, z1=z1, z2=z2)
@@ -304,10 +304,11 @@ def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+
     if metadata is not None:
         hash_input.append(metadata)
-    
-    h = hash_to_bn(hash_input, params)
+
+    h = BigNum.hash_to_bn(*hash_input, params=params)
 
     z3 = t + h * kfrag.bn_key
 
@@ -360,7 +361,7 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     if proof.metadata is not None:
         hash_input.append(proof.metadata)
     
-    h = hash_to_bn(hash_input, params)
+    h = BigNum.hash_to_bn(*hash_input, params=params)
 
     valid_kfrag_signature     = z1 == hash_to_bn([g_y, kfrag_id, pub_a, pub_b, u1, xcomp], params)
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
@@ -371,7 +372,6 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
          & correct_reencryption_of_e    \
          & correct_reencryption_of_v    \
          & correct_rk_commitment
-
 
 def _encapsulate(alice_pub_key: Point, key_length=32,
                  params: UmbralParameters=None) -> Tuple[bytes, Capsule]:
@@ -386,7 +386,7 @@ def _encapsulate(alice_pub_key: Point, key_length=32,
     priv_u = BigNum.gen_rand(params.curve)
     pub_u = priv_u * g
 
-    h = hash_to_bn([pub_r, pub_u], params)
+    h = BigNum.hash_to_bn(pub_r, pub_u, params=params)
     s = priv_u + (priv_r * h)
 
     shared_key = (priv_r + priv_u) * alice_pub_key
@@ -420,7 +420,7 @@ def _decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     params = params if params is not None else default_params()
 
     xcomp = capsule._point_noninteractive
-    d = hash_to_bn([xcomp, pub_key, priv_key * xcomp], params)
+    d = BigNum.hash_to_bn(xcomp, pub_key, priv_key * xcomp, params=params)
 
     e_prime = capsule._point_eph_e_prime
     v_prime = capsule._point_eph_v_prime
@@ -432,7 +432,7 @@ def _decapsulate_reencrypted(pub_key: Point, priv_key: BigNum,
     e = capsule._point_eph_e
     v = capsule._point_eph_v
     s = capsule._bn_sig
-    h = hash_to_bn([e, v], params)
+    h = BigNum.hash_to_bn(e, v, params=params)
     inv_d = ~d
 
     if not (s*inv_d) * orig_pub_key == (h*e_prime) + v_prime:

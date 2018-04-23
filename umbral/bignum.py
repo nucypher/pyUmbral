@@ -4,7 +4,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
 
 
@@ -80,6 +80,34 @@ class BigNum(object):
         bignum = backend._ffi.gc(bignum, backend._lib.BN_clear_free)
 
         return cls(bignum, curve_nid, group, order)
+
+    @classmethod
+    def hash_to_bn(cls, *crypto_items, params=None):
+        params = params if params is not None else default_params()
+
+        # TODO: Clean this in an upcoming cleanup of pyUmbral
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        for item in crypto_items:
+            try:
+                item_bytes = item.to_bytes()
+            except AttributeError:
+                if not isinstance(item, bytes):
+                    raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
+                item_bytes = item
+            blake2b.update(item_bytes)
+
+        i = 0
+        h = 0
+        while h < params.CURVE_MINVAL_HASH_512:
+            blake2b_i = blake2b.copy()
+            blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
+            hash_digest = blake2b_i.finalize()
+            h = int.from_bytes(hash_digest, byteorder='big', signed=False)
+            i += 1
+
+        hash_bn = h % int(params.order)
+        res = cls.from_int(hash_bn, params.curve)
+        return res
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
@@ -251,25 +279,3 @@ class BigNum(object):
     def __hash__(self):
         return hash(int(self))
 
-def hash_to_bn(crypto_items, params):
-    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-    for item in crypto_items:
-        try:
-            data_bytes = item.to_bytes()
-        except AttributeError:
-            data_bytes = item
-        blake2b.update(data_bytes)
-
-    i = 0
-    h = 0
-    while h < params.CURVE_MINVAL_HASH_512:
-        blake2b_i = blake2b.copy()
-        blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
-        hash_digest = blake2b_i.finalize()
-        h = int.from_bytes(hash_digest, byteorder='big', signed=False)
-        i += 1
-    hash_bn = h % int(params.order)
-
-    res = BigNum.from_int(hash_bn, params.curve)
-
-    return res

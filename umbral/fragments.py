@@ -1,6 +1,6 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from umbral.bignum import BigNum, hash_to_bn
+from umbral.bignum import BigNum
 from umbral.config import default_curve, default_params
 from umbral.point import Point
 from umbral.utils import get_curve_keysize_bytes
@@ -66,7 +66,7 @@ class KFrag(object):
 
         # We check the Schnorr signature over the kfrag components
         g_y = (z2 * params.g) + (z1 * pub_a)
-        check_kfrag_2 = z1 == hash_to_bn([g_y, self.bn_id, pub_a, pub_b, u1, x], params)
+        check_kfrag_2 = z1 == BigNum.hash_to_bn(g_y, self.bn_id, pub_a, pub_b, u1, x, params=params)
         
 
         return check_kfrag_1 & check_kfrag_2

@@ -1,11 +1,11 @@
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.point import Point
 
 
-def test_mocked_openssl_point_arithmetic(mock_openssl, random_ec_point1, random_ec_point2, random_ec_bignum1):
+def test_mocked_openssl_point_arithmetic(mock_openssl, random_ec_point1, random_ec_point2, random_ec_curvebn1):
 
     operations_that_construct = (
-        random_ec_point1 * random_ec_bignum1,  # __mul__
+        random_ec_point1 * random_ec_curvebn1,  # __mul__
         random_ec_point1 + random_ec_point2,   # __add__
         ~random_ec_point1                      # __invert__
     )
@@ -22,7 +22,7 @@ def test_point_curve_multiplication_regression():
     k256_bn_bytes = b'4u\xd70-\xa0h\xdeG\xf0\x143\x06!\x91\x05{\xe4jC\n\xf1h\xed7a\xf8\x9d\xec^\x19\x8c'
 
     k256_point = Point.from_bytes(k256_point_bytes)
-    k256_bn = BigNum.from_bytes(k256_bn_bytes)
+    k256_bn = CurveBN.from_bytes(k256_bn_bytes)
 
     product_with_star_operator = k256_point * k256_bn
 

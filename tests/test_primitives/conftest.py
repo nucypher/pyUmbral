@@ -3,12 +3,12 @@ import contextlib
 import pytest
 from cryptography.hazmat.backends.openssl import backend
 
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.point import Point
 
 
 @pytest.fixture()
-def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, random_ec_bignum2: BigNum):
+def mock_openssl(mocker, random_ec_point1: Point, random_ec_curvebn1: CurveBN, random_ec_curvebn2: CurveBN):
     """
     Patches openssl backend methods for testing.
     For all functions, 1 is returned for success, 0 on error.
@@ -32,8 +32,8 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
         'BN_nnmod': backend._lib.BN_nnmod,
     }
 
-    def check_bignum_ctypes(*bignums):
-        for bn in bignums:
+    def check_curvebn_ctypes(*curvebns):
+        for bn in curvebns:
             assert 'BIGNUM' in str(bn)
             assert bn.__class__.__name__ == 'CDataGCP'
 
@@ -61,16 +61,16 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
             assert not bool(actual_backend['EC_POINT_cmp'](group, random_ec_point1.ec_point, ec_point, context))
             return actual_backend['EC_POINT_add'](group, sum, ec_point, other_point, context)
 
-        def mocked_ec_point_multiplication(group, product, null, ec_point, bignum, context):
+        def mocked_ec_point_multiplication(group, product, null, ec_point, curvebn, context):
             check_point_ctypes(ec_point, product)
             assert 'BN_CTX' in str(context)
             assert 'EC_GROUP' in str(group)
             assert 'NULL' in str(null)
             assert random_ec_point1.group == group
-            assert random_ec_bignum1.curve_nid == random_ec_point1.curve_nid
+            assert random_ec_curvebn1.curve_nid == random_ec_point1.curve_nid
             assert not bool(actual_backend['EC_POINT_cmp'](group, random_ec_point1.ec_point, ec_point, context))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            return actual_backend['EC_POINT_mul'](group, product, null, ec_point, bignum, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            return actual_backend['EC_POINT_mul'](group, product, null, ec_point, curvebn, context)
 
         def mocked_ec_point_inversion(group, inverse, context):
             check_point_ctypes(inverse)
@@ -78,52 +78,52 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_bignum1: BigNum, ran
             assert random_ec_point1.group == group
             return actual_backend['EC_POINT_invert'](group, inverse, context)
 
-        def mocked_bn_compare(bignum, other):
-            check_bignum_ctypes(bignum, other)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            return actual_backend['BN_cmp'](bignum, other)
+        def mocked_bn_compare(curvebn, other):
+            check_curvebn_ctypes(curvebn, other)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            return actual_backend['BN_cmp'](curvebn, other)
 
-        def mocked_bn_mod_exponent(power, bignum, other, order, context):
-            check_bignum_ctypes(bignum, other, power, order)
+        def mocked_bn_mod_exponent(power, curvebn, other, order, context):
+            check_curvebn_ctypes(curvebn, other, power, order)
             assert 'BN_CTX' in str(context)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum2.bignum, other))
-            return actual_backend['BN_mod_exp'](power, bignum, other, order, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn2.bignum, other))
+            return actual_backend['BN_mod_exp'](power, curvebn, other, order, context)
 
-        def mocked_bn_mod_multiplication(product, bignum, other, order, context):
-            check_bignum_ctypes(bignum, other, product, order)
+        def mocked_bn_mod_multiplication(product, curvebn, other, order, context):
+            check_curvebn_ctypes(curvebn, other, product, order)
             assert 'BN_CTX' in str(context)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum2.bignum, other))
-            return actual_backend['BN_mod_mul'](product, bignum, other, order, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn2.bignum, other))
+            return actual_backend['BN_mod_mul'](product, curvebn, other, order, context)
 
-        def mocked_bn_inverse(null, bignum, order, context):
-            check_bignum_ctypes(bignum, order)
+        def mocked_bn_inverse(null, curvebn, order, context):
+            check_curvebn_ctypes(curvebn, order)
             assert 'BN_CTX' in str(context)
             assert 'NULL' in str(null)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            return actual_backend['BN_mod_inverse'](null, bignum, order, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            return actual_backend['BN_mod_inverse'](null, curvebn, order, context)
 
-        def mocked_bn_addition(sum, bignum, other, order, context):
-            check_bignum_ctypes(bignum, other, sum, order)
+        def mocked_bn_addition(sum, curvebn, other, order, context):
+            check_curvebn_ctypes(curvebn, other, sum, order)
             assert 'BN_CTX' in str(context)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum2.bignum, other))
-            return actual_backend['BN_mod_add'](sum, bignum, other, order, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn2.bignum, other))
+            return actual_backend['BN_mod_add'](sum, curvebn, other, order, context)
 
-        def mocked_bn_subtraction(diff, bignum, other, order, context):
-            check_bignum_ctypes(bignum, other, diff, order)
+        def mocked_bn_subtraction(diff, curvebn, other, order, context):
+            check_curvebn_ctypes(curvebn, other, diff, order)
             assert 'BN_CTX' in str(context)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum2.bignum, other))
-            return actual_backend['BN_mod_sub'](diff, bignum, other, order, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn2.bignum, other))
+            return actual_backend['BN_mod_sub'](diff, curvebn, other, order, context)
 
-        def mocked_bn_nmodulus(rem, bignum, other, context):
-            check_bignum_ctypes(bignum, other, rem)
+        def mocked_bn_nmodulus(rem, curvebn, other, context):
+            check_curvebn_ctypes(curvebn, other, rem)
             assert 'BN_CTX' in str(context)
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum1.bignum, bignum))
-            assert not bool(actual_backend['BN_cmp'](random_ec_bignum2.bignum, other))
-            return actual_backend['BN_nnmod'](rem, bignum, other, context)
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn1.bignum, curvebn))
+            assert not bool(actual_backend['BN_cmp'](random_ec_curvebn2.bignum, other))
+            return actual_backend['BN_nnmod'](rem, curvebn, other, context)
 
         mock_load = {
                      # Point

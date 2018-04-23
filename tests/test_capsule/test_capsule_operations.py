@@ -1,7 +1,7 @@
 import pytest
 
 from umbral import pre
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.pre import Capsule
 
@@ -13,7 +13,7 @@ def test_capsule_creation(alices_keys):
     # Some users may create capsules their own way.
     custom_capsule = Capsule(point_e=Point.gen_rand(),
                              point_v=Point.gen_rand(),
-                             bn_sig=BigNum.gen_rand())
+                             bn_sig=CurveBN.gen_rand())
 
     assert isinstance(custom_capsule, Capsule)
 
@@ -28,11 +28,11 @@ def test_capsule_creation(alices_keys):
 def test_capsule_equality():
     one_capsule = Capsule(point_e=Point.gen_rand(),
                           point_v=Point.gen_rand(),
-                          bn_sig=BigNum.gen_rand())
+                          bn_sig=CurveBN.gen_rand())
 
     another_capsule = Capsule(point_e=Point.gen_rand(),
                               point_v=Point.gen_rand(),
-                              bn_sig=BigNum.gen_rand())
+                              bn_sig=CurveBN.gen_rand())
 
     assert one_capsule != another_capsule
 
@@ -61,7 +61,7 @@ def test_bad_capsule_fails_reencryption(alices_keys):
 
     bollocks_capsule = Capsule(point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
-                               bn_sig=BigNum.gen_rand())
+                               bn_sig=CurveBN.gen_rand())
 
     with pytest.raises(Capsule.NotValid):
         pre.reencrypt(kfrags[0], bollocks_capsule)

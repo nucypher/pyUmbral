@@ -8,7 +8,7 @@ def test_kfrag_serialization(alices_keys):
     kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
-    # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four BigNums (32 each).
+    # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four CurveBNs (32 each).
     assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
 
     new_frag = pre.KFrag.from_bytes(kfrag_bytes)
@@ -40,7 +40,7 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
     assert proof is not None
     assert proof.metadata is not None
 
-    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
+    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a CurveBN (32).
     # TODO: Figure out final size for CFrags with proofs
     #assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
@@ -76,7 +76,7 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys):
     assert proof is not None
     assert proof.metadata is None
 
-    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
+    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a CurveBN (32).
     # TODO: Figure out final size for CFrags with proofs
     #assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
@@ -109,7 +109,7 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys):
     proof = cfrag.proof
     assert proof is None
 
-    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a BigNum (32).
+    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a CurveBN (32).
     assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)

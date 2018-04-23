@@ -1,4 +1,4 @@
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
@@ -32,7 +32,7 @@ class Point(object):
         generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         rand_point = openssl._get_new_EC_POINT(ec_group=group)
-        rand_bn = BigNum.gen_rand(curve).bignum
+        rand_bn = CurveBN.gen_rand(curve).bignum
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
@@ -95,7 +95,7 @@ class Point(object):
             if len(data[1:]) > get_curve_keysize_bytes(curve):
                 raise ValueError("X coordinate too large for curve.")
 
-            affine_x = BigNum.from_bytes(data[1:], curve)
+            affine_x = CurveBN.from_bytes(data[1:], curve)
 
             ec_point = openssl._get_new_EC_POINT(ec_group=affine_x.group)
             with backend._tmp_bn_ctx() as bn_ctx:
@@ -157,7 +157,7 @@ class Point(object):
     @classmethod
     def get_order_from_curve(cls, curve: ec.EllipticCurve=None):
         """
-        Returns the order from the given curve as a BigNum.
+        Returns the order from the given curve as a CurveBN.
         """
         curve = curve if curve is not None else default_curve()
         try:
@@ -169,7 +169,7 @@ class Point(object):
         group = openssl._get_ec_group_by_curve_nid(curve_nid)
         order = openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        return BigNum(order, curve_nid, group, order)
+        return CurveBN(order, curve_nid, group, order)
 
     def __eq__(self, other):
         """

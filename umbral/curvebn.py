@@ -21,6 +21,15 @@ class CurveBN(object):
         self.order = order
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a CurveBN given the curve.
+        If no curve is provided, it uses the default.
+        """
+        curve = curve if curve is not None else default_curve()
+        return get_curve_keysize_bytes(curve)
+
+    @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve = None):
         """
         Returns a CurveBN object with a cryptographically secure Bignum based

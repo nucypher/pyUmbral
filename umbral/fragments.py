@@ -19,6 +19,18 @@ class KFrag(object):
         self._bn_sig2 = bn_sig2
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a KFrag given the curve.
+        If no curve is provided, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
+
+        return (bn_size * 4) + (point_size * 2)
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate a KFrag object from the serialized data.
@@ -91,6 +103,18 @@ class CorrectnessProof(object):
         self.metadata = metadata
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a CorrectnessProof without the metadata.
+        If no curve is given, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve=curve)
+        point_size = Point.get_size(curve=curve)
+
+        return (bn_size * 3) + (point_size * 4)
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
         """
         Instantiate CorrectnessProof from serialized data.
@@ -150,6 +174,18 @@ class CapsuleFrag(object):
         self._bn_kfrag_id = bn_kfrag_id
         self._point_noninteractive = point_noninteractive
         self.proof = proof
+
+    @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a CapsuleFrag given the curve.
+        If no curve is provided, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
+
+        return (bn_size * 1) + (point_size * 3)
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):

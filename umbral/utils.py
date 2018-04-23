@@ -41,4 +41,6 @@ def kdf(ecpoint, key_length):
 
 
 def get_curve_keysize_bytes(curve):
+    # We use the ceil operation to fit all bytes on curve sizes where eight is
+    # not evenly divisible.
     return int(math.ceil(curve.key_size / 8.00))

@@ -123,7 +123,7 @@ class Capsule(object):
     def original_components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig
 
-    def activated_components(self) -> Union[Tuple[None, NCurveBNone], Tuple[Point, Point, Point]]:
+    def activated_components(self) -> Union[Tuple[None, None, None], Tuple[Point, Point, Point]]:
         return self._point_e_prime, self._point_v_prime, self._point_noninteractive
 
     def _reconstruct_shamirs_secret(self, 

@@ -19,12 +19,7 @@ def test_correctness_proof_serialization():
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
-    metadata = { 'ursula_id' : 0, 
-                 'timestamp' : time.time(), 
-                 'capsule' : bytes(capsule), 
-               }
-
-    metadata = str(metadata).encode()
+    metadata = b"This is an example of metadata for re-encryption request"
 
     cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
 
@@ -66,13 +61,8 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     for i, kfrag in enumerate(kfrags):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice1), 
-                     }
-
-        metadata_i = str(metadata_i).encode()
-        metadata.append(metadata_i)
+        metadata_i = "This is an example of metadata for re-encryption request #{}"
+        metadata_i = metadata_i.format(i).encode()
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
@@ -134,13 +124,8 @@ def test_cheating_ursula_sends_garbage(N, M):
     for i, kfrag in enumerate(kfrags[:M]):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice), 
-                     }
-
-        metadata_i = str(metadata_i).encode()
-        metadata.append(metadata_i)
+        metadata_i = "This is an example of metadata for re-encryption request #{}"
+        metadata_i = metadata_i.format(i).encode()
 
         cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
 
@@ -217,12 +202,8 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     for i, kfrag in enumerate(kfrags[:M]):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata = { 'ursula_id' : i, 
-                     'timestamp' : time.time(), 
-                     'capsule' : bytes(capsule), 
-                   }
-
-        metadata = str(metadata).encode()
+        metadata = "This is an example of metadata for re-encryption request #{}"
+        metadata = metadata.format(i).encode()
 
         cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)
         capsule.attach_cfrag(cfrag)

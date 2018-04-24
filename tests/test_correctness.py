@@ -183,6 +183,27 @@ def test_cheating_ursula_sends_garbage(N, M):
     assert len(correctness_error.offending_cfrags) == 1
 
 @pytest.mark.parametrize("N, M", parameters)
+def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_keys, bobs_keys):
+
+    """Manually injects umbralparameters for multi-curve testing."""
+
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        capsule.attach_cfrag(cfrag)
+
+
+    with pytest.raises(AttributeError):
+        _ = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice)
+
+
+@pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):
     priv_key_alice, pub_key_alice = alices_keys
     priv_key_bob, pub_key_bob = bobs_keys

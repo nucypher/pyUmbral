@@ -75,12 +75,76 @@ class KFrag(object):
         return self.to_bytes()
 
 
+class CorrectnessProof(object):
+    def __init__(self, e2, v2, u1, u2, z1, z2, z3, metadata:bytes=None):
+        self.point_eph_e2 = e2
+        self.point_eph_v2 = v2
+        self.point_kfrag_commitment = u1
+        self.point_kfrag_pok = u2
+        self.bn_kfrag_sig1 = z1
+        self.bn_kfrag_sig2 = z2
+        self.bn_sig = z3
+        self.metadata = metadata
+
+    @classmethod
+    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
+        """
+        Instantiate CorrectnessProof from serialized data.
+        """
+        curve = curve if curve is not None else default_curve()
+        key_size = get_curve_keysize_bytes(curve)
+        data = BytesIO(data)
+
+        # BigNums are the keysize in bytes, Points are compressed and the
+        # keysize + 1 bytes long.
+        e2 = Point.from_bytes(data.read(key_size + 1), curve)
+        v2 = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
+        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
+        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
+        sig = BigNum.from_bytes(data.read(key_size), curve)
+
+        metadata = data.read() or None
+
+        return cls(e2, v2, kfrag_commitment, kfrag_pok, 
+                   kfrag_sig1, kfrag_sig2, sig, metadata=metadata)
+
+    def to_bytes(self) -> bytes:
+        """
+        Serialize the CorrectnessProof to a bytestring.
+        """
+        e2 = self.point_eph_e2.to_bytes()
+        v2 = self.point_eph_v2.to_bytes()
+        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
+        kfrag_pok = self.point_kfrag_pok.to_bytes()
+        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
+        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
+        sig = self.bn_sig.to_bytes()
+
+        result = e2            \
+            + v2               \
+            + kfrag_commitment \
+            + kfrag_pok        \
+            + kfrag_sig1       \
+            + kfrag_sig2       \
+            + sig              
+
+        result += self.metadata or b''
+
+        return result
+
+    def __bytes__(self):
+        return self.to_bytes()
+
+
 class CapsuleFrag(object):
-    def __init__(self, e1, v1, id_, x):
+    def __init__(self, e1, v1, id_, x, proof: CorrectnessProof=None):
         self.point_eph_e1 = e1
         self.point_eph_v1 = v1
         self.bn_kfrag_id = id_
         self.point_eph_ni = x
+        self.proof = proof
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
@@ -98,7 +162,10 @@ class CapsuleFrag(object):
         kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
         eph_ni = Point.from_bytes(data.read(key_size + 1), curve)
 
-        return cls(e1, v1, kfrag_id, eph_ni)
+        proof = data.read() or None
+        proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
+
+        return cls(e1, v1, kfrag_id, eph_ni, proof)
 
     def to_bytes(self):
         """
@@ -109,7 +176,14 @@ class CapsuleFrag(object):
         kfrag_id = self.bn_kfrag_id.to_bytes()
         eph_ni = self.point_eph_ni.to_bytes()
 
-        return e1 + v1 + kfrag_id + eph_ni
+        serialized_cfrag = e1 + v1 + kfrag_id + eph_ni
+
+        if self.proof is not None:
+            serialized_cfrag += self.proof.to_bytes()
+
+        return serialized_cfrag
 
     def __bytes__(self):
         return self.to_bytes()
+
+

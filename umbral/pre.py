@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from umbral.bignum import BigNum
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
-from umbral.fragments import KFrag, CapsuleFrag
+from umbral.fragments import KFrag, CapsuleFrag, CorrectnessProof
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
@@ -24,6 +24,10 @@ CHACHA20_KEY_SIZE = 32
 class GenericUmbralError(Exception):
     pass
 
+class UmbralCorrectnessError(GenericUmbralError):
+    def __init__(self, message, offending_cfrags):
+        super().__init__(message)
+        self.offending_cfrags = offending_cfrags
 
 class Capsule(object):
 
@@ -199,61 +203,7 @@ class Capsule(object):
         return hash(component_bytes)
 
 
-class ChallengeResponse(object):
-    def __init__(self, e2, v2, u1, u2, z1, z2, z3):
-        self.point_eph_e2 = e2
-        self.point_eph_v2 = v2
-        self.point_kfrag_commitment = u1
-        self.point_kfrag_pok = u2
-        self.bn_kfrag_sig1 = z1
-        self.bn_kfrag_sig2 = z2
-        self.bn_sig = z3
 
-    @classmethod
-    def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
-        """
-        Instantiate ChallengeResponse from serialized data.
-        """
-        curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
-        data = BytesIO(data)
-
-        # BigNums are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        e2 = Point.from_bytes(data.read(key_size + 1), curve)
-        v2 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
-        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
-        sig = BigNum.from_bytes(data.read(key_size), curve)
-
-        return cls(e2, v2, kfrag_commitment, kfrag_pok, kfrag_sig1, kfrag_sig2, sig)
-
-    def to_bytes(self) -> bytes:
-        """
-        Serialize the ChallengeResponse to a bytestring.
-        """
-        e2 = self.point_eph_e2.to_bytes()
-        v2 = self.point_eph_v2.to_bytes()
-        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
-        kfrag_pok = self.point_kfrag_pok.to_bytes()
-        kfrag_sig1 = self.bn_kfrag_sig1.to_bytes()
-        kfrag_sig2 = self.bn_kfrag_sig2.to_bytes()
-        sig = self.bn_sig.to_bytes()
-
-        result = e2            \
-            + v2               \
-            + kfrag_commitment \
-            + kfrag_pok        \
-            + kfrag_sig1       \
-            + kfrag_sig2       \
-            + sig
-
-        return result
-
-    def __bytes__(self):
-        return self.to_bytes()
 
 
 def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
@@ -315,9 +265,10 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, BigNum],
     return kfrags
 
 
-def reencrypt(kfrag: KFrag, capsule: Capsule,
-              params: UmbralParameters=None) -> CapsuleFrag:
-    params = params if params is not None else default_params()
+def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None, 
+              provide_proof=True, metadata: bytes=None) -> CapsuleFrag:
+    if params is None:
+        params = default_params()
 
     if not capsule.verify(params):
         raise capsule.NotValid
@@ -326,12 +277,16 @@ def reencrypt(kfrag: KFrag, capsule: Capsule,
     v1 = kfrag.bn_key * capsule._point_eph_v
 
     cfrag = CapsuleFrag(e1=e1, v1=v1, id_=kfrag.bn_id, x=kfrag.point_eph_ni)
+
+    if provide_proof:
+        _prove_correctness(cfrag, kfrag, capsule, metadata, params)
+
     return cfrag
 
 
-def _challenge(kfrag: KFrag, capsule: Capsule, 
-              cfrag: CapsuleFrag, challenge_metadata: bytes=None,
-              params: UmbralParameters=None) -> ChallengeResponse:
+def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule, 
+                       metadata: bytes=None, params: UmbralParameters=None
+                      ) -> CorrectnessProof:
     params = params if params is not None else default_params()
 
     e1 = cfrag.point_eph_e1
@@ -349,28 +304,32 @@ def _challenge(kfrag: KFrag, capsule: Capsule,
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata is not None:
-        hash_input.append(challenge_metadata)
+
+    if metadata is not None:
+        hash_input.append(metadata)
 
     h = BigNum.hash_to_bn(*hash_input, params=params)
 
     z3 = t + h * kfrag.bn_key
 
-    ch_resp = ChallengeResponse(e2=e2, v2=v2, u1=u1, u2=u2,
-                                z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3)
+    proof = CorrectnessProof(e2=e2, v2=v2, u1=u1, u2=u2,
+                                z1=kfrag.bn_sig1, z2=kfrag.bn_sig2, z3=z3,
+                                metadata=metadata)
+
+    cfrag.proof = proof
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
     if not capsule.verify(params):
         raise capsule.NotValid("Capsule verification failed.")
 
-    return ch_resp
-
-
-def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
-                    challenge_resp: ChallengeResponse, 
-                    pub_a: Point, pub_b: Point, challenge_metadata: bytes=None,
+def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
+                    pub_a: Point, pub_b: Point, 
                     params: UmbralParameters=None) -> bool:
+    
+    
+    proof = cfrag.proof
+
     params = params if params is not None else default_params()
 
     e = capsule._point_eph_e
@@ -381,34 +340,39 @@ def _check_challenge(capsule: Capsule, cfrag: CapsuleFrag,
     xcomp = cfrag.point_eph_ni
     kfrag_id = cfrag.bn_kfrag_id
 
-    e2 = challenge_resp.point_eph_e2
-    v2 = challenge_resp.point_eph_v2
+    e2 = proof.point_eph_e2
+    v2 = proof.point_eph_v2
 
     g = params.g
     u = params.u
 
-    u1 = challenge_resp.point_kfrag_commitment
-    u2 = challenge_resp.point_kfrag_pok
+    u1 = proof.point_kfrag_commitment
+    u2 = proof.point_kfrag_pok
 
-    z1 = challenge_resp.bn_kfrag_sig1
-    z2 = challenge_resp.bn_kfrag_sig2
-    z3 = challenge_resp.bn_sig
+    z1 = proof.bn_kfrag_sig1
+    z2 = proof.bn_kfrag_sig2
+    z3 = proof.bn_sig
 
     g_y = (z2 * g) + (z1 * pub_a)
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if challenge_metadata is not None:
-        hash_input.append(challenge_metadata)
+    if proof.metadata is not None:
+        hash_input.append(proof.metadata)
     
     h = BigNum.hash_to_bn(*hash_input, params=params)
 
-    check31 = z1 == BigNum.hash_to_bn(g_y, kfrag_id, pub_a, pub_b, u1, xcomp, params=params)
-    check32 = z3 * e == e2 + (h * e1)
-    check33 = z3 * u == u2 + (h * u1)
-    check34 = z3 * v == v2 + (h * v1)
-
-    return check31 & check32 & check33 & check34
-
+    signature_input = [g_y, kfrag_id, pub_a, pub_b, u1, xcomp]
+    kfrag_signature1 = BigNum.hash_to_bn(*signature_input, params=params)
+    valid_kfrag_signature = z1 == kfrag_signature1
+    
+    correct_reencryption_of_e = z3 * e == e2 + (h * e1)
+    correct_reencryption_of_v = z3 * v == v2 + (h * v1)
+    correct_rk_commitment = z3 * u == u2 + (h * u1)
+    
+    return valid_kfrag_signature        \
+         & correct_reencryption_of_e    \
+         & correct_reencryption_of_v    \
+         & correct_rk_commitment
 
 def _encapsulate(alice_pub_key: Point, key_length=32,
                  params: UmbralParameters=None) -> Tuple[bytes, Capsule]:
@@ -497,8 +461,9 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes,
     return ciphertext, capsule
 
 
-def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
-                  alice_pub_key: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
+def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
+                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None, 
+                  check_proof=True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
@@ -507,10 +472,20 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     """
     params = params if params is not None else default_params()
 
-    priv_b = bob_private_key.bn_key
-    pub_b = priv_b * params.g
+    priv_b = bob_privkey.bn_key
+    pub_b = bob_privkey.get_pubkey().point_key
 
-    pub_a = alice_pub_key.point_key
+    pub_a = alice_pubkey.point_key
+
+    # TODO: Change dict for a list if issue #116 goes through
+    if check_proof:
+        offending_cfrags = []
+        for _, cfrag in capsule._attached_cfrags.items():
+            if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
+                offending_cfrags.append(cfrag)
+
+        if offending_cfrags:
+            raise UmbralCorrectnessError("Some CFrags are not correct", offending_cfrags)
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 
@@ -518,8 +493,9 @@ def _open_capsule(capsule: Capsule, bob_private_key: UmbralPrivateKey,
     return key
 
 
-def decrypt(ciphertext: bytes, capsule: Capsule,
-        priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, params: UmbralParameters=None) -> bytes:
+def decrypt(ciphertext: bytes, capsule: Capsule, 
+            priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, 
+            params: UmbralParameters=None, check_proof=True) -> bytes:
     """
     Opens the capsule and gets what's inside.
 
@@ -530,16 +506,21 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
 
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
+        # (i.e., this is a re-encrypted capsule)
+        
         bob_priv_key = priv_key
-        key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
-        dem = UmbralDEM(key)
+
+        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, 
+                                         params=params, check_proof=check_proof)
+        dem = UmbralDEM(encapsulated_key)
 
         original_capsule_bytes = capsule._original_to_bytes()
         cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
-        key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
-        dem = UmbralDEM(key)
+        # (i.e., this is an original capsule)
+        encapsulated_key = _decapsulate_original(priv_key.bn_key, capsule, params=params)
+        dem = UmbralDEM(encapsulated_key)
 
         capsule_bytes = bytes(capsule)
         cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)

@@ -19,10 +19,10 @@ def test_correctness_proof_serialization():
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
-    metadata = { 'ursula_id' : 0, 
-                 'timestamp' : time.time(), 
-                 'capsule' : bytes(capsule), 
-               }
+    metadata = {'ursula_id': 0,
+                'timestamp': time.time(),
+                'capsule': bytes(capsule),
+                }
 
     metadata = str(metadata).encode()
 
@@ -66,10 +66,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     for i, kfrag in enumerate(kfrags):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice1), 
-                     }
+        metadata_i = {'ursula_id': i,
+                      'timestamp': time.time(),
+                      'capsule': bytes(capsule_alice1),
+                      }
 
         metadata_i = str(metadata_i).encode()
         metadata.append(metadata_i)
@@ -85,20 +85,20 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
         cfrags.append(cfrag)
 
     # Let's activate the capsule
-    capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    
+    capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)
 
     with pytest.raises(pre.GenericUmbralError):
         sym_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                priv_key_bob.bn_key,
                                                pub_key_alice.point_key,
                                                capsule_alice1
-                                              )
+                                               )
 
     assert not pre._verify_correctness(capsule_alice1,
                                        cfrags[0],
                                        pub_key_alice.point_key,
                                        pub_key_bob.point_key,
-                                      )
+                                       )
 
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags should be correct:
@@ -107,7 +107,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                        cfrag_i,
                                        pub_key_alice.point_key,
                                        pub_key_bob.point_key,
-                                      )
+                                       )
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
@@ -132,12 +132,11 @@ def test_cheating_ursula_sends_garbage(N, M):
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
-
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice), 
-                     }
+        metadata_i = {'ursula_id': i,
+                      'timestamp': time.time(),
+                      'capsule': bytes(capsule_alice),
+                      }
 
         metadata_i = str(metadata_i).encode()
         metadata.append(metadata_i)
@@ -151,7 +150,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     cfrags[0].point_eph_e1 = Point.gen_rand()
     cfrags[0].point_eph_v1 = Point.gen_rand()
 
-    capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
+    capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)  # activate capsule
 
     with pytest.raises(pre.GenericUmbralError):
         _unused_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
@@ -159,11 +158,11 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                    pub_key_alice.point_key,
                                                    capsule_alice)
 
-    assert not pre._verify_correctness(capsule_alice, 
-                                       cfrags[0], 
-                                       pub_key_alice.point_key, 
+    assert not pre._verify_correctness(capsule_alice,
+                                       cfrags[0],
+                                       pub_key_alice.point_key,
                                        pub_key_bob.point_key,
-                                      )
+                                       )
 
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags chould be correct:
@@ -172,7 +171,7 @@ def test_cheating_ursula_sends_garbage(N, M):
                                        cfrag_i,
                                        pub_key_alice.point_key,
                                        pub_key_bob.point_key,
-                                      )
+                                       )
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
@@ -181,6 +180,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
+
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):
@@ -194,12 +194,11 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
         assert kfrag.verify(pub_key_alice.point_key, pub_key_bob.point_key)
 
     for i, kfrag in enumerate(kfrags[:M]):
-
         # Example of potential metadata to describe the re-encryption request
-        metadata = { 'ursula_id' : i, 
-                     'timestamp' : time.time(), 
-                     'capsule' : bytes(capsule), 
-                   }
+        metadata = {'ursula_id': i,
+                    'timestamp': time.time(),
+                    'capsule': bytes(capsule),
+                    }
 
         metadata = str(metadata).encode()
 
@@ -208,9 +207,9 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
         assert pre._verify_correctness(capsule, cfrag,
                                        pub_key_alice.point_key, pub_key_bob.point_key,
-                                      )
+                                       )
 
     # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
-    
+
     sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, pub_key_alice)
     assert sym_key == sym_key_from_capsule

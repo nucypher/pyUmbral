@@ -38,7 +38,7 @@ def test_correctness_proof_serialization():
     # TODO: Figure out final size for CorrectnessProofs
     # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
 
-    new_proof = pre.CorrectnessProof.from_bytes(proof_bytes)
+    new_proof = CorrectnessProof.from_bytes(proof_bytes)
     assert new_proof.point_eph_e2 == proof.point_eph_e2
     assert new_proof.point_eph_v2 == proof.point_eph_v2
     assert new_proof.point_kfrag_commitment == proof.point_kfrag_commitment

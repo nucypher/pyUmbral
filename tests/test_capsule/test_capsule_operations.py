@@ -11,8 +11,8 @@ def test_capsule_creation(alices_keys):
         rare_capsule = Capsule()    # Alice cannot make a capsule this way.
 
     # Some users may create capsules their own way.
-    custom_capsule = Capsule(point_eph_e=Point.gen_rand(),
-                             point_eph_v=Point.gen_rand(),
+    custom_capsule = Capsule(point_e=Point.gen_rand(),
+                             point_v=Point.gen_rand(),
                              bn_sig=BigNum.gen_rand())
 
     assert isinstance(custom_capsule, Capsule)
@@ -26,19 +26,19 @@ def test_capsule_creation(alices_keys):
 
 
 def test_capsule_equality():
-    one_capsule = Capsule(point_eph_e=Point.gen_rand(),
-                          point_eph_v=Point.gen_rand(),
+    one_capsule = Capsule(point_e=Point.gen_rand(),
+                          point_v=Point.gen_rand(),
                           bn_sig=BigNum.gen_rand())
 
-    another_capsule = Capsule(point_eph_e=Point.gen_rand(),
-                              point_eph_v=Point.gen_rand(),
+    another_capsule = Capsule(point_e=Point.gen_rand(),
+                              point_v=Point.gen_rand(),
                               bn_sig=BigNum.gen_rand())
 
     assert one_capsule != another_capsule
 
-    activated_capsule = Capsule(e_prime=Point.gen_rand(),
-                                v_prime=Point.gen_rand(),
-                                noninteractive_point=Point.gen_rand())
+    activated_capsule = Capsule(point_e_prime=Point.gen_rand(),
+                                point_v_prime=Point.gen_rand(),
+                                point_noninteractive=Point.gen_rand())
 
     assert activated_capsule != one_capsule
 
@@ -59,8 +59,8 @@ def test_bad_capsule_fails_reencryption(alices_keys):
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
-    bollocks_capsule = Capsule(point_eph_e=Point.gen_rand(),
-                               point_eph_v=Point.gen_rand(),
+    bollocks_capsule = Capsule(point_e=Point.gen_rand(),
+                               point_v=Point.gen_rand(),
                                bn_sig=BigNum.gen_rand())
 
     with pytest.raises(Capsule.NotValid):

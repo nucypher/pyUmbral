@@ -178,7 +178,8 @@ class CapsuleFrag(object):
     @classmethod
     def get_size(cls, curve: ec.EllipticCurve=None):
         """
-        Returns the size (in bytes) of a CapsuleFrag given the curve.
+        Returns the size (in bytes) of a CapsuleFrag given the curve without
+        the CorrectnessProof.
         If no curve is provided, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()

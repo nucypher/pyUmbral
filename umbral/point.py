@@ -26,7 +26,7 @@ class Point(object):
         If no curve is provided, it uses the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        return get_curve_keysize_bytes(curve)
+        return get_curve_keysize_bytes(curve) + 1
 
     @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve=None):

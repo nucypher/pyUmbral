@@ -59,8 +59,7 @@ class Capsule(object):
         self._point_v_prime = point_v_prime
         self._point_noninteractive = point_noninteractive
 
-        self._attached_cfrags = {}
-        self._contents = None
+        self._attached_cfrags = list()
 
     class NotValid(ValueError):
         """
@@ -118,7 +117,7 @@ class Capsule(object):
         return s * params.g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
-        self._attached_cfrags[cfrag._bn_kfrag_id] = cfrag
+        self._attached_cfrags.append(cfrag)
 
     def original_components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig
@@ -149,18 +148,18 @@ class Capsule(object):
         blake2b.update(g_ab.to_bytes())
         hashed_dh_tuple = blake2b.finalize()
 
-        id_cfrag_pairs = list(self._attached_cfrags.items())
-        id_0, cfrag_0 = id_cfrag_pairs[0]
+        cfrag_0 = self._attached_cfrags[0]
+        id_0 = cfrag_0._bn_kfrag_id
         x_0 = CurveBN.hash_to_bn(id_0, hashed_dh_tuple, params=params)
-        if len(id_cfrag_pairs) > 1:
-            xs = [CurveBN.hash_to_bn(_id, hashed_dh_tuple, params=params)
-                    for _id in self._attached_cfrags.keys()]
+        if len(self._attached_cfrags) > 1:
+            xs = [CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
+                    for cfrag in self._attached_cfrags]
             lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0._point_e1
             v = lambda_0 * cfrag_0._point_v1
 
-            for id_i, cfrag in id_cfrag_pairs[1:]:
-                x_i = CurveBN.hash_to_bn(id_i, hashed_dh_tuple, params=params)
+            for cfrag in self._attached_cfrags[1:]:
+                x_i = CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
                 lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag._point_e1)
                 v = v + (lambda_i * cfrag._point_v1)
@@ -489,7 +488,7 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     # TODO: Change dict for a list if issue #116 goes through
     if check_proof:
         offending_cfrags = []
-        for _, cfrag in capsule._attached_cfrags.items():
+        for cfrag in capsule._attached_cfrags:
             if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
                 offending_cfrags.append(cfrag)
 

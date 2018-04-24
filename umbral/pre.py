@@ -327,10 +327,8 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
                     pub_a: Point, pub_b: Point, 
                     params: UmbralParameters=None) -> bool:
     
-    try:
-        proof = cfrag.proof
-    except AttributeError:
-        raise ValueError("CFrag doesn't have a correctnes proof attached")
+    
+    proof = cfrag.proof
 
     params = params if params is not None else default_params()
 
@@ -464,7 +462,8 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes,
 
 
 def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
-                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
+                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None, 
+                  check_proof=True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
@@ -479,13 +478,14 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     pub_a = alice_pubkey.point_key
 
     # TODO: Change dict for a list if issue #116 goes through
-    offending_cfrags = []
-    for _, cfrag in capsule._attached_cfrags.items():
-        if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
-            offending_cfrags.append(cfrag)
+    if check_proof:
+        offending_cfrags = []
+        for _, cfrag in capsule._attached_cfrags.items():
+            if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
+                offending_cfrags.append(cfrag)
 
-    if offending_cfrags:
-        raise UmbralCorrectnessError("Some CFrags are not correct", offending_cfrags)
+        if offending_cfrags:
+            raise UmbralCorrectnessError("Some CFrags are not correct", offending_cfrags)
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 
@@ -493,8 +493,9 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     return key
 
 
-def decrypt(ciphertext: bytes, capsule: Capsule,
-        priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, params: UmbralParameters=None) -> bytes:
+def decrypt(ciphertext: bytes, capsule: Capsule, 
+            priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, 
+            params: UmbralParameters=None, check_proof=True) -> bytes:
     """
     Opens the capsule and gets what's inside.
 
@@ -509,7 +510,8 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
         
         bob_priv_key = priv_key
 
-        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
+        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, 
+                                         params=params, check_proof=check_proof)
         dem = UmbralDEM(encapsulated_key)
 
         original_capsule_bytes = capsule._original_to_bytes()

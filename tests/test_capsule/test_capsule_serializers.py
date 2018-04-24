@@ -27,8 +27,8 @@ def test_capsule_serialization(alices_keys):
 
     # Third, we can directly compare the private original component attributes
     # (though this is not a supported approach):
-    assert new_capsule._point_eph_e == capsule._point_eph_e
-    assert new_capsule._point_eph_v == capsule._point_eph_v
+    assert new_capsule._point_e == capsule._point_e
+    assert new_capsule._point_v == capsule._point_v
     assert new_capsule._bn_sig == capsule._bn_sig
 
 
@@ -58,28 +58,28 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
 
     assert new_rec_capsule.activated_components() == capsule.activated_components()
 
-    assert new_rec_capsule._point_eph_e_prime == capsule._point_eph_e_prime
-    assert new_rec_capsule._point_eph_v_prime == capsule._point_eph_v_prime
+    assert new_rec_capsule._point_e_prime == capsule._point_e_prime
+    assert new_rec_capsule._point_v_prime == capsule._point_v_prime
     assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_cannot_create_capsule_from_bogus_material(alices_keys):
     with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(point_eph_e=Point.gen_rand(),
-                                                        point_eph_v=42,
+        capsule_of_questionable_parentage = pre.Capsule(point_e=Point.gen_rand(),
+                                                        point_v=42,
                                                         bn_sig=BigNum.gen_rand())
 
     with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(point_eph_e=Point.gen_rand(),
-                                                        point_eph_v=Point.gen_rand(),
+        capsule_of_questionable_parentage = pre.Capsule(point_e=Point.gen_rand(),
+                                                        point_v=Point.gen_rand(),
                                                         bn_sig=42)
 
     with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(e_prime=Point.gen_rand(),
-                                                        v_prime=42,
-                                                        noninteractive_point=Point.gen_rand())
+        capsule_of_questionable_parentage = pre.Capsule(point_e_prime=Point.gen_rand(),
+                                                        point_v_prime=42,
+                                                        point_noninteractive=Point.gen_rand())
 
     with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(e_prime=Point.gen_rand(),
-                                                        v_prime=Point.gen_rand(),
-                                                        noninteractive_point=42)
+        capsule_of_questionable_parentage = pre.Capsule(point_e_prime=Point.gen_rand(),
+                                                        point_v_prime=Point.gen_rand(),
+                                                        point_noninteractive=42)

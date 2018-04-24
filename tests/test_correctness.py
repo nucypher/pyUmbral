@@ -34,13 +34,13 @@ def test_correctness_proof_serialization():
     # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
 
     new_proof = CorrectnessProof.from_bytes(proof_bytes)
-    assert new_proof.point_eph_e2 == proof.point_eph_e2
-    assert new_proof.point_eph_v2 == proof.point_eph_v2
-    assert new_proof.point_kfrag_commitment == proof.point_kfrag_commitment
-    assert new_proof.point_kfrag_pok == proof.point_kfrag_pok
-    assert new_proof.bn_kfrag_sig1 == proof.bn_kfrag_sig1
-    assert new_proof.bn_kfrag_sig2 == proof.bn_kfrag_sig2
-    assert new_proof.bn_sig == proof.bn_sig
+    assert new_proof._point_e2 == proof._point_e2
+    assert new_proof._point_v2 == proof._point_v2
+    assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
+    assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
+    assert new_proof._bn_kfrag_sig1 == proof._bn_kfrag_sig1
+    assert new_proof._bn_kfrag_sig2 == proof._bn_kfrag_sig2
+    assert new_proof._bn_sig == proof._bn_sig
     assert new_proof.metadata == proof.metadata
 
 
@@ -133,8 +133,8 @@ def test_cheating_ursula_sends_garbage(N, M):
         cfrags.append(cfrag)
 
     # Let's put random garbage in one of the cfrags
-    cfrags[0].point_eph_e1 = Point.gen_rand()
-    cfrags[0].point_eph_v1 = Point.gen_rand()
+    cfrags[0]._point_e1 = Point.gen_rand()
+    cfrags[0]._point_v1 = Point.gen_rand()
 
     capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
 

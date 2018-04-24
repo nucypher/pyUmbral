@@ -30,10 +30,10 @@ class CurveBN(object):
         return get_curve_keysize_bytes(curve)
 
     @classmethod
-    def gen_rand(cls, curve: ec.EllipticCurve = None):
+    def gen_rand(cls, curve: ec.EllipticCurve=None):
         """
-        Returns a CurveBN object with a cryptographically secure Bignum based
-        on the given curve.
+        Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
+        based on the given curve.
         """
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)

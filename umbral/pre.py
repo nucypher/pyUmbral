@@ -333,10 +333,8 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
                     pub_a: Point, pub_b: Point, 
                     params: UmbralParameters=None) -> bool:
     
-    try:
-        proof = cfrag.proof
-    except AttributeError:
-        raise ValueError("CFrag doesn't have a correctnes proof attached")
+    
+    proof = cfrag.proof
 
     params = params if params is not None else default_params()
 
@@ -370,12 +368,13 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     h = BigNum.hash_to_bn(*hash_input, params=params)
 
     signature_input = [g_y, kfrag_id, pub_a, pub_b, u1, xcomp]
-    valid_kfrag_signature = z1 == BigNum.hash_to_bn(*signature_input, params=params)
+    kfrag_signature1 = BigNum.hash_to_bn(*signature_input, params=params)
+    valid_kfrag_signature = z1 == kfrag_signature1
     
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
     
     correct_reencryption_of_v = z3 * v == v2 + (h * v1)
-    
+
     correct_rk_commitment = z3 * u == u2 + (h * u1)
     
     return valid_kfrag_signature        \
@@ -471,7 +470,8 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes,
 
 
 def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
-                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None) -> bytes:
+                  alice_pubkey: UmbralPublicKey, params: UmbralParameters=None, 
+                  check_proof=True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
@@ -486,13 +486,15 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     pub_a = alice_pubkey.point_key
 
     # TODO: Change dict for a list if issue #116 goes through
-    offending_cfrags = []
-    for _, cfrag in capsule._attached_cfrags.items():
-        if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
-            offending_cfrags.append(cfrag)
+    if check_proof:
+        offending_cfrags = []
+        for _, cfrag in capsule._attached_cfrags.items():
+            if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
+                offending_cfrags.append(cfrag)
 
-    if offending_cfrags:
-        raise UmbralCorrectnessError("Decryption error: some CFrags are not correct", offending_cfrags)
+        if offending_cfrags:
+            error_msg = "Decryption error: Some CFrags are not correct"
+            raise UmbralCorrectnessError(error_msg, offending_cfrags)
 
     capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
 
@@ -500,8 +502,9 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     return key
 
 
-def decrypt(ciphertext: bytes, capsule: Capsule,
-        priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, params: UmbralParameters=None) -> bytes:
+def decrypt(ciphertext: bytes, capsule: Capsule, 
+            priv_key: UmbralPrivateKey, alice_pub_key: UmbralPublicKey=None, 
+            params: UmbralParameters=None, check_proof=True) -> bytes:
     """
     Opens the capsule and gets what's inside.
 
@@ -516,7 +519,8 @@ def decrypt(ciphertext: bytes, capsule: Capsule,
         
         bob_priv_key = priv_key
 
-        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, params=params)
+        encapsulated_key = _open_capsule(capsule, bob_priv_key, alice_pub_key, 
+                                         params=params, check_proof=check_proof)
         dem = UmbralDEM(encapsulated_key)
 
         original_capsule_bytes = capsule._original_to_bytes()

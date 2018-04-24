@@ -19,12 +19,7 @@ def test_correctness_proof_serialization():
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
-    metadata = { 'ursula_id' : 0, 
-                 'timestamp' : time.time(), 
-                 'capsule' : bytes(capsule), 
-               }
-
-    metadata = str(metadata).encode()
+    metadata = b"This is an example of metadata for re-encryption request"
 
     cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
 
@@ -38,7 +33,7 @@ def test_correctness_proof_serialization():
     # TODO: Figure out final size for CorrectnessProofs
     # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
 
-    new_proof = pre.CorrectnessProof.from_bytes(proof_bytes)
+    new_proof = CorrectnessProof.from_bytes(proof_bytes)
     assert new_proof._point_e2 == proof._point_e2
     assert new_proof._point_v2 == proof._point_v2
     assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
@@ -66,13 +61,8 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     for i, kfrag in enumerate(kfrags):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice1), 
-                     }
-
-        metadata_i = str(metadata_i).encode()
-        metadata.append(metadata_i)
+        metadata_i = "This is an example of metadata for re-encryption request #{}"
+        metadata_i = metadata_i.format(i).encode()
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
@@ -134,13 +124,8 @@ def test_cheating_ursula_sends_garbage(N, M):
     for i, kfrag in enumerate(kfrags[:M]):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata_i = { 'ursula_id' : i, 
-                        'timestamp' : time.time(), 
-                        'capsule' : bytes(capsule_alice), 
-                     }
-
-        metadata_i = str(metadata_i).encode()
-        metadata.append(metadata_i)
+        metadata_i = "This is an example of metadata for re-encryption request #{}"
+        metadata_i = metadata_i.format(i).encode()
 
         cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
 
@@ -183,6 +168,27 @@ def test_cheating_ursula_sends_garbage(N, M):
     assert len(correctness_error.offending_cfrags) == 1
 
 @pytest.mark.parametrize("N, M", parameters)
+def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_keys, bobs_keys):
+
+    """Manually injects umbralparameters for multi-curve testing."""
+
+    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+
+    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        capsule.attach_cfrag(cfrag)
+
+
+    with pytest.raises(AttributeError):
+        _ = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice)
+
+
+@pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):
     priv_key_alice, pub_key_alice = alices_keys
     priv_key_bob, pub_key_bob = bobs_keys
@@ -196,12 +202,8 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     for i, kfrag in enumerate(kfrags[:M]):
 
         # Example of potential metadata to describe the re-encryption request
-        metadata = { 'ursula_id' : i, 
-                     'timestamp' : time.time(), 
-                     'capsule' : bytes(capsule), 
-                   }
-
-        metadata = str(metadata).encode()
+        metadata = "This is an example of metadata for re-encryption request #{}"
+        metadata = metadata.format(i).encode()
 
         cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)
         capsule.attach_cfrag(cfrag)

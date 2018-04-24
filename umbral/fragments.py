@@ -109,9 +109,7 @@ class CorrectnessProof(object):
         kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
         sig = BigNum.from_bytes(data.read(key_size), curve)
 
-        metadata = data.read()
-        if metadata == bytes(0):
-            metadata = None
+        metadata = data.read() or None
 
         return cls(e2, v2, kfrag_commitment, kfrag_pok, 
                    kfrag_sig1, kfrag_sig2, sig, metadata=metadata)
@@ -136,8 +134,7 @@ class CorrectnessProof(object):
             + kfrag_sig2       \
             + sig              
 
-        if self.metadata is not None:
-            result = result + self.metadata
+        result += self.metadata or b''
 
         return result
 
@@ -170,8 +167,8 @@ class CapsuleFrag(object):
         kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
         ni = Point.from_bytes(data.read(key_size + 1), curve)
 
-        proof = data.read()
-        proof = CorrectnessProof.from_bytes(proof, curve) if proof != bytes(0) else None
+        proof = data.read() or None
+        proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
 
         return cls(e1, v1, kfrag_id, ni, proof)
 

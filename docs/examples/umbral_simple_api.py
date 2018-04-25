@@ -21,7 +21,7 @@ print(alice_ciphertext)
 
 #4
 # Decrypt data for Alice
-alice_decrypted_data = pre.decrypt(umbral_capsule, alice_priv_key, alice_ciphertext, alice_pub_key)
+alice_decrypted_data = pre.decrypt(alice_ciphertext, umbral_capsule, alice_priv_key, alice_pub_key)
 print(alice_decrypted_data)
 
 #5
@@ -31,7 +31,7 @@ bob_capsule = umbral_capsule
 #6
 # Attempt Bob's decryption (fail)
 try:
-    fail_decrypted_data = pre.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pubkey)
+    fail_decrypted_data = pre.decrypt(alice_ciphertext, bob_capsule, bob_priv_key, alice_pubkey)
 except:
     print("Decryption failed!")
 
@@ -53,5 +53,5 @@ for kfrag in rand_min_shares:
 
 #9
 # Bob reconstructs the capsule and decrypts the ciphertext:
-bob_plaintext = pre.decrypt(bob_capsule, bob_priv_key, alice_ciphertext, alice_pub_key)
+bob_plaintext = pre.decrypt(alice_ciphertext, bob_capsule, bob_priv_key, alice_pub_key)
 print(bob_plaintext)

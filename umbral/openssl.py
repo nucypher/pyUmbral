@@ -58,10 +58,9 @@ def _bn_is_on_curve(check_bn, curve_nid: int):
     """
     ec_order = _get_ec_order_by_curve_nid(curve_nid)
 
-    # is_zero workaround since BN_is_zero is not exposed yet.
-    is_zero = backend._lib.BN_cmp(check_bn, backend._int_to_bn(0))
+    check_sign = backend._lib.BN_cmp(check_bn, backend._int_to_bn(0))
     range_check = backend._lib.BN_cmp(check_bn, ec_order)
-    return is_zero == 1 and range_check == -1
+    return check_sign == 1 and range_check == -1
 
 
 def _int_to_bn(py_int: int, curve_nid: int=None):

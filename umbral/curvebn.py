@@ -11,7 +11,8 @@ from umbral.utils import get_curve_keysize_bytes
 
 class CurveBN(object):
     """
-    Represents an OpenSSL Bignum modulo the order of a curve.
+    Represents an OpenSSL Bignum modulo the order of a curve. Some of these
+    operations will only work with prime numbers
     """
 
     def __init__(self, bignum, curve_nid, group, order):
@@ -44,6 +45,10 @@ class CurveBN(object):
         new_rand_bn = openssl._get_new_BN()
         rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
         backend.openssl_assert(rand_res == 1)
+
+        if not openssl._bn_is_on_curve(new_rand_bn, curve_nid):
+            new_rand_bn = cls.gen_rand(curve=curve)
+            return new_rand_bn
 
         return cls(new_rand_bn, curve_nid, group, order)
 

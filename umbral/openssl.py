@@ -1,16 +1,19 @@
+from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
 
-def _get_new_BN():
+def _get_new_BN(is_consttime=True):
     """
     Returns a new and initialized OpenSSL BIGNUM.
-
-    TODO: Add flag for consttime
+    is_consttime set to True by default to automatically default to constant
+    time operations.
     """
     new_bn = backend._lib.BN_new()
     backend.openssl_assert(new_bn != backend._ffi.NULL)
     new_bn = backend._ffi.gc(new_bn, backend._lib.BN_clear_free)
 
+    if is_consttime:
+        backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
     return new_bn
 
 
@@ -63,13 +66,12 @@ def _bn_is_on_curve(check_bn, curve_nid: int):
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve_nid: int=None):
+def _int_to_bn(py_int: int, curve_nid: int=None, is_consttime=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve_nid is
     provided, it will check if the Python integer is within the order of that
     curve. If it's not within the order, it will raise a ValueError.
-
-    TODO: Add flag for consttime
+    is_consttime set to True by default to use constant time ops.
     """
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
@@ -78,6 +80,9 @@ def _int_to_bn(py_int: int, curve_nid: int=None):
         on_curve = _bn_is_on_curve(conv_bn, curve_nid)
         if not on_curve:
             raise ValueError("The Python integer given is not on the provided curve.")
+
+    if is_consttime:
+        backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
 

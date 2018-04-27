@@ -1,7 +1,7 @@
 import pytest
 
 from umbral import pre
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.point import Point
 
 
@@ -13,7 +13,7 @@ def test_capsule_serialization(alices_keys):
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted
 
-    # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a BigNum (32).
+    # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a CurveBN (32).
     assert len(capsule_bytes) == 33 + 33 + 32 == 98
 
     new_capsule = pre.Capsule.from_bytes(capsule_bytes)
@@ -48,7 +48,7 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
 
     # An activated Capsule is:
     # three points, representable as 33 bytes each (the original), and
-    # two points and a bignum (32 bytes) (the activated components), for 197 total.
+    # two points and a CurveBN (32 bytes) (the activated components), for 197 total.
     assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
 
     new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes)
@@ -67,7 +67,7 @@ def test_cannot_create_capsule_from_bogus_material(alices_keys):
     with pytest.raises(TypeError):
         capsule_of_questionable_parentage = pre.Capsule(point_e=Point.gen_rand(),
                                                         point_v=42,
-                                                        bn_sig=BigNum.gen_rand())
+                                                        bn_sig=CurveBN.gen_rand())
 
     with pytest.raises(TypeError):
         capsule_of_questionable_parentage = pre.Capsule(point_e=Point.gen_rand(),

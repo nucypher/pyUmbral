@@ -1,9 +1,10 @@
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InternalError
 
+from umbral import openssl
 from umbral.config import default_curve
 from umbral.utils import get_curve_keysize_bytes
 
@@ -19,6 +20,15 @@ class Point(object):
         self.group = group
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a compressed Point given a curve.
+        If no curve is provided, it uses the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        return get_curve_keysize_bytes(curve) + 1
+
+    @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve=None):
         """
         Returns a Point object with a cryptographically secure EC_POINT based
@@ -27,18 +37,11 @@ class Point(object):
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
 
-        generator = backend._lib.EC_GROUP_get0_generator(group)
-        backend.openssl_assert(generator != backend._ffi.NULL)
-
-        rand_point = backend._lib.EC_POINT_new(group)
-        backend.openssl_assert(rand_point != backend._ffi.NULL)
-        rand_point = backend._ffi.gc(rand_point,
-                                     backend._lib.EC_POINT_clear_free)
-
-        rand_bn = BigNum.gen_rand(curve).bignum
+        rand_point = openssl._get_new_EC_POINT(ec_group=group)
+        rand_bn = CurveBN.gen_rand(curve).bignum
 
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
@@ -63,24 +66,13 @@ class Point(object):
 
         affine_x, affine_y = coords
         if type(affine_x) == int:
-            affine_x = backend._int_to_bn(affine_x)
-            affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
+            affine_x = openssl._int_to_bn(affine_x)
 
         if type(affine_y) == int:
-            affine_y = backend._int_to_bn(affine_y)
-            affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
+            affine_y = openssl._int_to_bn(affine_y)
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
-
-        ec_point = backend._lib.EC_POINT_new(group)
-        backend.openssl_assert(ec_point != backend._ffi.NULL)
-
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_POINT_set_affine_coordinates_GFp(
-                group, ec_point, affine_x, affine_y, bn_ctx
-            )
-            backend.openssl_assert(res == 1)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
 
         return Point(ec_point, curve_nid, group)
 
@@ -89,19 +81,8 @@ class Point(object):
         Returns a tuple of Python ints in the format of (x, y) that represents
         the point in the curve.
         """
-        affine_x = backend._lib.BN_new()
-        backend.openssl_assert(affine_x != backend._ffi.NULL)
-        affine_x = backend._ffi.gc(affine_x, backend._lib.BN_clear_free)
-
-        affine_y = backend._lib.BN_new()
-        backend.openssl_assert(affine_y != backend._ffi.NULL)
-        affine_y = backend._ffi.gc(affine_y, backend._lib.BN_clear_free)
-
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_POINT_get_affine_coordinates_GFp(
-                self.group, self.ec_point, affine_x, affine_y, bn_ctx
-            )
-            backend.openssl_assert(res == 1)
+        affine_x, affine_y = openssl._get_affine_coords_via_EC_POINT(
+                                self.ec_point, ec_group=self.group)
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
     @classmethod
@@ -123,19 +104,14 @@ class Point(object):
             if len(data[1:]) > get_curve_keysize_bytes(curve):
                 raise ValueError("X coordinate too large for curve.")
 
-            affine_x = BigNum.from_bytes(data[1:], curve)
+            affine_x = CurveBN.from_bytes(data[1:], curve)
 
-            ec_point = backend._lib.EC_POINT_new(affine_x.group)
-            backend.openssl_assert(ec_point != backend._ffi.NULL)
-            ec_point = backend._ffi.gc(ec_point,
-                                       backend._lib.EC_POINT_clear_free)
-
+            ec_point = openssl._get_new_EC_POINT(ec_group=affine_x.group)
             with backend._tmp_bn_ctx() as bn_ctx:
                 res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
                     affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
                 )
                 backend.openssl_assert(res == 1)
-
             return cls(ec_point, curve_nid, affine_x.group)
 
         # Handle uncompressed point
@@ -182,18 +158,15 @@ class Point(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
-
-        generator = backend._lib.EC_GROUP_get0_generator(group)
-        backend.openssl_assert(generator != backend._ffi.NULL)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         return cls(generator, curve_nid, group)
 
     @classmethod
     def get_order_from_curve(cls, curve: ec.EllipticCurve=None):
         """
-        Returns the order from the given curve as a BigNum.
+        Returns the order from the given curve as a CurveBN.
         """
         curve = curve if curve is not None else default_curve()
         try:
@@ -202,18 +175,10 @@ class Point(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        order = backend._lib.BN_new()
-        backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
-
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
-            backend.openssl_assert(res == 1)
-
-        return BigNum(order, curve_nid, group, order)
+        return CurveBN(order, curve_nid, group, order)
 
     def __eq__(self, other):
         """
@@ -232,11 +197,7 @@ class Point(object):
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """
-
-        prod = backend._lib.EC_POINT_new(self.group)
-        backend.openssl_assert(prod != backend._ffi.NULL)
-        prod = backend._ffi.gc(prod, backend._lib.EC_POINT_clear_free)
-
+        prod = openssl._get_new_EC_POINT(ec_group=self.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
                 self.group, prod, backend._ffi.NULL, self.ec_point, other.bignum, bn_ctx
@@ -251,17 +212,13 @@ class Point(object):
         """
         Performs an EC_POINT_add on two EC_POINTS.
         """
-        sum = backend._lib.EC_POINT_new(self.group)
-        backend.openssl_assert(sum != backend._ffi.NULL)
-        sum = backend._ffi.gc(sum, backend._lib.EC_POINT_clear_free)
-
+        op_sum = openssl._get_new_EC_POINT(ec_group=self.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_add(
-                self.group, sum, self.ec_point, other.ec_point, bn_ctx
+                self.group, op_sum, self.ec_point, other.ec_point, bn_ctx
             )
             backend.openssl_assert(res == 1)
-
-        return Point(sum, self.curve_nid, self.group)
+        return Point(op_sum, self.curve_nid, self.group)
 
     def __sub__(self, other):
         """
@@ -282,7 +239,6 @@ class Point(object):
                 self.group, inv, bn_ctx
             )
             backend.openssl_assert(res == 1)
-
         return Point(inv, self.curve_nid, self.group)
 
 

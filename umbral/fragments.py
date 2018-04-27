@@ -1,6 +1,6 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN
 from umbral.config import default_curve, default_params
 from umbral.point import Point
 from umbral.utils import get_curve_keysize_bytes
@@ -19,6 +19,18 @@ class KFrag(object):
         self._bn_sig2 = bn_sig2
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a KFrag given the curve.
+        If no curve is provided, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
+
+        return (bn_size * 4) + (point_size * 2)
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiate a KFrag object from the serialized data.
@@ -27,14 +39,14 @@ class KFrag(object):
         key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
-        # BigNums are the keysize in bytes, Points are compressed and the
+        # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        id = BigNum.from_bytes(data.read(key_size), curve)
-        key = BigNum.from_bytes(data.read(key_size), curve)
+        id = CurveBN.from_bytes(data.read(key_size), curve)
+        key = CurveBN.from_bytes(data.read(key_size), curve)
         ni = Point.from_bytes(data.read(key_size + 1), curve)
         commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        sig1 = BigNum.from_bytes(data.read(key_size), curve)
-        sig2 = BigNum.from_bytes(data.read(key_size), curve)
+        sig1 = CurveBN.from_bytes(data.read(key_size), curve)
+        sig2 = CurveBN.from_bytes(data.read(key_size), curve)
 
         return cls(id, key, ni, commitment, sig1, sig2)
 
@@ -69,7 +81,7 @@ class KFrag(object):
         g_y = (z2 * params.g) + (z1 * pub_a)
 
         kfrag_components = [g_y, self._bn_id, pub_a, pub_b, u1, x]
-        valid_kfrag_signature = z1 == BigNum.hash_to_bn(*kfrag_components, params=params)
+        valid_kfrag_signature = z1 == CurveBN.hash_to_bn(*kfrag_components, params=params)
 
         return correct_commitment & valid_kfrag_signature
 
@@ -91,6 +103,18 @@ class CorrectnessProof(object):
         self.metadata = metadata
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a CorrectnessProof without the metadata.
+        If no curve is given, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve=curve)
+        point_size = Point.get_size(curve=curve)
+
+        return (bn_size * 3) + (point_size * 4)
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve=None):
         """
         Instantiate CorrectnessProof from serialized data.
@@ -99,15 +123,15 @@ class CorrectnessProof(object):
         key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
-        # BigNums are the keysize in bytes, Points are compressed and the
+        # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
         e2 = Point.from_bytes(data.read(key_size + 1), curve)
         v2 = Point.from_bytes(data.read(key_size + 1), curve)
         kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
         kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_sig1 = BigNum.from_bytes(data.read(key_size), curve)
-        kfrag_sig2 = BigNum.from_bytes(data.read(key_size), curve)
-        sig = BigNum.from_bytes(data.read(key_size), curve)
+        kfrag_sig1 = CurveBN.from_bytes(data.read(key_size), curve)
+        kfrag_sig2 = CurveBN.from_bytes(data.read(key_size), curve)
+        sig = CurveBN.from_bytes(data.read(key_size), curve)
 
         metadata = data.read() or None
 
@@ -152,6 +176,19 @@ class CapsuleFrag(object):
         self.proof = proof
 
     @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a CapsuleFrag given the curve without
+        the CorrectnessProof.
+        If no curve is provided, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
+
+        return (bn_size * 1) + (point_size * 3)
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
         """
         Instantiates a CapsuleFrag object from the serialized data.
@@ -160,11 +197,11 @@ class CapsuleFrag(object):
         key_size = get_curve_keysize_bytes(curve)
         data = BytesIO(data)
 
-        # BigNums are the keysize in bytes, Points are compressed and the
+        # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
         e1 = Point.from_bytes(data.read(key_size + 1), curve)
         v1 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_id = BigNum.from_bytes(data.read(key_size), curve)
+        kfrag_id = CurveBN.from_bytes(data.read(key_size), curve)
         ni = Point.from_bytes(data.read(key_size + 1), curve)
 
         proof = data.read() or None

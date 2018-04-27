@@ -4,13 +4,15 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
+from umbral import openssl
 from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
 
 
-class BigNum(object):
+class CurveBN(object):
     """
-    Represents an OpenSSL BIGNUM except more Pythonic
+    Represents an OpenSSL Bignum modulo the order of a curve. Some of these
+    operations will only work with prime numbers
     """
 
     def __init__(self, bignum, curve_nid, group, order):
@@ -20,38 +22,40 @@ class BigNum(object):
         self.order = order
 
     @classmethod
-    def gen_rand(cls, curve: ec.EllipticCurve = None):
+    def get_size(cls, curve: ec.EllipticCurve=None):
         """
-        Returns a BigNum object with a cryptographically secure BigNum based
-        on the given curve.
+        Returns the size (in bytes) of a CurveBN given the curve.
+        If no curve is provided, it uses the default.
+        """
+        curve = curve if curve is not None else default_curve()
+        return get_curve_keysize_bytes(curve)
+
+    @classmethod
+    def gen_rand(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
+        based on the given curve.
         """
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        order = backend._lib.BN_new()
-        backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
-
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
-            backend.openssl_assert(res == 1)
-
-        new_rand_bn = backend._lib.BN_new()
-        backend.openssl_assert(new_rand_bn != backend._ffi.NULL)
-        new_rand_bn = backend._ffi.gc(new_rand_bn, backend._lib.BN_clear_free)
-
+        new_rand_bn = openssl._get_new_BN()
         rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
         backend.openssl_assert(rand_res == 1)
+
+        if not openssl._bn_is_on_curve(new_rand_bn, curve_nid):
+            new_rand_bn = cls.gen_rand(curve=curve)
+            return new_rand_bn
 
         return cls(new_rand_bn, curve_nid, group, order)
 
     @classmethod
     def from_int(cls, num, curve: ec.EllipticCurve=None):
         """
-        Returns a BigNum object from a given integer on a curve.
+        Returns a CurveBN object from a given integer on a curve.
         """
         curve = curve if curve is not None else default_curve()
         try:
@@ -60,26 +64,12 @@ class BigNum(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
-        backend.openssl_assert(group != backend._ffi.NULL)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        order = backend._lib.BN_new()
-        backend.openssl_assert(order != backend._ffi.NULL)
-        order = backend._ffi.gc(order, backend._lib.BN_clear_free)
+        conv_bn = openssl._int_to_bn(num, curve_nid)
 
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.EC_GROUP_get_order(group, order, bn_ctx)
-            backend.openssl_assert(res == 1)
-
-        order_int = backend._bn_to_int(order)
-        if num <= 0 or num >= order_int:
-            # TODO: Handle this better maybe? Ask David.
-            raise ValueError("Integer provided is not on the given curve.")
-
-        bignum = backend._int_to_bn(num)
-        bignum = backend._ffi.gc(bignum, backend._lib.BN_clear_free)
-
-        return cls(bignum, curve_nid, group, order)
+        return cls(conv_bn, curve_nid, group, order)
 
     @classmethod
     def hash_to_bn(cls, *crypto_items, params=None):
@@ -112,17 +102,17 @@ class BigNum(object):
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):
         """
-        Returns a BigNum object from the given byte data that's within the size
+        Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
         """
         curve = curve if curve is not None else default_curve()
         num = int.from_bytes(data, 'big')
 
-        return BigNum.from_int(num, curve)
+        return cls.from_int(num, curve)
 
     def to_bytes(self):
         """
-        Returns the BigNum as bytes.
+        Returns the CurveBN as bytes.
         """
         size = backend._lib.BN_num_bytes(self.order)
 
@@ -130,7 +120,7 @@ class BigNum(object):
 
     def __int__(self):
         """
-        Converts the BigNum to a Python int.
+        Converts the CurveBN to a Python int.
         """
         return backend._bn_to_int(self.bignum)
 
@@ -139,10 +129,8 @@ class BigNum(object):
         Compares the two BIGNUMS or int.
         """
         if type(other) == int:
-            other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
-
-            other = BigNum(other, None, None, None)
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, None, None, None)
 
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
@@ -150,52 +138,45 @@ class BigNum(object):
     def __pow__(self, other):
         """
         Performs a BN_mod_exp on two BIGNUMS.
+
+        WARNING: Not in constant time yet.
         """
         if type(other) == int:
-            other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, None, None, None)
 
-            other = BigNum(other, None, None, None)
-
-        power = backend._lib.BN_new()
-        backend.openssl_assert(power != backend._ffi.NULL)
-        power = backend._ffi.gc(power, backend._lib.BN_clear_free)
-
+        power = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_exp(
                 power, self.bignum, other.bignum, self.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(power, self.curve_nid, self.group, self.order)
+        return CurveBN(power, self.curve_nid, self.group, self.order)
 
     def __mul__(self, other):
         """
         Performs a BN_mod_mul between two BIGNUMS.
         """
-        if type(other) != BigNum:
+        if type(other) != CurveBN:
             return NotImplemented
 
-        product = backend._lib.BN_new()
-        backend.openssl_assert(product != backend._ffi.NULL)
-        product = backend._ffi.gc(product, backend._lib.BN_clear_free)
-
+        product = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_mul(
                 product, self.bignum, other.bignum, self.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve_nid, self.group, self.order)
 
     def __truediv__(self, other):
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
-        """
-        product = backend._lib.BN_new()
-        backend.openssl_assert(product != backend._ffi.NULL)
-        product = backend._ffi.gc(product, backend._lib.BN_clear_free)
 
+        WARNING: Not in constant time yet.
+        """
+        product = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             inv_other = backend._lib.BN_mod_inverse(
                 backend._ffi.NULL, other.bignum, self.order, bn_ctx
@@ -207,43 +188,39 @@ class BigNum(object):
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve_nid, self.group, self.order)
 
     def __add__(self, other):
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
-        sum = backend._lib.BN_new()
-        backend.openssl_assert(sum != backend._ffi.NULL)
-        sum = backend._ffi.gc(sum, backend._lib.BN_clear_free)
-
+        op_sum = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
-                sum, self.bignum, other.bignum, self.order, bn_ctx
+                op_sum, self.bignum, other.bignum, self.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(sum, self.curve_nid, self.group, self.order)
+        return CurveBN(op_sum, self.curve_nid, self.group, self.order)
 
     def __sub__(self, other):
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
-        diff = backend._lib.BN_new()
-        backend.openssl_assert(diff != backend._ffi.NULL)
-        diff = backend._ffi.gc(diff, backend._lib.BN_clear_free)
-
+        diff = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(
                 diff, self.bignum, other.bignum, self.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(diff, self.curve_nid, self.group, self.order)
+        return CurveBN(diff, self.curve_nid, self.group, self.order)
 
     def __invert__(self):
         """
         Performs a BN_mod_inverse.
+
+        WARNING: Not in constant time yet.
         """
         with backend._tmp_bn_ctx() as bn_ctx:
             inv = backend._lib.BN_mod_inverse(
@@ -252,30 +229,21 @@ class BigNum(object):
             backend.openssl_assert(inv != backend._ffi.NULL)
             inv = backend._ffi.gc(inv, backend._lib.BN_clear_free)
 
-        return BigNum(inv, self.curve_nid, self.group, self.order)
+        return CurveBN(inv, self.curve_nid, self.group, self.order)
 
     def __mod__(self, other):
         """
         Performs a BN_nnmod on two BIGNUMS.
         """
         if type(other) == int:
-            other = backend._int_to_bn(other)
-            other = backend._ffi.gc(other, backend._lib.BN_clear_free)
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, None, None, None)
 
-            other = BigNum(other, None, None, None)
-
-        rem = backend._lib.BN_new()
-        backend.openssl_assert(rem != backend._ffi.NULL)
-        rem = backend._ffi.gc(rem, backend._lib.BN_clear_free)
-
+        rem = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_nnmod(
                 rem, self.bignum, other.bignum, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return BigNum(rem, self.curve_nid, self.group, self.order)
-
-    def __hash__(self):
-        return hash(int(self))
-
+        return CurveBN(rem, self.curve_nid, self.group, self.order)

@@ -41,4 +41,4 @@ def kdf(ecpoint, key_length):
 
 
 def get_curve_keysize_bytes(curve):
-    return int(math.ceil(curve.key_size / 8.00))
+    return (curve.key_size + 7) // 8

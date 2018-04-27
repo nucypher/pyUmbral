@@ -12,15 +12,15 @@ from cryptography.hazmat.backends.openssl.ec import (
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-
+from umbral import openssl
 from umbral.config import default_params
 from umbral.point import Point
-from umbral.bignum import BigNum
+from umbral.curvebn import CurveBN 
 from umbral.params import UmbralParameters
 
     
 class UmbralPrivateKey(object):
-    def __init__(self, bn_key: BigNum, params: UmbralParameters=None):
+    def __init__(self, bn_key: CurveBN, params: UmbralParameters=None):
         """
         Initializes an Umbral private key.
         """
@@ -29,6 +29,7 @@ class UmbralPrivateKey(object):
 
         self.params = params
         self.bn_key = bn_key
+        self.pubkey = self.get_pubkey()
 
     @classmethod
     def gen_key(cls, params: UmbralParameters=None):
@@ -38,7 +39,7 @@ class UmbralPrivateKey(object):
         if params is None:
             params = default_params()
 
-        bn_key = BigNum.gen_rand(params.curve)
+        bn_key = CurveBN.gen_rand(params.curve)
         return cls(bn_key, params)
 
     @classmethod
@@ -78,7 +79,7 @@ class UmbralPrivateKey(object):
 
             key_bytes = SecretBox(key).decrypt(key_bytes)
 
-        bn_key = BigNum.from_bytes(key_bytes, params.curve)
+        bn_key = CurveBN.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
     def to_bytes(self, password: bytes=None, _scrypt_cost: int=20,
@@ -146,10 +147,7 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(set_privkey_result == 1)
 
         # Get public key
-        point = backend._lib.EC_POINT_new(self.bn_key.group)
-        backend.openssl_assert(point != backend._ffi.NULL)
-        point = backend._ffi.gc(point, backend._lib.EC_POINT_free)
-
+        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             mult_result = backend._lib.EC_POINT_mul(
                 self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,
@@ -295,7 +293,7 @@ class UmbralKeyingMaterial(object):
             backend=default_backend()
         ).derive(self.keying_material)
 
-        bn_key = BigNum.hash_to_bn(key_material, params=params)
+        bn_key = CurveBN.hash_to_bn(key_material, params=params)
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod

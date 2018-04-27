@@ -82,7 +82,7 @@ def _int_to_bn(py_int: int, curve_nid: int=None, is_consttime=True):
             raise ValueError("The Python integer given is not on the provided curve.")
 
     if is_consttime:
-        backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
+        backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
 
@@ -143,3 +143,20 @@ def _get_affine_coords_via_EC_POINT(ec_point, ec_group=None, curve_nid: int=None
         )
         backend.openssl_assert(res == 1)
     return (affine_x, affine_y)
+
+
+@contextmanager
+def _tmp_bn_mont_ctx(modulus):
+    """
+    Initializes and returns a BN_MONT_CTX and a BN_CTX for Montgomery ops.
+    Requires a modulus to place in the Montgomery structure.
+    """
+    bn_mont_ctx = backend._lib.BN_MONT_CTX_new()
+    backend.openssl_assert(bn_mont_ctx != backend._ffi.NULL)
+    bn_mont_ctx = backend._ffi.gc(bn_mont_ctx, backend._lib.BN_MONT_CTX_free)
+
+    with backend._lib._tmp_bn_ctx() as bn_ctx:
+        res = backend._lib.BN_MONT_CTX_set(bn_mont_ctx, modulus, bn_ctx)
+        backend.openssl_assert(res == 1)
+
+        yield bn_mont_ctx, bn_ctx

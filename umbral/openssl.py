@@ -148,15 +148,18 @@ def _get_affine_coords_via_EC_POINT(ec_point, ec_group=None, curve_nid: int=None
 @contextmanager
 def _tmp_bn_mont_ctx(modulus):
     """
-    Initializes and returns a BN_MONT_CTX and a BN_CTX for Montgomery ops.
+    Initializes and returns a BN_MONT_CTX for Montgomery ops.
     Requires a modulus to place in the Montgomery structure.
     """
     bn_mont_ctx = backend._lib.BN_MONT_CTX_new()
     backend.openssl_assert(bn_mont_ctx != backend._ffi.NULL)
-    bn_mont_ctx = backend._ffi.gc(bn_mont_ctx, backend._lib.BN_MONT_CTX_free)
+    # Don't set the garbage collector. Only free it when the context is done
+    # or else you'll get a null pointer error.
 
-    with backend._lib._tmp_bn_ctx() as bn_ctx:
+    with backend._tmp_bn_ctx() as bn_ctx:
         res = backend._lib.BN_MONT_CTX_set(bn_mont_ctx, modulus, bn_ctx)
         backend.openssl_assert(res == 1)
-
-        yield bn_mont_ctx, bn_ctx
+        try:
+            yield bn_mont_ctx
+        finally:
+            backend._lib.BN_MONT_CTX_free(bn_mont_ctx)

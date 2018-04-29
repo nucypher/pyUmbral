@@ -1,5 +1,3 @@
-import hmac
-
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.backends.openssl import backend

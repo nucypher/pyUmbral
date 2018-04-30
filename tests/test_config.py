@@ -2,7 +2,6 @@ from umbral.config import _CONFIG
 import pytest
 import importlib
 from cryptography.hazmat.primitives.asymmetric import ec
-from umbral.curvebn import CurveBN
 import warnings
 
 

@@ -132,8 +132,8 @@ class Point(object):
         affine_x, affine_y = self.to_affine()
 
         # Get size of curve via order
-        order = Point.get_order_from_curve(self.curve_nid)
-        key_size = backend._lib.BN_num_bytes(order.bignum)
+        order = openssl._get_ec_order_by_curve_nid(self.curve_nid)
+        key_size = backend._lib.BN_num_bytes(order)
 
         if is_compressed:
             y_bit = (affine_y & 1) + 2
@@ -162,23 +162,6 @@ class Point(object):
         generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         return cls(generator, curve_nid, group)
-
-    @classmethod
-    def get_order_from_curve(cls, curve: ec.EllipticCurve=None):
-        """
-        Returns the order from the given curve as a CurveBN.
-        """
-        curve = curve if curve is not None else default_curve()
-        try:
-            curve_nid = backend._elliptic_curve_to_nid(curve)
-        except AttributeError:
-            # Presume that the user passed in the curve_nid
-            curve_nid = curve
-
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
-
-        return CurveBN(order, curve_nid, group, order)
 
     def __eq__(self, other):
         """

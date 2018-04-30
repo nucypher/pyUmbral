@@ -72,7 +72,7 @@ class CurveBN(object):
         return cls(conv_bn, curve_nid, group, order)
 
     @classmethod
-    def hash_to_bn(cls, *crypto_items, params=None):
+    def hash_to_bn(cls, *crypto_items, params=None, _iteration=0):
         params = params if params is not None else default_params()
 
         # TODO: Clean this in an upcoming cleanup of pyUmbral
@@ -85,19 +85,34 @@ class CurveBN(object):
                     raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
                 item_bytes = item
             blake2b.update(item_bytes)
+        
+        blake2b.update(_iteration.to_bytes(4, byteorder='big'))
 
-        i = 0
-        h = 0
-        while h < params.CURVE_MINVAL_HASH_512:
-            blake2b_i = blake2b.copy()
-            blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
-            hash_digest = blake2b_i.finalize()
-            h = int.from_bytes(hash_digest, byteorder='big', signed=False)
-            i += 1
+        hash_digest = blake2b.finalize()
+        hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
 
-        hash_bn = h % int(params.order)
-        res = cls.from_int(hash_bn, params.curve)
-        return res
+        curve_nid = backend._elliptic_curve_to_nid(params.curve)
+        order = openssl._get_ec_order_by_curve_nid(curve_nid)
+
+        try:
+            hash_digest = openssl._int_to_bn(hash_digest)
+            bn_from_hash = openssl._get_new_BN()
+            with backend._tmp_bn_ctx() as bn_ctx:
+                res = backend._lib.BN_mod(
+                    bn_from_hash, hash_digest, order, bn_ctx
+                )
+                backend.openssl_assert(res == 1)
+
+            group = openssl._get_ec_group_by_curve_nid(curve_nid)
+            bn_from_hash = cls(bn_from_hash, curve_nid, group, order)
+
+        except ValueError:
+            # This case is only reached when the result is 0, 
+            # which happens with prob. 1/order of the curve
+            _iteration += 1
+            bn_from_hash = cls.hash_to_bn(*crypto_items, params, _iteration=_iteration)
+
+        return bn_from_hash
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):

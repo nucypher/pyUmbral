@@ -49,7 +49,7 @@ class Point(object):
             )
             backend.openssl_assert(res == 1)
 
-        return Point(rand_point, curve_nid, group)
+        return cls(rand_point, curve_nid, group)
 
     @classmethod
     def from_affine(cls, coords, curve: ec.EllipticCurve=None):
@@ -74,7 +74,7 @@ class Point(object):
         group = openssl._get_ec_group_by_curve_nid(curve_nid)
         ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
 
-        return Point(ec_point, curve_nid, group)
+        return cls(ec_point, curve_nid, group)
 
     def to_affine(self):
         """
@@ -120,7 +120,7 @@ class Point(object):
             affine_x = int.from_bytes(data[1:key_size+1], 'big')
             affine_y = int.from_bytes(data[1+key_size:], 'big')
 
-            return Point.from_affine((affine_x, affine_y), curve)
+            return cls.from_affine((affine_x, affine_y), curve)
         else:
             raise ValueError("Invalid point serialization.")
 

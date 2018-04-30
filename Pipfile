@@ -1,18 +1,19 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
-cryptography = ">=2.2"
+cryptography = { file="./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl"}
 pynacl = "*"
 
+# Since wheel-specified dependencies aren't locked...
+idna = ">=2.1"
+asn1crypto = ">=0.21.0"
+six = ">=1.4.1"
+cffi = ">=1.7"
 
 [dev-packages]
-
 pytest = "*"
 coverage = "*"
 pytest-cov = "*"
@@ -22,4 +23,3 @@ pytest-mock = "*"
 codecov = "*"
 sphinx = "*"
 sphinx-autobuild = "*"
-cryptography = ">=2.2"

@@ -230,7 +230,7 @@ def unsafe_hash_to_point(data, params, label=None):
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
     It admits an optional label as an additional input to the hash function.
-    It uses SHA256 as the internal hash function.
+    It uses BLAKE2b (with a digest size of 64 bytes) as the internal hash function.
 
     WARNING: Do not use when the input data is secret, as this implementation is not
     in constant time, and hence, it is not safe with respect to timing attacks.
@@ -245,9 +245,9 @@ def unsafe_hash_to_point(data, params, label=None):
     i = 1
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
-        sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
-        sha_512.update(label + ibytes + data)
-        hash_digest = sha_512.finalize()[:params.CURVE_KEY_SIZE_BYTES]
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        blake2b.update(label + ibytes + data)
+        hash_digest = blake2b.finalize()[:params.CURVE_KEY_SIZE_BYTES]
 
         compressed02 = b"\x02" + hash_digest
 

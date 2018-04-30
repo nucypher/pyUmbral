@@ -13,7 +13,6 @@ class UmbralParameters(object):
 
         g_bytes = self.g.to_bytes(is_compressed=True)
 
-        self.CURVE_MINVAL_HASH_512 = (1 << 512) % int(self.order)
         self.CURVE_KEY_SIZE_BYTES = get_curve_keysize_bytes(self.curve)
 
         parameters_seed = b'NuCypherKMS/UmbralParameters/'

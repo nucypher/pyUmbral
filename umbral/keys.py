@@ -293,7 +293,7 @@ class UmbralKeyingMaterial(object):
             backend=default_backend()
         ).derive(self.keying_material)
 
-        bn_key = CurveBN.hash_to_bn(key_material, params=params)
+        bn_key = CurveBN.hash(key_material, params=params)
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod

@@ -16,6 +16,12 @@ class CurveBN(object):
     """
 
     def __init__(self, bignum, curve_nid, group, order):
+
+        if curve_nid:
+            on_curve = openssl._bn_is_on_curve(bignum, curve_nid)
+            if not on_curve:
+                raise ValueError("The provided BIGNUM is not on the provided curve.")
+
         self.bignum = bignum
         self.curve_nid = curve_nid
         self.group = group

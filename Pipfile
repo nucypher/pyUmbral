@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-cryptography = { file="./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl"}
+cryptography35 = { file='./wheelhouse/cryptography-2.3.dev1-cp35-cp35m-linux_x86_64.whl', markers="python_version >= '3.5' and python_version < '3.6'"}
+cryptography36 = { file='./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl', markers="python_version >= '3.6' and python_version < '3.7'"}
 pynacl = "*"
 
 # Since wheel-specified dependencies aren't locked...

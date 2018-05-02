@@ -81,7 +81,7 @@ class KFrag(object):
         g_y = (z2 * params.g) + (z1 * pub_a)
 
         kfrag_components = [g_y, self._bn_id, pub_a, pub_b, u1, x]
-        valid_kfrag_signature = z1 == CurveBN.hash_to_bn(*kfrag_components, params=params)
+        valid_kfrag_signature = z1 == CurveBN.hash(*kfrag_components, params=params)
 
         return correct_commitment & valid_kfrag_signature
 

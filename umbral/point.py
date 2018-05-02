@@ -49,7 +49,7 @@ class Point(object):
             )
             backend.openssl_assert(res == 1)
 
-        return Point(rand_point, curve_nid, group)
+        return cls(rand_point, curve_nid, group)
 
     @classmethod
     def from_affine(cls, coords, curve: ec.EllipticCurve=None):
@@ -74,7 +74,7 @@ class Point(object):
         group = openssl._get_ec_group_by_curve_nid(curve_nid)
         ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
 
-        return Point(ec_point, curve_nid, group)
+        return cls(ec_point, curve_nid, group)
 
     def to_affine(self):
         """
@@ -120,7 +120,7 @@ class Point(object):
             affine_x = int.from_bytes(data[1:key_size+1], 'big')
             affine_y = int.from_bytes(data[1+key_size:], 'big')
 
-            return Point.from_affine((affine_x, affine_y), curve)
+            return cls.from_affine((affine_x, affine_y), curve)
         else:
             raise ValueError("Invalid point serialization.")
 
@@ -132,8 +132,8 @@ class Point(object):
         affine_x, affine_y = self.to_affine()
 
         # Get size of curve via order
-        order = Point.get_order_from_curve(self.curve_nid)
-        key_size = backend._lib.BN_num_bytes(order.bignum)
+        order = openssl._get_ec_order_by_curve_nid(self.curve_nid)
+        key_size = backend._lib.BN_num_bytes(order)
 
         if is_compressed:
             y_bit = (affine_y & 1) + 2
@@ -162,23 +162,6 @@ class Point(object):
         generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         return cls(generator, curve_nid, group)
-
-    @classmethod
-    def get_order_from_curve(cls, curve: ec.EllipticCurve=None):
-        """
-        Returns the order from the given curve as a CurveBN.
-        """
-        curve = curve if curve is not None else default_curve()
-        try:
-            curve_nid = backend._elliptic_curve_to_nid(curve)
-        except AttributeError:
-            # Presume that the user passed in the curve_nid
-            curve_nid = curve
-
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
-
-        return CurveBN(order, curve_nid, group, order)
 
     def __eq__(self, other):
         """
@@ -247,7 +230,7 @@ def unsafe_hash_to_point(data, params, label=None):
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
     It admits an optional label as an additional input to the hash function.
-    It uses SHA256 as the internal hash function.
+    It uses BLAKE2b (with a digest size of 64 bytes) as the internal hash function.
 
     WARNING: Do not use when the input data is secret, as this implementation is not
     in constant time, and hence, it is not safe with respect to timing attacks.
@@ -262,9 +245,9 @@ def unsafe_hash_to_point(data, params, label=None):
     i = 1
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
-        sha_512 = hashes.Hash(hashes.SHA512(), backend=backend)
-        sha_512.update(label + ibytes + data)
-        hash_digest = sha_512.finalize()[:params.CURVE_KEY_SIZE_BYTES]
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        blake2b.update(label + ibytes + data)
+        hash_digest = blake2b.finalize()[:params.CURVE_KEY_SIZE_BYTES]
 
         compressed02 = b"\x02" + hash_digest
 

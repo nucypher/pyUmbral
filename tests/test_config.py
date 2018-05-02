@@ -2,7 +2,6 @@ from umbral.config import _CONFIG
 import pytest
 import importlib
 from cryptography.hazmat.primitives.asymmetric import ec
-from umbral.point import Point
 import warnings
 
 
@@ -63,8 +62,6 @@ def test_cannot_set_default_curve_twice():
 
     # Our default curve has been set...
     assert config.default_curve() == ec.SECP256R1
-    # ...and used to set the order of our default parameters.
-    assert config.default_params().order == Point.get_order_from_curve(ec.SECP256R1)
 
     # ...but once set, you can't set the default curve again, even if you've found a better one.
     with pytest.raises(config._CONFIG.UmbralConfigurationError):

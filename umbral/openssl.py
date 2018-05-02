@@ -1,16 +1,20 @@
+from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
 
-def _get_new_BN():
+def _get_new_BN(set_consttime_flag=True):
     """
     Returns a new and initialized OpenSSL BIGNUM.
-
-    TODO: Add flag for consttime
+    The set_consttime_flag is set to True by default. When this instance of a
+    CurveBN object has BN_FLG_CONSTTIME set, OpenSSL will use constant time
+    operations whenever this CurveBN is passed.
     """
     new_bn = backend._lib.BN_new()
     backend.openssl_assert(new_bn != backend._ffi.NULL)
     new_bn = backend._ffi.gc(new_bn, backend._lib.BN_clear_free)
 
+    if set_consttime_flag:
+        backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
     return new_bn
 
 
@@ -63,13 +67,14 @@ def _bn_is_on_curve(check_bn, curve_nid: int):
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve_nid: int=None):
+def _int_to_bn(py_int: int, curve_nid: int=None, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve_nid is
     provided, it will check if the Python integer is within the order of that
     curve. If it's not within the order, it will raise a ValueError.
 
-    TODO: Add flag for consttime
+    If set_consttime_flag is set to True, OpenSSL will use constant time
+    operations when using this CurveBN.
     """
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
@@ -78,6 +83,9 @@ def _int_to_bn(py_int: int, curve_nid: int=None):
         on_curve = _bn_is_on_curve(conv_bn, curve_nid)
         if not on_curve:
             raise ValueError("The Python integer given is not on the provided curve.")
+
+    if set_consttime_flag:
+        backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
 
@@ -138,3 +146,23 @@ def _get_affine_coords_via_EC_POINT(ec_point, ec_group=None, curve_nid: int=None
         )
         backend.openssl_assert(res == 1)
     return (affine_x, affine_y)
+
+
+@contextmanager
+def _tmp_bn_mont_ctx(modulus):
+    """
+    Initializes and returns a BN_MONT_CTX for Montgomery ops.
+    Requires a modulus to place in the Montgomery structure.
+    """
+    bn_mont_ctx = backend._lib.BN_MONT_CTX_new()
+    backend.openssl_assert(bn_mont_ctx != backend._ffi.NULL)
+    # Don't set the garbage collector. Only free it when the context is done
+    # or else you'll get a null pointer error.
+
+    try:
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_MONT_CTX_set(bn_mont_ctx, modulus, bn_ctx)
+            backend.openssl_assert(res == 1)
+            yield bn_mont_ctx
+    finally:
+        backend._lib.BN_MONT_CTX_free(bn_mont_ctx)

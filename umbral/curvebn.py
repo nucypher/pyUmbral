@@ -13,6 +13,8 @@ class CurveBN(object):
     """
     Represents an OpenSSL Bignum modulo the order of a curve. Some of these
     operations will only work with prime numbers
+    By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
+    constant time operations.
     """
 
     def __init__(self, bignum, curve_nid, group, order):
@@ -35,6 +37,8 @@ class CurveBN(object):
         """
         Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
         based on the given curve.
+        By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
+        constant time operations.
         """
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
@@ -56,6 +60,8 @@ class CurveBN(object):
     def from_int(cls, num, curve: ec.EllipticCurve=None):
         """
         Returns a CurveBN object from a given integer on a curve.
+        By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
+        constant time operations.
         """
         curve = curve if curve is not None else default_curve()
         try:
@@ -104,6 +110,8 @@ class CurveBN(object):
         """
         Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
+        By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
+        constant time operations.
         """
         curve = curve if curve is not None else default_curve()
         num = int.from_bytes(data, 'big')
@@ -139,16 +147,16 @@ class CurveBN(object):
         """
         Performs a BN_mod_exp on two BIGNUMS.
 
-        WARNING: Not in constant time yet.
+        WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
             other = CurveBN(other, None, None, None)
 
         power = openssl._get_new_BN()
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.BN_mod_exp(
-                power, self.bignum, other.bignum, self.order, bn_ctx
+        with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
+            res = backend._lib.BN_mod_exp_mont(
+                power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
             )
             backend.openssl_assert(res == 1)
 
@@ -174,7 +182,7 @@ class CurveBN(object):
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
 
-        WARNING: Not in constant time yet.
+        WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
         """
         product = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -220,7 +228,8 @@ class CurveBN(object):
         """
         Performs a BN_mod_inverse.
 
-        WARNING: Not in constant time yet.
+        WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
+
         """
         with backend._tmp_bn_ctx() as bn_ctx:
             inv = backend._lib.BN_mod_inverse(

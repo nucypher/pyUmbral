@@ -72,6 +72,8 @@ def _int_to_bn(py_int: int, curve_nid: int=None, is_consttime=True):
     provided, it will check if the Python integer is within the order of that
     curve. If it's not within the order, it will raise a ValueError.
     is_consttime set to True by default to use constant time ops.
+
+    TODO: Add flag for consttime
     """
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)

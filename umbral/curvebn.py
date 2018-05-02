@@ -160,6 +160,7 @@ class CurveBN(object):
                     power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
                 )
                 backend.openssl_assert(res == 1)
+
         return CurveBN(power, self.curve_nid, self.group, self.order)
 
     def __mul__(self, other):
@@ -229,6 +230,7 @@ class CurveBN(object):
         Performs a BN_mod_inverse.
 
         WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
+
         """
         with backend._tmp_bn_ctx() as bn_ctx:
             inv = backend._lib.BN_mod_inverse(

@@ -154,12 +154,11 @@ class CurveBN(object):
             other = CurveBN(other, None, None, None)
 
         power = openssl._get_new_BN()
-        with backend._tmp_bn_ctx() as bn_ctx:
-            with openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
-                res = backend._lib.BN_mod_exp_mont(
-                    power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
-                )
-                backend.openssl_assert(res == 1)
+        with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
+            res = backend._lib.BN_mod_exp_mont(
+                power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
+            )
+            backend.openssl_assert(res == 1)
 
         return CurveBN(power, self.curve_nid, self.group, self.order)
 

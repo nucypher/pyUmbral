@@ -18,6 +18,12 @@ class CurveBN(object):
     """
 
     def __init__(self, bignum, curve_nid, group, order):
+
+        if curve_nid:
+            on_curve = openssl._bn_is_on_curve(bignum, curve_nid)
+            if not on_curve:
+                raise ValueError("The provided BIGNUM is not on the provided curve.")
+
         self.bignum = bignum
         self.curve_nid = curve_nid
         self.group = group
@@ -78,32 +84,44 @@ class CurveBN(object):
         return cls(conv_bn, curve_nid, group, order)
 
     @classmethod
-    def hash_to_bn(cls, *crypto_items, params=None):
+    def hash(cls, *crypto_items, params=None):
         params = params if params is not None else default_params()
 
-        # TODO: Clean this in an upcoming cleanup of pyUmbral
-        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        for item in crypto_items:
+        curve_nid = backend._elliptic_curve_to_nid(params.curve)
+        order = openssl._get_ec_order_by_curve_nid(curve_nid)
+        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+    
+        # We use an internal 32-bit counter as additional input
+        iteration = 0
+        while True:
+
+            # TODO: Clean this in an upcoming cleanup of pyUmbral
+            blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+            for item in crypto_items:
+                try:
+                    item_bytes = item.to_bytes()
+                except AttributeError:
+                    if not isinstance(item, bytes):
+                        raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
+                    item_bytes = item
+                blake2b.update(item_bytes)
+            
+            blake2b.update(iteration.to_bytes(4, byteorder='big'))
+
+            hash_digest = blake2b.finalize()
+            hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
+
+            bignum = openssl._get_new_BN()
             try:
-                item_bytes = item.to_bytes()
-            except AttributeError:
-                if not isinstance(item, bytes):
-                    raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
-                item_bytes = item
-            blake2b.update(item_bytes)
-
-        i = 0
-        h = 0
-        while h < params.CURVE_MINVAL_HASH_512:
-            blake2b_i = blake2b.copy()
-            blake2b_i.update(i.to_bytes(params.CURVE_KEY_SIZE_BYTES, 'big'))
-            hash_digest = blake2b_i.finalize()
-            h = int.from_bytes(hash_digest, byteorder='big', signed=False)
-            i += 1
-
-        hash_bn = h % int(params.order)
-        res = cls.from_int(hash_bn, params.curve)
-        return res
+                hash_digest = openssl._int_to_bn(hash_digest)
+                with backend._tmp_bn_ctx() as bn_ctx:
+                    res = backend._lib.BN_mod(bignum, hash_digest, order, bn_ctx)
+                    backend.openssl_assert(res == 1)
+                return cls(bignum, curve_nid, group, order)
+            except ValueError:
+                # This case is only reached when the result is 0, 
+                # which happens with prob. 1/order of the curve
+                iteration += 1
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):

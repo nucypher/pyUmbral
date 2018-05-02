@@ -1,5 +1,3 @@
-import hmac
-
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.backends.openssl import backend
@@ -112,7 +110,7 @@ class Capsule(object):
         e = self._point_e
         v = self._point_v
         s = self._bn_sig
-        h = CurveBN.hash_to_bn(e, v, params=params)
+        h = CurveBN.hash(e, v, params=params)
 
         return s * params.g == v + (h * e)
 
@@ -150,16 +148,16 @@ class Capsule(object):
 
         cfrag_0 = self._attached_cfrags[0]
         id_0 = cfrag_0._bn_kfrag_id
-        x_0 = CurveBN.hash_to_bn(id_0, hashed_dh_tuple, params=params)
+        x_0 = CurveBN.hash(id_0, hashed_dh_tuple, params=params)
         if len(self._attached_cfrags) > 1:
-            xs = [CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
+            xs = [CurveBN.hash(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
                     for cfrag in self._attached_cfrags]
             lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0._point_e1
             v = lambda_0 * cfrag_0._point_v1
 
             for cfrag in self._attached_cfrags[1:]:
-                x_i = CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
+                x_i = CurveBN.hash(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
                 lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag._point_e1)
                 v = v + (lambda_i * cfrag._point_v1)
@@ -228,7 +226,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
 
     x = CurveBN.gen_rand(params.curve)
     xcomp = x * g
-    d = CurveBN.hash_to_bn(xcomp, pub_b, pub_b * x, params=params)
+    d = CurveBN.hash(xcomp, pub_b, pub_b * x, params=params)
 
     coeffs = [priv_a * (~d)]
     coeffs += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
@@ -247,14 +245,14 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
     for _ in range(N):
         id_kfrag = CurveBN.gen_rand(params.curve)
 
-        share_x = CurveBN.hash_to_bn(id_kfrag, hashed_dh_tuple, params=params)
+        share_x = CurveBN.hash(id_kfrag, hashed_dh_tuple, params=params)
 
         rk = poly_eval(coeffs, share_x)
 
         u1 = rk * u
         y = CurveBN.gen_rand(params.curve)
 
-        z1 = CurveBN.hash_to_bn(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
+        z1 = CurveBN.hash(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
         z2 = y - priv_a * z1
 
         kfrag = KFrag(bn_id=id_kfrag, bn_key=rk, 
@@ -311,7 +309,7 @@ def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule,
     if metadata is not None:
         hash_input.append(metadata)
 
-    h = CurveBN.hash_to_bn(*hash_input, params=params)
+    h = CurveBN.hash(*hash_input, params=params)
 
     z3 = t + h * rk
 
@@ -365,10 +363,10 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     if proof.metadata is not None:
         hash_input.append(proof.metadata)
     
-    h = CurveBN.hash_to_bn(*hash_input, params=params)
+    h = CurveBN.hash(*hash_input, params=params)
 
     signature_input = [g_y, kfrag_id, pub_a, pub_b, u1, xcomp]
-    kfrag_signature1 = CurveBN.hash_to_bn(*signature_input, params=params)
+    kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
     valid_kfrag_signature = z1 == kfrag_signature1
     
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
@@ -395,7 +393,7 @@ def _encapsulate(alice_pub_key: Point, key_length=32,
     priv_u = CurveBN.gen_rand(params.curve)
     pub_u = priv_u * g
 
-    h = CurveBN.hash_to_bn(pub_r, pub_u, params=params)
+    h = CurveBN.hash(pub_r, pub_u, params=params)
     s = priv_u + (priv_r * h)
 
     shared_key = (priv_r + priv_u) * alice_pub_key
@@ -429,7 +427,7 @@ def _decapsulate_reencrypted(pub_key: Point, priv_key: CurveBN,
     params = params if params is not None else default_params()
 
     xcomp = capsule._point_noninteractive
-    d = CurveBN.hash_to_bn(xcomp, pub_key, priv_key * xcomp, params=params)
+    d = CurveBN.hash(xcomp, pub_key, priv_key * xcomp, params=params)
 
     e_prime = capsule._point_e_prime
     v_prime = capsule._point_v_prime
@@ -441,7 +439,7 @@ def _decapsulate_reencrypted(pub_key: Point, priv_key: CurveBN,
     e = capsule._point_e
     v = capsule._point_v
     s = capsule._bn_sig
-    h = CurveBN.hash_to_bn(e, v, params=params)
+    h = CurveBN.hash(e, v, params=params)
     inv_d = ~d
 
     if not (s*inv_d) * orig_pub_key == (h*e_prime) + v_prime:

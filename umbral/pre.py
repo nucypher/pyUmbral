@@ -1,5 +1,6 @@
 import hmac
 
+import os
 from typing import Tuple, Union, List
 
 from cryptography.hazmat.backends.openssl import backend
@@ -149,17 +150,17 @@ class Capsule(object):
         hashed_dh_tuple = blake2b.finalize()
 
         cfrag_0 = self._attached_cfrags[0]
-        id_0 = cfrag_0._bn_kfrag_id
+        id_0 = cfrag_0._kfrag_id
         x_0 = CurveBN.hash_to_bn(id_0, hashed_dh_tuple, params=params)
         if len(self._attached_cfrags) > 1:
-            xs = [CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
+            xs = [CurveBN.hash_to_bn(cfrag._kfrag_id, hashed_dh_tuple, params=params)
                     for cfrag in self._attached_cfrags]
             lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0._point_e1
             v = lambda_0 * cfrag_0._point_v1
 
             for cfrag in self._attached_cfrags[1:]:
-                x_i = CurveBN.hash_to_bn(cfrag._bn_kfrag_id, hashed_dh_tuple, params=params)
+                x_i = CurveBN.hash_to_bn(cfrag._kfrag_id, hashed_dh_tuple, params=params)
                 lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag._point_e1)
                 v = v + (lambda_i * cfrag._point_v1)
@@ -244,8 +245,11 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
     hashed_dh_tuple = blake2b.finalize()
 
     kfrags = []
+
+    bn_size = CurveBN.get_size(params.curve)
+    
     for _ in range(N):
-        id_kfrag = CurveBN.gen_rand(params.curve)
+        id_kfrag = os.urandom(bn_size)
 
         share_x = CurveBN.hash_to_bn(id_kfrag, hashed_dh_tuple, params=params)
 
@@ -257,7 +261,7 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
         z1 = CurveBN.hash_to_bn(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
         z2 = y - priv_a * z1
 
-        kfrag = KFrag(bn_id=id_kfrag, bn_key=rk, 
+        kfrag = KFrag(id=id_kfrag, bn_key=rk, 
                       point_noninteractive=xcomp, point_commitment=u1, 
                       bn_sig1=z1, bn_sig2=z2)
         kfrags.append(kfrag)
@@ -276,7 +280,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None,
     e1 = kfrag._bn_key * capsule._point_e
     v1 = kfrag._bn_key * capsule._point_v
 
-    cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, bn_kfrag_id=kfrag._bn_id, 
+    cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag._id, 
                         point_noninteractive=kfrag._point_noninteractive)
 
     if provide_proof:
@@ -344,7 +348,7 @@ def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
     e1 = cfrag._point_e1
     v1 = cfrag._point_v1
     xcomp = cfrag._point_noninteractive
-    kfrag_id = cfrag._bn_kfrag_id
+    kfrag_id = cfrag._kfrag_id
 
     e2 = proof._point_e2
     v2 = proof._point_v2

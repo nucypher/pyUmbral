@@ -9,9 +9,9 @@ from io import BytesIO
 
 
 class KFrag(object):
-    def __init__(self, bn_id, bn_key, point_noninteractive, 
+    def __init__(self, id, bn_key, point_noninteractive, 
                  point_commitment, bn_sig1, bn_sig2):
-        self._bn_id = bn_id
+        self._id = id
         self._bn_key = bn_key
         self._point_noninteractive = point_noninteractive
         self._point_commitment = point_commitment
@@ -41,7 +41,7 @@ class KFrag(object):
 
         # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        id = CurveBN.from_bytes(data.read(key_size), curve)
+        id = data.read(key_size)
         key = CurveBN.from_bytes(data.read(key_size), curve)
         ni = Point.from_bytes(data.read(key_size + 1), curve)
         commitment = Point.from_bytes(data.read(key_size + 1), curve)
@@ -54,14 +54,13 @@ class KFrag(object):
         """
         Serialize the KFrag into a bytestring.
         """
-        id = self._bn_id.to_bytes()
         key = self._bn_key.to_bytes()
         ni = self._point_noninteractive.to_bytes()
         commitment = self._point_commitment.to_bytes()
         sig1 = self._bn_sig1.to_bytes()
         sig2 = self._bn_sig2.to_bytes()
 
-        return id + key + ni + commitment + sig1 + sig2
+        return self._id + key + ni + commitment + sig1 + sig2
 
     def verify(self, pub_a, pub_b, params: "UmbralParameters"=None):
         params = params if params is not None else default_params()
@@ -80,7 +79,7 @@ class KFrag(object):
         # We check the Schnorr signature over the kfrag components
         g_y = (z2 * params.g) + (z1 * pub_a)
 
-        kfrag_components = [g_y, self._bn_id, pub_a, pub_b, u1, x]
+        kfrag_components = [g_y, self._id, pub_a, pub_b, u1, x]
         valid_kfrag_signature = z1 == CurveBN.hash_to_bn(*kfrag_components, params=params)
 
         return correct_commitment & valid_kfrag_signature
@@ -167,11 +166,11 @@ class CorrectnessProof(object):
 
 
 class CapsuleFrag(object):
-    def __init__(self, point_e1, point_v1, bn_kfrag_id, point_noninteractive, 
+    def __init__(self, point_e1, point_v1, kfrag_id, point_noninteractive, 
                  proof: CorrectnessProof=None):
         self._point_e1 = point_e1
         self._point_v1 = point_v1
-        self._bn_kfrag_id = bn_kfrag_id
+        self._kfrag_id = kfrag_id
         self._point_noninteractive = point_noninteractive
         self.proof = proof
 
@@ -201,7 +200,7 @@ class CapsuleFrag(object):
         # keysize + 1 bytes long.
         e1 = Point.from_bytes(data.read(key_size + 1), curve)
         v1 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_id = CurveBN.from_bytes(data.read(key_size), curve)
+        kfrag_id = data.read(key_size)
         ni = Point.from_bytes(data.read(key_size + 1), curve)
 
         proof = data.read() or None
@@ -215,10 +214,9 @@ class CapsuleFrag(object):
         """
         e1 = self._point_e1.to_bytes()
         v1 = self._point_v1.to_bytes()
-        kfrag_id = self._bn_kfrag_id.to_bytes()
         ni = self._point_noninteractive.to_bytes()
 
-        serialized_cfrag = e1 + v1 + kfrag_id + ni
+        serialized_cfrag = e1 + v1 + self._kfrag_id + ni
 
         if self.proof is not None:
             serialized_cfrag += self.proof.to_bytes()

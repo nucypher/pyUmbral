@@ -12,7 +12,7 @@ from cryptography.hazmat.backends.openssl.ec import (
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from umbral import openssl
+from umbral import _openssl
 from umbral.config import default_params
 from umbral.point import Point
 from umbral.curvebn import CurveBN 
@@ -147,7 +147,7 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(set_privkey_result == 1)
 
         # Get public key
-        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.group)
+        point = _openssl._get_new_EC_POINT(ec_group=self.bn_key.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             mult_result = backend._lib.EC_POINT_mul(
                 self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,

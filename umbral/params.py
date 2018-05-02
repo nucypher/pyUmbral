@@ -1,6 +1,6 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.backends.openssl import backend
-from umbral import openssl
+from umbral import _openssl
 
 
 class UmbralParameters(object):
@@ -13,7 +13,7 @@ class UmbralParameters(object):
 
         self.g = Point.get_generator_from_curve(self.curve)
 
-        self.order = openssl._get_ec_order_by_curve_nid(curve_nid)
+        self.order = _openssl._get_ec_order_by_curve_nid(curve_nid)
 
         g_bytes = self.g.to_bytes(is_compressed=True)
 

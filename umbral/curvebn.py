@@ -4,7 +4,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from umbral import openssl
+from umbral import _openssl
 from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
 
@@ -20,7 +20,7 @@ class CurveBN(object):
     def __init__(self, bignum, curve_nid, group, order):
 
         if curve_nid:
-            on_curve = openssl._bn_is_on_curve(bignum, curve_nid)
+            on_curve = _openssl._bn_is_on_curve(bignum, curve_nid)
             if not on_curve:
                 raise ValueError("The provided BIGNUM is not on the provided curve.")
 
@@ -49,14 +49,14 @@ class CurveBN(object):
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = _openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        new_rand_bn = openssl._get_new_BN()
+        new_rand_bn = _openssl._get_new_BN()
         rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
         backend.openssl_assert(rand_res == 1)
 
-        if not openssl._bn_is_on_curve(new_rand_bn, curve_nid):
+        if not _openssl._bn_is_on_curve(new_rand_bn, curve_nid):
             new_rand_bn = cls.gen_rand(curve=curve)
             return new_rand_bn
 
@@ -76,10 +76,10 @@ class CurveBN(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = _openssl._get_ec_order_by_curve_nid(curve_nid)
 
-        conv_bn = openssl._int_to_bn(num, curve_nid)
+        conv_bn = _openssl._int_to_bn(num, curve_nid)
 
         return cls(conv_bn, curve_nid, group, order)
 
@@ -88,8 +88,8 @@ class CurveBN(object):
         params = params if params is not None else default_params()
 
         curve_nid = backend._elliptic_curve_to_nid(params.curve)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
+        order = _openssl._get_ec_order_by_curve_nid(curve_nid)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
     
         # We use an internal 32-bit counter as additional input
         iteration = 0
@@ -111,9 +111,9 @@ class CurveBN(object):
             hash_digest = blake2b.finalize()
             hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
 
-            bignum = openssl._get_new_BN()
+            bignum = _openssl._get_new_BN()
             try:
-                hash_digest = openssl._int_to_bn(hash_digest)
+                hash_digest = _openssl._int_to_bn(hash_digest)
                 with backend._tmp_bn_ctx() as bn_ctx:
                     res = backend._lib.BN_mod(bignum, hash_digest, order, bn_ctx)
                     backend.openssl_assert(res == 1)
@@ -155,7 +155,7 @@ class CurveBN(object):
         Compares the two BIGNUMS or int.
         """
         if type(other) == int:
-            other = openssl._int_to_bn(other)
+            other = _openssl._int_to_bn(other)
             other = CurveBN(other, None, None, None)
 
         # -1 less than, 0 is equal to, 1 is greater than
@@ -168,11 +168,11 @@ class CurveBN(object):
         WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
         """
         if type(other) == int:
-            other = openssl._int_to_bn(other)
+            other = _openssl._int_to_bn(other)
             other = CurveBN(other, None, None, None)
 
-        power = openssl._get_new_BN()
-        with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
+        power = _openssl._get_new_BN()
+        with backend._tmp_bn_ctx() as bn_ctx, _openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
             res = backend._lib.BN_mod_exp_mont(
                 power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
             )
@@ -187,7 +187,7 @@ class CurveBN(object):
         if type(other) != CurveBN:
             return NotImplemented
 
-        product = openssl._get_new_BN()
+        product = _openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_mul(
                 product, self.bignum, other.bignum, self.order, bn_ctx
@@ -202,7 +202,7 @@ class CurveBN(object):
 
         WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
         """
-        product = openssl._get_new_BN()
+        product = _openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             inv_other = backend._lib.BN_mod_inverse(
                 backend._ffi.NULL, other.bignum, self.order, bn_ctx
@@ -220,7 +220,7 @@ class CurveBN(object):
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
-        op_sum = openssl._get_new_BN()
+        op_sum = _openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
                 op_sum, self.bignum, other.bignum, self.order, bn_ctx
@@ -233,7 +233,7 @@ class CurveBN(object):
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
-        diff = openssl._get_new_BN()
+        diff = _openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(
                 diff, self.bignum, other.bignum, self.order, bn_ctx
@@ -263,10 +263,10 @@ class CurveBN(object):
         Performs a BN_nnmod on two BIGNUMS.
         """
         if type(other) == int:
-            other = openssl._int_to_bn(other)
+            other = _openssl._int_to_bn(other)
             other = CurveBN(other, None, None, None)
 
-        rem = openssl._get_new_BN()
+        rem = _openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_nnmod(
                 rem, self.bignum, other.bignum, bn_ctx

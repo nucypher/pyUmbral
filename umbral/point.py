@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InternalError
 
-from umbral import openssl
+from umbral import _openssl
 from umbral.config import default_curve
 from umbral.utils import get_curve_keysize_bytes
 
@@ -37,10 +37,10 @@ class Point(object):
         curve = curve if curve is not None else default_curve()
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
+        generator = _openssl._get_ec_generator_by_curve_nid(curve_nid)
 
-        rand_point = openssl._get_new_EC_POINT(ec_group=group)
+        rand_point = _openssl._get_new_EC_POINT(ec_group=group)
         rand_bn = CurveBN.gen_rand(curve).bignum
 
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -66,13 +66,13 @@ class Point(object):
 
         affine_x, affine_y = coords
         if type(affine_x) == int:
-            affine_x = openssl._int_to_bn(affine_x)
+            affine_x = _openssl._int_to_bn(affine_x)
 
         if type(affine_y) == int:
-            affine_y = openssl._int_to_bn(affine_y)
+            affine_y = _openssl._int_to_bn(affine_y)
 
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
+        ec_point = _openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
 
         return cls(ec_point, curve_nid, group)
 
@@ -81,7 +81,7 @@ class Point(object):
         Returns a tuple of Python ints in the format of (x, y) that represents
         the point in the curve.
         """
-        affine_x, affine_y = openssl._get_affine_coords_via_EC_POINT(
+        affine_x, affine_y = _openssl._get_affine_coords_via_EC_POINT(
                                 self.ec_point, ec_group=self.group)
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
@@ -106,7 +106,7 @@ class Point(object):
 
             affine_x = CurveBN.from_bytes(data[1:], curve)
 
-            ec_point = openssl._get_new_EC_POINT(ec_group=affine_x.group)
+            ec_point = _openssl._get_new_EC_POINT(ec_group=affine_x.group)
             with backend._tmp_bn_ctx() as bn_ctx:
                 res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
                     affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
@@ -132,7 +132,7 @@ class Point(object):
         affine_x, affine_y = self.to_affine()
 
         # Get size of curve via order
-        order = openssl._get_ec_order_by_curve_nid(self.curve_nid)
+        order = _openssl._get_ec_order_by_curve_nid(self.curve_nid)
         key_size = backend._lib.BN_num_bytes(order)
 
         if is_compressed:
@@ -158,8 +158,8 @@ class Point(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        generator = openssl._get_ec_generator_by_curve_nid(curve_nid)
+        group = _openssl._get_ec_group_by_curve_nid(curve_nid)
+        generator = _openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         return cls(generator, curve_nid, group)
 
@@ -180,7 +180,7 @@ class Point(object):
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """
-        prod = openssl._get_new_EC_POINT(ec_group=self.group)
+        prod = _openssl._get_new_EC_POINT(ec_group=self.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_mul(
                 self.group, prod, backend._ffi.NULL, self.ec_point, other.bignum, bn_ctx
@@ -195,7 +195,7 @@ class Point(object):
         """
         Performs an EC_POINT_add on two EC_POINTS.
         """
-        op_sum = openssl._get_new_EC_POINT(ec_group=self.group)
+        op_sum = _openssl._get_new_EC_POINT(ec_group=self.group)
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.EC_POINT_add(
                 self.group, op_sum, self.ec_point, other.ec_point, bn_ctx

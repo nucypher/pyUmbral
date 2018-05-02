@@ -14,10 +14,20 @@ class Point(object):
     Represents an OpenSSL EC_POINT except more Pythonic
     """
 
-    def __init__(self, ec_point, curve_nid, group):
-        self.ec_point = ec_point
+    def __init__(self, ec_point, curve):
+        """
+        Initializes a point on a given elliptic curve.
+        Accepts an OpenSSL EC_POINT and either a curve_nid or a cryptography.io
+        EllipticCurve object.
+        """
+        if isinstance(curve, ec.EllipticCurve):
+            curve_nid = backend._elliptic_curve_to_nid(curve)
+        else:
+            curve_nid = curve
         self.curve_nid = curve_nid
-        self.group = group
+
+        self.ec_point = ec_point
+        self.group = _openssl._get_ec_group_by_curve_nid(self.curve_nid)
 
     @classmethod
     def get_size(cls, curve: ec.EllipticCurve=None):
@@ -49,7 +59,7 @@ class Point(object):
             )
             backend.openssl_assert(res == 1)
 
-        return cls(rand_point, curve_nid, group)
+        return cls(rand_point, curve_nid)
 
     @classmethod
     def from_affine(cls, coords, curve: ec.EllipticCurve=None):
@@ -74,7 +84,7 @@ class Point(object):
         group = _openssl._get_ec_group_by_curve_nid(curve_nid)
         ec_point = _openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
 
-        return cls(ec_point, curve_nid, group)
+        return cls(ec_point, curve_nid)
 
     def to_affine(self):
         """
@@ -112,7 +122,7 @@ class Point(object):
                     affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
                 )
                 backend.openssl_assert(res == 1)
-            return cls(ec_point, curve_nid, affine_x.group)
+            return cls(ec_point, curve_nid)
 
         # Handle uncompressed point
         elif data[0] == 4:
@@ -161,7 +171,7 @@ class Point(object):
         group = _openssl._get_ec_group_by_curve_nid(curve_nid)
         generator = _openssl._get_ec_generator_by_curve_nid(curve_nid)
 
-        return cls(generator, curve_nid, group)
+        return cls(generator, curve_nid)
 
     def __eq__(self, other):
         """
@@ -187,7 +197,7 @@ class Point(object):
             )
             backend.openssl_assert(res == 1)
 
-        return Point(prod, self.curve_nid, self.group)
+        return Point(prod, self.curve_nid)
 
     __rmul__ = __mul__
 
@@ -201,7 +211,7 @@ class Point(object):
                 self.group, op_sum, self.ec_point, other.ec_point, bn_ctx
             )
             backend.openssl_assert(res == 1)
-        return Point(op_sum, self.curve_nid, self.group)
+        return Point(op_sum, self.curve_nid)
 
     def __sub__(self, other):
         """
@@ -222,7 +232,7 @@ class Point(object):
                 self.group, inv, bn_ctx
             )
             backend.openssl_assert(res == 1)
-        return Point(inv, self.curve_nid, self.group)
+        return Point(inv, self.curve_nid)
 
 
 def unsafe_hash_to_point(data, params, label=None):

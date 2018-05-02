@@ -2,17 +2,18 @@ from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
 
-def _get_new_BN(is_consttime=True):
+def _get_new_BN(set_consttime_flag=True):
     """
     Returns a new and initialized OpenSSL BIGNUM.
-    is_consttime set to True by default to automatically default to constant
-    time operations.
+    The set_consttime_flag is set to True by default. When this instance of a
+    CurveBN object has BN_FLG_CONSTTIME set, OpenSSL will use constant time
+    operations whenever this CurveBN is passed.
     """
     new_bn = backend._lib.BN_new()
     backend.openssl_assert(new_bn != backend._ffi.NULL)
     new_bn = backend._ffi.gc(new_bn, backend._lib.BN_clear_free)
 
-    if is_consttime:
+    if set_consttime_flag:
         backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
     return new_bn
 
@@ -66,12 +67,14 @@ def _bn_is_on_curve(check_bn, curve_nid: int):
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve_nid: int=None, is_consttime=True):
+def _int_to_bn(py_int: int, curve_nid: int=None, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve_nid is
     provided, it will check if the Python integer is within the order of that
     curve. If it's not within the order, it will raise a ValueError.
-    is_consttime set to True by default to use constant time ops.
+
+    If set_consttime_flag is set to True, OpenSSL will use constant time
+    operations when using this CurveBN.
     """
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
@@ -81,7 +84,7 @@ def _int_to_bn(py_int: int, curve_nid: int=None, is_consttime=True):
         if not on_curve:
             raise ValueError("The Python integer given is not on the provided curve.")
 
-    if is_consttime:
+    if set_consttime_flag:
         backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
@@ -156,10 +159,10 @@ def _tmp_bn_mont_ctx(modulus):
     # Don't set the garbage collector. Only free it when the context is done
     # or else you'll get a null pointer error.
 
-    with backend._tmp_bn_ctx() as bn_ctx:
-        res = backend._lib.BN_MONT_CTX_set(bn_mont_ctx, modulus, bn_ctx)
-        backend.openssl_assert(res == 1)
-        try:
+    try:
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_MONT_CTX_set(bn_mont_ctx, modulus, bn_ctx)
+            backend.openssl_assert(res == 1)
             yield bn_mont_ctx
-        finally:
-            backend._lib.BN_MONT_CTX_free(bn_mont_ctx)
+    finally:
+        backend._lib.BN_MONT_CTX_free(bn_mont_ctx)

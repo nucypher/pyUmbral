@@ -1,5 +1,5 @@
 import pytest
-
+import random
 from umbral import pre, keys
 from umbral.point import Point
 from umbral.fragments import CorrectnessProof
@@ -15,6 +15,7 @@ def test_correctness_proof_serialization():
 
     _unused_key, capsule = pre._encapsulate(pub_key_alice.point_key)
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
+    random.shuffle(kfrags)
 
     # Example of potential metadata to describe the re-encryption request
     metadata = b"This is an example of metadata for re-encryption request"
@@ -54,6 +55,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice.point_key)
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    random.shuffle(kfrags)
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
@@ -117,6 +119,7 @@ def test_cheating_ursula_sends_garbage(N, M):
 
     sym_key, capsule_alice = pre._encapsulate(pub_key_alice.point_key)
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    random.shuffle(kfrags)
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
@@ -177,6 +180,8 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
     ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
 
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    random.shuffle(kfrags)
+
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
         capsule.attach_cfrag(cfrag)
@@ -193,6 +198,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
     sym_key, capsule = pre._encapsulate(pub_key_alice.point_key)
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    random.shuffle(kfrags)
 
     for kfrag in kfrags:
         assert kfrag.verify(pub_key_alice.point_key, pub_key_bob.point_key)

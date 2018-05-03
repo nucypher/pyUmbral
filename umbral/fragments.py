@@ -9,11 +9,12 @@ from io import BytesIO
 
 class KFrag(object):
     def __init__(self, id, bn_key, point_noninteractive, 
-                 point_commitment, bn_sig1, bn_sig2):
+                 point_commitment, point_seed_xcoord, bn_sig1, bn_sig2):
         self._id = id
         self._bn_key = bn_key
         self._point_noninteractive = point_noninteractive
         self._point_commitment = point_commitment
+        self._point_seed_xcoord = point_seed_xcoord
         self._bn_sig1 = bn_sig1
         self._bn_sig2 = bn_sig2
 
@@ -27,7 +28,7 @@ class KFrag(object):
         bn_size = CurveBN.get_size(curve)
         point_size = Point.get_size(curve)
 
-        return (bn_size * 4) + (point_size * 2)
+        return (bn_size * 4) + (point_size * 3)
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
@@ -45,10 +46,11 @@ class KFrag(object):
         key = CurveBN.from_bytes(data.read(bn_size), curve)
         ni = Point.from_bytes(data.read(point_size), curve)
         commitment = Point.from_bytes(data.read(point_size), curve)
+        seed_xcoord = Point.from_bytes(data.read(point_size), curve)
         sig1 = CurveBN.from_bytes(data.read(bn_size), curve)
         sig2 = CurveBN.from_bytes(data.read(bn_size), curve)
 
-        return cls(id, key, ni, commitment, sig1, sig2)
+        return cls(id, key, ni, commitment, seed_xcoord, sig1, sig2)
 
     def to_bytes(self):
         """
@@ -57,10 +59,11 @@ class KFrag(object):
         key = self._bn_key.to_bytes()
         ni = self._point_noninteractive.to_bytes()
         commitment = self._point_commitment.to_bytes()
+        seed_xcoord = self._point_seed_xcoord.to_bytes()
         sig1 = self._bn_sig1.to_bytes()
         sig2 = self._bn_sig2.to_bytes()
 
-        return self._id + key + ni + commitment + sig1 + sig2
+        return self._id + key + ni + commitment + seed_xcoord + sig1 + sig2
 
     def verify(self, pub_a, pub_b, params: "UmbralParameters"=None):
         params = params if params is not None else default_params()
@@ -71,6 +74,7 @@ class KFrag(object):
         z1 = self._bn_sig1
         z2 = self._bn_sig2
         x = self._point_noninteractive
+        seed_xcoord = self._point_seed_xcoord
         key = self._bn_key
 
         # We check that the commitment u1 is well-formed
@@ -79,7 +83,7 @@ class KFrag(object):
         # We check the Schnorr signature over the kfrag components
         g_y = (z2 * params.g) + (z1 * pub_a)
 
-        kfrag_components = [g_y, self._id, pub_a, pub_b, u1, x]
+        kfrag_components = [g_y, self._id, pub_a, pub_b, u1, x, seed_xcoord]
         valid_kfrag_signature = z1 == CurveBN.hash_to_bn(*kfrag_components, params=params)
 
         return correct_commitment & valid_kfrag_signature
@@ -167,12 +171,14 @@ class CorrectnessProof(object):
 
 
 class CapsuleFrag(object):
-    def __init__(self, point_e1, point_v1, kfrag_id, point_noninteractive, 
+    def __init__(self, point_e1, point_v1, kfrag_id, 
+                 point_noninteractive, point_seed_xcoord,
                  proof: CorrectnessProof=None):
         self._point_e1 = point_e1
         self._point_v1 = point_v1
         self._kfrag_id = kfrag_id
         self._point_noninteractive = point_noninteractive
+        self._point_seed_xcoord = point_seed_xcoord
         self.proof = proof
 
     @classmethod
@@ -186,7 +192,7 @@ class CapsuleFrag(object):
         bn_size = CurveBN.get_size(curve)
         point_size = Point.get_size(curve)
 
-        return (bn_size * 1) + (point_size * 3)
+        return (bn_size * 1) + (point_size * 4)
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: ec.EllipticCurve = None):
@@ -202,11 +208,12 @@ class CapsuleFrag(object):
         v1 = Point.from_bytes(data.read(point_size), curve)
         kfrag_id = data.read(key_size)
         ni = Point.from_bytes(data.read(point_size), curve)
+        seed_xcoord = Point.from_bytes(data.read(point_size), curve)
 
         proof = data.read() or None
         proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
 
-        return cls(e1, v1, kfrag_id, ni, proof)
+        return cls(e1, v1, kfrag_id, ni, seed_xcoord, proof)
 
     def to_bytes(self):
         """
@@ -215,8 +222,9 @@ class CapsuleFrag(object):
         e1 = self._point_e1.to_bytes()
         v1 = self._point_v1.to_bytes()
         ni = self._point_noninteractive.to_bytes()
+        seed_xcoord = self._point_seed_xcoord.to_bytes()
 
-        serialized_cfrag = e1 + v1 + self._kfrag_id + ni
+        serialized_cfrag = e1 + v1 + self._kfrag_id + ni + seed_xcoord
 
         if self.proof is not None:
             serialized_cfrag += self.proof.to_bytes()

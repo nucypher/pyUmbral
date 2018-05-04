@@ -12,7 +12,7 @@ class UmbralParameters(object):
         curve_nid = backend._elliptic_curve_to_nid(curve)
 
         self.g = Point.get_generator_from_curve(self.curve)
-
+        
         self.order = _openssl._get_ec_order_by_curve_nid(curve_nid)
 
         g_bytes = self.g.to_bytes(is_compressed=True)

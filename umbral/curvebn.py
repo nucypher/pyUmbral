@@ -27,6 +27,7 @@ class CurveBN(object):
             curve_nid = backend._elliptic_curve_to_nid(curve)
         else:
             curve_nid = curve
+
         self.curve_nid = curve_nid
 
         on_curve = _openssl._bn_is_on_curve(bignum, curve_nid)

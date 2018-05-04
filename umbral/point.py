@@ -58,7 +58,7 @@ class Point(object):
                 group, rand_point, backend._ffi.NULL, generator, rand_bn, bn_ctx
             )
             backend.openssl_assert(res == 1)
-
+            
         return cls(rand_point, curve_nid)
 
     @classmethod
@@ -83,7 +83,7 @@ class Point(object):
 
         group = _openssl._get_ec_group_by_curve_nid(curve_nid)
         ec_point = _openssl._get_EC_POINT_via_affine(affine_x, affine_y, ec_group=group)
-
+        
         return cls(ec_point, curve_nid)
 
     def to_affine(self):
@@ -172,7 +172,7 @@ class Point(object):
         generator = _openssl._get_ec_generator_by_curve_nid(curve_nid)
 
         return cls(generator, curve_nid)
-
+      
     def __eq__(self, other):
         """
         Compares two EC_POINTS for equality.

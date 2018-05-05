@@ -91,37 +91,37 @@ class CurveBN(object):
         order = openssl._get_ec_order_by_curve_nid(curve_nid)
         group = openssl._get_ec_group_by_curve_nid(curve_nid)
     
-        # We use an internal 32-bit counter as additional input
-        iteration = 0
-        while True:
-
-            # TODO: Clean this in an upcoming cleanup of pyUmbral
-            blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-            for item in crypto_items:
-                try:
-                    item_bytes = item.to_bytes()
-                except AttributeError:
-                    if not isinstance(item, bytes):
-                        raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
-                    item_bytes = item
-                blake2b.update(item_bytes)
-            
-            blake2b.update(iteration.to_bytes(4, byteorder='big'))
-
-            hash_digest = blake2b.finalize()
-            hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
-
-            bignum = openssl._get_new_BN()
+        # TODO: Clean this in an upcoming cleanup of pyUmbral
+        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        for item in crypto_items:
             try:
-                hash_digest = openssl._int_to_bn(hash_digest)
-                with backend._tmp_bn_ctx() as bn_ctx:
-                    res = backend._lib.BN_mod(bignum, hash_digest, order, bn_ctx)
-                    backend.openssl_assert(res == 1)
-                return cls(bignum, curve_nid, group, order)
-            except ValueError:
-                # This case is only reached when the result is 0, 
-                # which happens with prob. 1/order of the curve
-                iteration += 1
+                item_bytes = item.to_bytes()
+            except AttributeError:
+                if isinstance(item, bytes):
+                    item_bytes = item
+                else:
+                    raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
+            blake2b.update(item_bytes)
+
+        hash_digest = blake2b.finalize()
+        hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
+        hash_digest = openssl._int_to_bn(hash_digest)
+
+        _1 = backend._lib.BN_value_one()
+        
+        order_minus_1 = openssl._get_new_BN()
+        res = backend._lib.BN_sub(order_minus_1, order, _1)
+        backend.openssl_assert(res == 1)
+
+        bignum = openssl._get_new_BN()
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod(bignum, hash_digest, order_minus_1, bn_ctx)
+            backend.openssl_assert(res == 1)
+
+        res = backend._lib.BN_add(bignum, bignum, _1)
+        backend.openssl_assert(res == 1)
+        
+        return cls(bignum, curve_nid, group, order)
 
     @classmethod
     def from_bytes(cls, data, curve: ec.EllipticCurve=None):

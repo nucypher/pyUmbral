@@ -1,4 +1,5 @@
 from umbral.curvebn import CurveBN
+import pytest
 
 
 def test_cast_curvebn_to_int():
@@ -11,3 +12,9 @@ def test_cast_curvebn_to_int():
 
     y = CurveBN.from_int(x)
     assert x == y
+
+
+def test_cant_hash_arbitrary_object_into_bignum():
+    whatever = object()
+    with pytest.raises(TypeError):
+        CurveBN.hash(whatever)

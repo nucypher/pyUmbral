@@ -91,9 +91,10 @@ class CurveBN(object):
             try:
                 item_bytes = item.to_bytes()
             except AttributeError:
-                if not isinstance(item, bytes):
+                if isinstance(item, bytes):
+                    item_bytes = item
+                else:
                     raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
-                item_bytes = item
             blake2b.update(item_bytes)
 
         hash_digest = blake2b.finalize()

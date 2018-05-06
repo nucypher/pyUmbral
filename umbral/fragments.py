@@ -2,8 +2,10 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral.curvebn import CurveBN
 from umbral.config import default_curve, default_params
+from umbral.keys import UmbralPublicKey
 from umbral.point import Point
 from umbral.utils import get_curve_keysize_bytes
+from umbral.params import UmbralParameters
 
 from io import BytesIO
 

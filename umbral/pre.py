@@ -479,24 +479,23 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     params = params if params is not None else default_params()
 
     priv_b = bob_privkey.bn_key
-    pub_b = bob_privkey.get_pubkey().point_key
-
-    pub_a = alice_pubkey.point_key
+    bob_pubkey = bob_privkey.get_pubkey()
 
     # TODO: Change dict for a list if issue #116 goes through
     if check_proof:
         offending_cfrags = []
         for cfrag in capsule._attached_cfrags:
-            if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
+            if not cfrag.verify_correctness(capsule, alice_pubkey,
+                                            bob_pubkey, params):
                 offending_cfrags.append(cfrag)
 
         if offending_cfrags:
             error_msg = "Decryption error: Some CFrags are not correct"
             raise UmbralCorrectnessError(error_msg, offending_cfrags)
 
-    capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
+    capsule._reconstruct_shamirs_secret(alice_pubkey.point_key, priv_b, params=params)
 
-    key = _decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule, params=params)
+    key = _decapsulate_reencrypted(bob_pubkey.point_key, priv_b, alice_pubkey.point_key, capsule, params=params)
     return key
 
 

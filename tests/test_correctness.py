@@ -84,19 +84,17 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
                                                capsule_alice1
                                               )
 
-    assert not pre._verify_correctness(capsule_alice1,
-                                       cfrags[0],
-                                       pub_key_alice.point_key,
-                                       pub_key_bob.point_key,
+    assert not cfrags[0].verify_correctness(capsule_alice1,
+                                      pub_key_alice,
+                                      pub_key_bob,
                                       )
 
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags should be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
-        assert pre._verify_correctness(capsule_alice1,
-                                       cfrag_i,
-                                       pub_key_alice.point_key,
-                                       pub_key_bob.point_key,
+        assert cfrag_i.verify_correctness(capsule_alice1,
+                                      pub_key_alice,
+                                      pub_key_bob,
                                       )
 
     # Alternatively, we can try to open the capsule directly.
@@ -144,19 +142,17 @@ def test_cheating_ursula_sends_garbage(N, M):
                                                    pub_key_alice.point_key,
                                                    capsule_alice)
 
-    assert not pre._verify_correctness(capsule_alice, 
-                                       cfrags[0], 
-                                       pub_key_alice.point_key, 
-                                       pub_key_bob.point_key,
+    assert not cfrags[0].verify_correctness(capsule_alice,
+                                      pub_key_alice,
+                                      pub_key_bob,
                                       )
 
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags chould be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
-        assert pre._verify_correctness(capsule_alice,
-                                       cfrag_i,
-                                       pub_key_alice.point_key,
-                                       pub_key_bob.point_key,
+        assert cfrag_i.verify_correctness(capsule_alice,
+                                      pub_key_alice,
+                                      pub_key_bob,
                                       )
 
     # Alternatively, we can try to open the capsule directly.
@@ -208,11 +204,9 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
         cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)
         capsule.attach_cfrag(cfrag)
 
-        assert pre._verify_correctness(capsule, cfrag,
-                                       pub_key_alice.point_key, pub_key_bob.point_key,
+        assert cfrag.verify_correctness(capsule,
+                                      pub_key_alice, pub_key_bob,
                                       )
-
-    # assert capsule.is_openable_by_bob()  # TODO: Is it possible to check here if >= m cFrags have been attached?
     
     sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, pub_key_alice)
     assert sym_key == sym_key_from_capsule

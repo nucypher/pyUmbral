@@ -225,7 +225,60 @@ class CapsuleFrag(object):
 
         return serialized_cfrag
 
+    def verify_correctness(self, capsule: "Capsule",
+                       pubkey_a: UmbralPublicKey, pubkey_b: UmbralPublicKey,
+                       params: UmbralParameters=None):
+
+        params = params if params is not None else default_params()
+
+        ####
+        ## Here are the formulaic constituents shared with `prove_correctness`.
+        ####
+        e = capsule._point_e
+        v = capsule._point_v
+
+        e1 = self._point_e1
+        v1 = self._point_v1
+
+        u = params.u
+        u1 = self.proof._point_kfrag_commitment
+
+        e2 = self.proof._point_e2
+        v2 = self.proof._point_v2
+        u2 = self.proof._point_kfrag_pok
+
+        hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+        if self.proof.metadata is not None:
+            hash_input.append(self.proof.metadata)
+        h = CurveBN.hash(*hash_input, params=params)
+
+        z1 = self.proof._bn_kfrag_sig1
+        z2 = self.proof._bn_kfrag_sig2
+        z3 = self.proof._bn_sig
+        ########
+
+
+        xcomp = self._point_noninteractive
+        kfrag_id = self._bn_kfrag_id
+
+        g = params.g
+
+        g_y = (z2 * g) + (z1 * pubkey_a.point_key)
+        signature_input = [g_y, kfrag_id, pubkey_a.point_key, pubkey_b.point_key, u1, xcomp]
+        kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
+        valid_kfrag_signature = z1 == kfrag_signature1
+
+        correct_reencryption_of_e = z3 * e == e2 + (h * e1)
+
+        correct_reencryption_of_v = z3 * v == v2 + (h * v1)
+
+        correct_rk_commitment = z3 * u == u2 + (h * u1)
+
+        return valid_kfrag_signature \
+               & correct_reencryption_of_e \
+               & correct_reencryption_of_v \
+               & correct_rk_commitment
+
+
     def __bytes__(self):
         return self.to_bytes()
-
-

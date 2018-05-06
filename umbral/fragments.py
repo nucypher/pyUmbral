@@ -232,6 +232,8 @@ class CapsuleFrag(object):
                        params: UmbralParameters=None):
 
         params = params if params is not None else default_params()
+        point_alice = pubkey_a.point_key
+        point_bob = pubkey_b.point_key
 
         ####
         ## Here are the formulaic constituents shared with `prove_correctness`.
@@ -259,14 +261,13 @@ class CapsuleFrag(object):
         z3 = self.proof._bn_sig
         ########
 
-
         xcomp = self._point_noninteractive
         kfrag_id = self._bn_kfrag_id
 
         g = params.g
 
-        g_y = (z2 * g) + (z1 * pubkey_a.point_key)
-        signature_input = [g_y, kfrag_id, pubkey_a.point_key, pubkey_b.point_key, u1, xcomp]
+        g_y = (z2 * g) + (z1 * point_alice)
+        signature_input = [g_y, kfrag_id, point_alice, point_bob, u1, xcomp]
         kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
         valid_kfrag_signature = z1 == kfrag_signature1
 

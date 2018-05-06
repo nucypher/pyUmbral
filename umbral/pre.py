@@ -203,7 +203,7 @@ class Capsule(object):
 
 
 def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
-                pub_b: Union[UmbralPublicKey, Point],
+                point_bob: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
                 params: UmbralParameters=None) -> List[KFrag]:
     """
@@ -218,26 +218,26 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
     if isinstance(priv_a, UmbralPrivateKey):
         priv_a = priv_a.bn_key
 
-    if isinstance(pub_b, UmbralPublicKey):
-        pub_b = pub_b.point_key
+    if isinstance(point_bob, UmbralPublicKey):
+        point_bob = point_bob.point_key
 
     g = params.g
-    pub_a = priv_a * g
+    point_alice = priv_a * g
 
     x = CurveBN.gen_rand(params.curve)
     xcomp = x * g
-    d = CurveBN.hash(xcomp, pub_b, pub_b * x, params=params)
+    d = CurveBN.hash(xcomp, point_bob, point_bob * x, params=params)
 
     coeffs = [priv_a * (~d)]
     coeffs += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
 
     u = params.u
 
-    g_ab = priv_a * pub_b
+    g_ab = priv_a * point_bob
 
     blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-    blake2b.update(pub_a.to_bytes())
-    blake2b.update(pub_b.to_bytes())
+    blake2b.update(point_alice.to_bytes())
+    blake2b.update(point_bob.to_bytes())
     blake2b.update(g_ab.to_bytes())
     hashed_dh_tuple = blake2b.finalize()
 
@@ -252,7 +252,8 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
         u1 = rk * u
         y = CurveBN.gen_rand(params.curve)
 
-        z1 = CurveBN.hash(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
+        signature_input = [y * g, id_kfrag, point_alice, point_bob, u1, xcomp]
+        z1 = CurveBN.hash(*signature_input, params=params)
         z2 = y - priv_a * z1
 
         kfrag = KFrag(bn_id=id_kfrag, bn_key=rk, 

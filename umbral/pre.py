@@ -332,58 +332,6 @@ def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule,
     if not capsule.verify(params):
         raise capsule.NotValid("Capsule verification failed.")
 
-def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
-                    pub_a: Point, pub_b: Point, 
-                    params: UmbralParameters=None) -> bool:
-    
-    
-    proof = cfrag.proof
-
-    params = params if params is not None else default_params()
-
-    e = capsule._point_e
-    v = capsule._point_v
-
-    e1 = cfrag._point_e1
-    v1 = cfrag._point_v1
-    xcomp = cfrag._point_noninteractive
-    kfrag_id = cfrag._bn_kfrag_id
-
-    e2 = proof._point_e2
-    v2 = proof._point_v2
-
-    g = params.g
-    u = params.u
-
-    u1 = proof._point_kfrag_commitment
-    u2 = proof._point_kfrag_pok
-
-    z1 = proof._bn_kfrag_sig1
-    z2 = proof._bn_kfrag_sig2
-    z3 = proof._bn_sig
-
-    g_y = (z2 * g) + (z1 * pub_a)
-
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if proof.metadata is not None:
-        hash_input.append(proof.metadata)
-    
-    h = CurveBN.hash(*hash_input, params=params)
-
-    signature_input = [g_y, kfrag_id, pub_a, pub_b, u1, xcomp]
-    kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
-    valid_kfrag_signature = z1 == kfrag_signature1
-    
-    correct_reencryption_of_e = z3 * e == e2 + (h * e1)
-    
-    correct_reencryption_of_v = z3 * v == v2 + (h * v1)
-
-    correct_rk_commitment = z3 * u == u2 + (h * u1)
-    
-    return valid_kfrag_signature        \
-         & correct_reencryption_of_e    \
-         & correct_reencryption_of_v    \
-         & correct_rk_commitment
 
 def _encapsulate(alice_pub_key: Point, key_length=32,
                  params: UmbralParameters=None) -> Tuple[bytes, Capsule]:

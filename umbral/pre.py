@@ -4,10 +4,11 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
+from umbral._pre import prove_cfrag_correctness
 from umbral.curvebn import CurveBN
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
-from umbral.fragments import KFrag, CapsuleFrag, CorrectnessProof
+from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
@@ -279,59 +280,9 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None,
                         point_noninteractive=kfrag._point_noninteractive)
 
     if provide_proof:
-        _prove_correctness(cfrag, kfrag, capsule, metadata, params)
+        prove_cfrag_correctness(cfrag, kfrag, capsule, metadata, params)
 
     return cfrag
-
-
-def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule, 
-                       metadata: bytes=None, params: UmbralParameters=None
-                      ) -> CorrectnessProof:
-    t = CurveBN.gen_rand(params.curve)
-    rk = kfrag._bn_key
-
-    params = params if params is not None else default_params()
-
-    ####
-    ## Here are the formulaic constituents shared with `verify_correctness`.
-    ####
-    e = capsule._point_e
-    v = capsule._point_v
-
-    e1 = cfrag._point_e1
-    v1 = cfrag._point_v1
-
-    u = params.u
-    u1 = kfrag._point_commitment
-
-    e2 = t * e
-    v2 = t * v
-    u2 = t * u
-
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if metadata is not None:
-        hash_input.append(metadata)
-    h = CurveBN.hash(*hash_input, params=params)
-
-    z1 = kfrag._bn_sig1
-    z2 = kfrag._bn_sig2
-    z3 = t + h * rk
-    ########
-
-
-    cfrag.proof = CorrectnessProof(point_e2=e2, 
-                                   point_v2=v2, 
-                                   point_kfrag_commitment=u1,
-                                   point_kfrag_pok=u2,
-                                   bn_kfrag_sig1=z1,
-                                   bn_kfrag_sig2=z2,
-                                   bn_sig=z3,
-                                   metadata=metadata)
-
-    # Check correctness of original ciphertext (check nº 2) at the end
-    # to avoid timing oracles
-    if not capsule.verify(params):
-        raise capsule.NotValid("Capsule verification failed.")
 
 
 def _encapsulate(alice_pub_key: Point, key_length=32,

@@ -14,7 +14,7 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
     rk = kfrag._bn_key
     t = CurveBN.gen_rand(params.curve)
     ####
-    ## Here are the formulaic constituents shared with `verify_correctness`.
+    ## Here are the formulaic constituents shared with `assess_cfrag_correctness`.
     ####
     e = capsule._point_e
     v = capsule._point_v

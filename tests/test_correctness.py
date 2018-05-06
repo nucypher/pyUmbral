@@ -193,7 +193,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     for kfrag in kfrags:
-        assert kfrag.verify(pub_key_alice.point_key, pub_key_bob.point_key)
+        assert kfrag.verify(pub_key_alice, pub_key_bob)
 
     for i, kfrag in enumerate(kfrags[:M]):
 

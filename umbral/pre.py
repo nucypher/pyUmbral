@@ -286,39 +286,44 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None,
 def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule, 
                        metadata: bytes=None, params: UmbralParameters=None
                       ) -> CorrectnessProof:
+    t = CurveBN.gen_rand(params.curve)
+    rk = kfrag._bn_key
+
     params = params if params is not None else default_params()
+
+    ####
+    ## Here are the formulaic constituents shared with `verify_correctness`.
+    ####
+    e = capsule._point_e
+    v = capsule._point_v
 
     e1 = cfrag._point_e1
     v1 = cfrag._point_v1
 
-    e = capsule._point_e
-    v = capsule._point_v
-
     u = params.u
     u1 = kfrag._point_commitment
 
-    rk = kfrag._bn_key
-
-    t = CurveBN.gen_rand(params.curve)
     e2 = t * e
     v2 = t * v
     u2 = t * u
 
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-
     if metadata is not None:
         hash_input.append(metadata)
-
     h = CurveBN.hash(*hash_input, params=params)
 
+    z1 = kfrag._bn_sig1
+    z2 = kfrag._bn_sig2
     z3 = t + h * rk
+    ########
+
 
     cfrag.proof = CorrectnessProof(point_e2=e2, 
                                    point_v2=v2, 
                                    point_kfrag_commitment=u1,
                                    point_kfrag_pok=u2,
-                                   bn_kfrag_sig1=kfrag._bn_sig1,
-                                   bn_kfrag_sig2=kfrag._bn_sig2,
+                                   bn_kfrag_sig1=z1,
+                                   bn_kfrag_sig2=z2,
                                    bn_sig=z3,
                                    metadata=metadata)
 

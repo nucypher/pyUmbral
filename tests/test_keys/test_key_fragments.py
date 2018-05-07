@@ -12,7 +12,7 @@ def test_kfrag_serialization(alices_keys):
     assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
 
     new_frag = pre.KFrag.from_bytes(kfrag_bytes)
-    assert new_frag._bn_id == kfrags[0]._bn_id
+    assert new_frag._id == kfrags[0]._id
     assert new_frag._bn_key == kfrags[0]._bn_key
     assert new_frag._point_noninteractive == kfrags[0]._point_noninteractive
     assert new_frag._point_commitment == kfrags[0]._point_commitment
@@ -47,7 +47,7 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1
     assert new_cfrag._point_v1 == cfrag._point_v1
-    assert new_cfrag._bn_kfrag_id == cfrag._bn_kfrag_id
+    assert new_cfrag._kfrag_id == cfrag._kfrag_id
     assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
 
     new_proof = new_cfrag.proof
@@ -83,7 +83,7 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys):
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1
     assert new_cfrag._point_v1 == cfrag._point_v1
-    assert new_cfrag._bn_kfrag_id == cfrag._bn_kfrag_id
+    assert new_cfrag._kfrag_id == cfrag._kfrag_id
     assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
 
     new_proof = new_cfrag.proof
@@ -115,7 +115,7 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys):
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1
     assert new_cfrag._point_v1 == cfrag._point_v1
-    assert new_cfrag._bn_kfrag_id == cfrag._bn_kfrag_id
+    assert new_cfrag._kfrag_id == cfrag._kfrag_id
     assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
 
     new_proof = new_cfrag.proof

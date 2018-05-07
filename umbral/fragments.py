@@ -1,9 +1,12 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from umbral._pre import assess_cfrag_correctness, verify_kfrag
 from umbral.curvebn import CurveBN
 from umbral.config import default_curve, default_params
+from umbral.keys import UmbralPublicKey
 from umbral.point import Point
 from umbral.utils import get_curve_keysize_bytes
+from umbral.params import UmbralParameters
 
 from io import BytesIO
 
@@ -63,27 +66,13 @@ class KFrag(object):
 
         return id + key + ni + commitment + sig1 + sig2
 
-    def verify(self, pub_a, pub_b, params: "UmbralParameters"=None):
-        params = params if params is not None else default_params()
+    def verify(self, pubkey_a: UmbralPublicKey,
+                        pubkey_b: UmbralPublicKey,
+                        params: UmbralParameters=None):
+        pubkey_a_point = pubkey_a.point_key
+        pubkey_b_point = pubkey_b.point_key
 
-        u = params.u
-
-        u1 = self._point_commitment
-        z1 = self._bn_sig1
-        z2 = self._bn_sig2
-        x = self._point_noninteractive
-        key = self._bn_key
-
-        # We check that the commitment u1 is well-formed
-        correct_commitment = u1 == key * u
-
-        # We check the Schnorr signature over the kfrag components
-        g_y = (z2 * params.g) + (z1 * pub_a)
-
-        kfrag_components = [g_y, self._bn_id, pub_a, pub_b, u1, x]
-        valid_kfrag_signature = z1 == CurveBN.hash(*kfrag_components, params=params)
-
-        return correct_commitment & valid_kfrag_signature
+        return verify_kfrag(self, pubkey_a_point, pubkey_b_point, params)
 
     def __bytes__(self):
         return self.to_bytes()
@@ -225,7 +214,26 @@ class CapsuleFrag(object):
 
         return serialized_cfrag
 
+    def verify_correctness(self,
+                        capsule: "Capsule",
+                        pubkey_a: UmbralPublicKey,
+                        pubkey_b: UmbralPublicKey,
+                        params: UmbralParameters=None):
+        pubkey_a_point = pubkey_a.point_key
+        pubkey_b_point = pubkey_b.point_key
+
+        return assess_cfrag_correctness(self, capsule, pubkey_a_point,
+                                        pubkey_b_point, params)
+
+    def attach_proof(self, e2, v2, u1, u2, z1, z2, z3, metadata):
+        self.proof = CorrectnessProof(point_e2=e2,
+                         point_v2=v2,
+                         point_kfrag_commitment=u1,
+                         point_kfrag_pok=u2,
+                         bn_kfrag_sig1=z1,
+                         bn_kfrag_sig2=z2,
+                         bn_sig=z3,
+                         metadata=metadata)
+
     def __bytes__(self):
         return self.to_bytes()
-
-

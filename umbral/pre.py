@@ -4,10 +4,11 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
+from umbral._pre import prove_cfrag_correctness
 from umbral.curvebn import CurveBN
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
-from umbral.fragments import KFrag, CapsuleFrag, CorrectnessProof
+from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
@@ -203,7 +204,7 @@ class Capsule(object):
 
 
 def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
-                pub_b: Union[UmbralPublicKey, Point],
+                pubkey_b_point: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
                 params: UmbralParameters=None) -> List[KFrag]:
     """
@@ -218,26 +219,26 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
     if isinstance(priv_a, UmbralPrivateKey):
         priv_a = priv_a.bn_key
 
-    if isinstance(pub_b, UmbralPublicKey):
-        pub_b = pub_b.point_key
+    if isinstance(pubkey_b_point, UmbralPublicKey):
+        pubkey_b_point = pubkey_b_point.point_key
 
     g = params.g
-    pub_a = priv_a * g
+    pubkey_a_point = priv_a * g
 
     x = CurveBN.gen_rand(params.curve)
     xcomp = x * g
-    d = CurveBN.hash(xcomp, pub_b, pub_b * x, params=params)
+    d = CurveBN.hash(xcomp, pubkey_b_point, pubkey_b_point * x, params=params)
 
     coeffs = [priv_a * (~d)]
     coeffs += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
 
     u = params.u
 
-    g_ab = priv_a * pub_b
+    g_ab = priv_a * pubkey_b_point
 
     blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-    blake2b.update(pub_a.to_bytes())
-    blake2b.update(pub_b.to_bytes())
+    blake2b.update(pubkey_a_point.to_bytes())
+    blake2b.update(pubkey_b_point.to_bytes())
     blake2b.update(g_ab.to_bytes())
     hashed_dh_tuple = blake2b.finalize()
 
@@ -252,7 +253,8 @@ def split_rekey(priv_a: Union[UmbralPrivateKey, CurveBN],
         u1 = rk * u
         y = CurveBN.gen_rand(params.curve)
 
-        z1 = CurveBN.hash(y * g, id_kfrag, pub_a, pub_b, u1, xcomp, params=params)
+        signature_input = [y * g, id_kfrag, pubkey_a_point, pubkey_b_point, u1, xcomp]
+        z1 = CurveBN.hash(*signature_input, params=params)
         z2 = y - priv_a * z1
 
         kfrag = KFrag(bn_id=id_kfrag, bn_key=rk, 
@@ -278,107 +280,10 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters=None,
                         point_noninteractive=kfrag._point_noninteractive)
 
     if provide_proof:
-        _prove_correctness(cfrag, kfrag, capsule, metadata, params)
+        prove_cfrag_correctness(cfrag, kfrag, capsule, metadata, params)
 
     return cfrag
 
-
-def _prove_correctness(cfrag: CapsuleFrag, kfrag: KFrag, capsule: Capsule, 
-                       metadata: bytes=None, params: UmbralParameters=None
-                      ) -> CorrectnessProof:
-    params = params if params is not None else default_params()
-
-    e1 = cfrag._point_e1
-    v1 = cfrag._point_v1
-
-    e = capsule._point_e
-    v = capsule._point_v
-
-    u = params.u
-    u1 = kfrag._point_commitment
-
-    rk = kfrag._bn_key
-
-    t = CurveBN.gen_rand(params.curve)
-    e2 = t * e
-    v2 = t * v
-    u2 = t * u
-
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-
-    if metadata is not None:
-        hash_input.append(metadata)
-
-    h = CurveBN.hash(*hash_input, params=params)
-
-    z3 = t + h * rk
-
-    cfrag.proof = CorrectnessProof(point_e2=e2, 
-                                   point_v2=v2, 
-                                   point_kfrag_commitment=u1,
-                                   point_kfrag_pok=u2,
-                                   bn_kfrag_sig1=kfrag._bn_sig1,
-                                   bn_kfrag_sig2=kfrag._bn_sig2,
-                                   bn_sig=z3,
-                                   metadata=metadata)
-
-    # Check correctness of original ciphertext (check nº 2) at the end
-    # to avoid timing oracles
-    if not capsule.verify(params):
-        raise capsule.NotValid("Capsule verification failed.")
-
-def _verify_correctness(capsule: Capsule, cfrag: CapsuleFrag,
-                    pub_a: Point, pub_b: Point, 
-                    params: UmbralParameters=None) -> bool:
-    
-    
-    proof = cfrag.proof
-
-    params = params if params is not None else default_params()
-
-    e = capsule._point_e
-    v = capsule._point_v
-
-    e1 = cfrag._point_e1
-    v1 = cfrag._point_v1
-    xcomp = cfrag._point_noninteractive
-    kfrag_id = cfrag._bn_kfrag_id
-
-    e2 = proof._point_e2
-    v2 = proof._point_v2
-
-    g = params.g
-    u = params.u
-
-    u1 = proof._point_kfrag_commitment
-    u2 = proof._point_kfrag_pok
-
-    z1 = proof._bn_kfrag_sig1
-    z2 = proof._bn_kfrag_sig2
-    z3 = proof._bn_sig
-
-    g_y = (z2 * g) + (z1 * pub_a)
-
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-    if proof.metadata is not None:
-        hash_input.append(proof.metadata)
-    
-    h = CurveBN.hash(*hash_input, params=params)
-
-    signature_input = [g_y, kfrag_id, pub_a, pub_b, u1, xcomp]
-    kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
-    valid_kfrag_signature = z1 == kfrag_signature1
-    
-    correct_reencryption_of_e = z3 * e == e2 + (h * e1)
-    
-    correct_reencryption_of_v = z3 * v == v2 + (h * v1)
-
-    correct_rk_commitment = z3 * u == u2 + (h * u1)
-    
-    return valid_kfrag_signature        \
-         & correct_reencryption_of_e    \
-         & correct_reencryption_of_v    \
-         & correct_rk_commitment
 
 def _encapsulate(alice_pub_key: Point, key_length=32,
                  params: UmbralParameters=None) -> Tuple[bytes, Capsule]:
@@ -479,24 +384,23 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     params = params if params is not None else default_params()
 
     priv_b = bob_privkey.bn_key
-    pub_b = bob_privkey.get_pubkey().point_key
-
-    pub_a = alice_pubkey.point_key
+    bob_pubkey = bob_privkey.get_pubkey()
 
     # TODO: Change dict for a list if issue #116 goes through
     if check_proof:
         offending_cfrags = []
         for cfrag in capsule._attached_cfrags:
-            if not _verify_correctness(capsule, cfrag, pub_a, pub_b, params):
+            if not cfrag.verify_correctness(capsule, alice_pubkey,
+                                            bob_pubkey, params):
                 offending_cfrags.append(cfrag)
 
         if offending_cfrags:
             error_msg = "Decryption error: Some CFrags are not correct"
             raise UmbralCorrectnessError(error_msg, offending_cfrags)
 
-    capsule._reconstruct_shamirs_secret(pub_a, priv_b, params=params)
+    capsule._reconstruct_shamirs_secret(alice_pubkey.point_key, priv_b, params=params)
 
-    key = _decapsulate_reencrypted(pub_b, priv_b, pub_a, capsule, params=params)
+    key = _decapsulate_reencrypted(bob_pubkey.point_key, priv_b, alice_pubkey.point_key, capsule, params=params)
     return key
 
 

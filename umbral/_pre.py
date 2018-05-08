@@ -29,9 +29,9 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
     v2 = t * v
     u2 = t * u
 
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
     if metadata is not None:
-        hash_input.append(metadata)
+        hash_input += (metadata,)
     h = CurveBN.hash(*hash_input, params=params)
 
     z1 = kfrag._bn_sig1
@@ -70,9 +70,9 @@ def assess_cfrag_correctness(cfrag,
     v2 = cfrag.proof._point_v2
     u2 = cfrag.proof._point_kfrag_pok
 
-    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
     if cfrag.proof.metadata is not None:
-        hash_input.append(cfrag.proof.metadata)
+        hash_input += (cfrag.proof.metadata,)
     h = CurveBN.hash(*hash_input, params=params)
 
     z1 = cfrag.proof._bn_kfrag_sig1
@@ -88,7 +88,7 @@ def assess_cfrag_correctness(cfrag,
 
     # TODO: change this Schnorr signature for Ed25519 or ECDSA (#97)
     g_y = (z2 * g) + (z1 * pubkey_a_point)
-    signature_input = [g_y, kfrag_id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord]
+    signature_input = (g_y, kfrag_id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
     kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
     valid_kfrag_signature = z1 == kfrag_signature1
 
@@ -129,7 +129,7 @@ def verify_kfrag(kfrag,
     # We check the Schnorr signature over the kfrag components
     g_y = (z2 * params.g) + (z1 * pubkey_a_point)
 
-    signature_input = [g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord]
+    signature_input = (g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
     valid_kfrag_signature = z1 == CurveBN.hash(*signature_input, params=params)
 
     return correct_commitment & valid_kfrag_signature

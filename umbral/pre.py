@@ -277,7 +277,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
         # TODO: change this Schnorr signature for Ed25519 or ECDSA (#97)
         y = CurveBN.gen_rand(params.curve)
         g_y = y * g
-        signature_input = [g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord]
+        signature_input = (g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
         z1 = CurveBN.hash(*signature_input, params=params)
         z2 = y - privkey_a_bn * z1
 

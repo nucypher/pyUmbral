@@ -5,7 +5,6 @@ from umbral.curvebn import CurveBN
 from umbral.config import default_curve, default_params
 from umbral.keys import UmbralPublicKey
 from umbral.point import Point
-from umbral.utils import get_curve_keysize_bytes
 from umbral.params import UmbralParameters
 
 from io import BytesIO
@@ -39,17 +38,18 @@ class KFrag(object):
         Instantiate a KFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
         data = BytesIO(data)
 
         # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        id = data.read(key_size)
-        key = CurveBN.from_bytes(data.read(key_size), curve)
-        ni = Point.from_bytes(data.read(key_size + 1), curve)
-        commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        sig1 = CurveBN.from_bytes(data.read(key_size), curve)
-        sig2 = CurveBN.from_bytes(data.read(key_size), curve)
+        id = data.read(bn_size)
+        key = CurveBN.from_bytes(data.read(bn_size), curve)
+        ni = Point.from_bytes(data.read(point_size), curve)
+        commitment = Point.from_bytes(data.read(point_size), curve)
+        sig1 = CurveBN.from_bytes(data.read(bn_size), curve)
+        sig2 = CurveBN.from_bytes(data.read(bn_size), curve)
 
         return cls(id, key, ni, commitment, sig1, sig2)
 
@@ -108,18 +108,19 @@ class CorrectnessProof(object):
         Instantiate CorrectnessProof from serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
         data = BytesIO(data)
 
         # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        e2 = Point.from_bytes(data.read(key_size + 1), curve)
-        v2 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_commitment = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_pok = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_sig1 = CurveBN.from_bytes(data.read(key_size), curve)
-        kfrag_sig2 = CurveBN.from_bytes(data.read(key_size), curve)
-        sig = CurveBN.from_bytes(data.read(key_size), curve)
+        e2 = Point.from_bytes(data.read(point_size), curve)
+        v2 = Point.from_bytes(data.read(point_size), curve)
+        kfrag_commitment = Point.from_bytes(data.read(point_size), curve)
+        kfrag_pok = Point.from_bytes(data.read(point_size), curve)
+        kfrag_sig1 = CurveBN.from_bytes(data.read(bn_size), curve)
+        kfrag_sig2 = CurveBN.from_bytes(data.read(bn_size), curve)
+        sig = CurveBN.from_bytes(data.read(bn_size), curve)
 
         metadata = data.read() or None
 
@@ -182,15 +183,16 @@ class CapsuleFrag(object):
         Instantiates a CapsuleFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
+        bn_size = CurveBN.get_size(curve=curve)
+        point_size = Point.get_size(curve=curve)
         data = BytesIO(data)
 
         # CurveBNs are the keysize in bytes, Points are compressed and the
         # keysize + 1 bytes long.
-        e1 = Point.from_bytes(data.read(key_size + 1), curve)
-        v1 = Point.from_bytes(data.read(key_size + 1), curve)
-        kfrag_id = data.read(key_size)
-        ni = Point.from_bytes(data.read(key_size + 1), curve)
+        e1 = Point.from_bytes(data.read(point_size), curve)
+        v1 = Point.from_bytes(data.read(point_size), curve)
+        kfrag_id = data.read(bn_size)
+        ni = Point.from_bytes(data.read(point_size), curve)
 
         proof = data.read() or None
         proof = CorrectnessProof.from_bytes(proof, curve) if proof else None

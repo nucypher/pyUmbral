@@ -27,11 +27,7 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
     kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
-    metadata = { 'ursula_id' : 42, 
-                 'timestamp' : time.time(), 
-                 'capsule' : bytes(capsule), 
-               }
-    metadata = str(metadata).encode()
+    metadata = b'This is an example of metadata for re-encryption request' 
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True, metadata=metadata)
     cfrag_bytes = cfrag.to_bytes()

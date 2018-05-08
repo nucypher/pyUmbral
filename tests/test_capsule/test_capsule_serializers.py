@@ -3,6 +3,7 @@ import pytest
 from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.point import Point
+from umbral.config import default_curve
 
 
 def test_capsule_serialization(alices_keys):
@@ -43,13 +44,18 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
 
     capsule.attach_cfrag(cfrag)
 
-    capsule._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)
+    capsule._reconstruct_shamirs_secret(priv_key_bob)
     rec_capsule_bytes = capsule.to_bytes()
 
     # An activated Capsule is:
     # three points, representable as 33 bytes each (the original), and
     # two points and a CurveBN (32 bytes) (the activated components), for 197 total.
-    assert len(rec_capsule_bytes) == (33 * 3) + (33 + 33 + 32)
+    curve = default_curve()
+    bn_size = CurveBN.get_size(curve)
+    point_size = Point.get_size(curve)
+
+    expected_length = (point_size * 3) + (point_size * 2 + bn_size)
+    assert len(rec_capsule_bytes) == expected_length
 
     new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes)
 

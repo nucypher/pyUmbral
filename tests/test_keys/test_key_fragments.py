@@ -1,6 +1,6 @@
 from umbral import pre
-import time
-
+from umbral.config import default_curve
+from umbral.fragments import KFrag, CapsuleFrag
 
 def test_kfrag_serialization(alices_keys):
     priv_key_alice, pub_key_alice = alices_keys
@@ -8,14 +8,15 @@ def test_kfrag_serialization(alices_keys):
     kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
-    # A KFrag can be represented as the 194 total bytes of two Points (33 each) and four CurveBNs (32 each).
-    assert len(kfrag_bytes) == 33 + 33 + (32 * 4) == 194
+    curve = default_curve()
+    assert len(kfrag_bytes) == KFrag.get_size(curve)
 
     new_frag = pre.KFrag.from_bytes(kfrag_bytes)
     assert new_frag._id == kfrags[0]._id
     assert new_frag._bn_key == kfrags[0]._bn_key
     assert new_frag._point_noninteractive == kfrags[0]._point_noninteractive
     assert new_frag._point_commitment == kfrags[0]._point_commitment
+    assert new_frag._point_xcoord == kfrags[0]._point_xcoord
     assert new_frag._bn_sig1 == kfrags[0]._bn_sig1
     assert new_frag._bn_sig2 == kfrags[0]._bn_sig2
 
@@ -35,10 +36,6 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
     proof = cfrag.proof
     assert proof is not None
     assert proof.metadata is not None
-
-    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a CurveBN (32).
-    # TODO: Figure out final size for CFrags with proofs
-    #assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1
@@ -105,8 +102,8 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys):
     proof = cfrag.proof
     assert proof is None
 
-    # A CFrag can be represented as the 131 total bytes of three Points (33 each) and a CurveBN (32).
-    assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
+    curve = default_curve()
+    assert len(cfrag_bytes) == CapsuleFrag.get_size(curve)
 
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1

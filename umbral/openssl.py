@@ -54,7 +54,7 @@ def _get_ec_generator_by_curve_nid(curve_nid: int):
     return generator
 
 
-def _bn_is_on_curve(check_bn, curve_nid: int):
+def _bn_is_within_order(check_bn, curve_nid: int):
     """
     Checks if a given OpenSSL BIGNUM is within the provided curve's order.
     Returns True if the provided BN is on the curve, or False if the BN is zero
@@ -80,7 +80,7 @@ def _int_to_bn(py_int: int, curve_nid: int=None, set_consttime_flag=True):
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
     
     if curve_nid:
-        on_curve = _bn_is_on_curve(conv_bn, curve_nid)
+        on_curve = _bn_is_within_order(conv_bn, curve_nid)
         if not on_curve:
             raise ValueError("The Python integer given is not on the provided curve.")
 

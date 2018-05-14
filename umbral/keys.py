@@ -172,10 +172,16 @@ class UmbralPublicKey(object):
 
         self.params = params
 
+        backend = default_backend()
+        curve_nid = backend._elliptic_curve_to_nid(self.params.curve)
+
         if not isinstance(point_key, Point):
             raise TypeError("point_key can only be a Point.  Don't pass anything else.")
 
-        self.point_key = point_key
+        if openssl._is_point_on_curve(point_key.ec_point, curve_nid=curve_nid):
+            self.point_key = point_key
+        else:
+            raise ValueError("Public key is not valid for this curve.")
 
     @classmethod
     def from_bytes(cls, key_bytes: bytes, params: UmbralParameters=None,

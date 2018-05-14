@@ -15,9 +15,12 @@ class Point(object):
     """
 
     def __init__(self, ec_point, curve_nid, group):
-        self.ec_point = ec_point
-        self.curve_nid = curve_nid
-        self.group = group
+        if openssl._is_point_on_curve(ec_point, group):
+            self.ec_point = ec_point
+            self.curve_nid = curve_nid
+            self.group = group
+        else:
+            raise ValueError("Point is not on the curve.")
 
     @classmethod
     def get_size(cls, curve: ec.EllipticCurve=None):
@@ -48,7 +51,6 @@ class Point(object):
                 group, rand_point, backend._ffi.NULL, generator, rand_bn, bn_ctx
             )
             backend.openssl_assert(res == 1)
-
         return cls(rand_point, curve_nid, group)
 
     @classmethod
@@ -264,6 +266,9 @@ def unsafe_hash_to_point(data, params, label=None):
             else:
                 # Any other exception, we raise it
                 raise e
+        except ValueError as e:
+            # We raise that a point is not on curve as a ValueError
+            pass
 
         i += 1
 

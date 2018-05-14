@@ -5,8 +5,6 @@ from umbral.point import Point
 from umbral.fragments import CorrectnessProof
 from .conftest import parameters
 
-import time
-
 
 def test_correctness_proof_serialization():
     priv_key_alice = keys.UmbralPrivateKey.gen_key()
@@ -58,7 +56,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
-    for i, kfrag in enumerate(kfrags):
+    for i, kfrag in enumerate(kfrags[:M]):
 
         # Example of potential metadata to describe the re-encryption request
         metadata_i = "This is an example of metadata for re-encryption request #{}"
@@ -75,7 +73,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
         cfrags.append(cfrag)
 
     # Let's activate the capsule
-    capsule_alice1._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    
+    capsule_alice1._reconstruct_shamirs_secret(priv_key_bob)    
 
     with pytest.raises(pre.GenericUmbralError):
         sym_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
@@ -134,7 +132,7 @@ def test_cheating_ursula_sends_garbage(N, M):
     cfrags[0]._point_e1 = Point.gen_rand()
     cfrags[0]._point_v1 = Point.gen_rand()
 
-    capsule_alice._reconstruct_shamirs_secret(pub_key_alice, priv_key_bob)    # activate capsule
+    capsule_alice._reconstruct_shamirs_secret(priv_key_bob)    # activate capsule
 
     with pytest.raises(pre.GenericUmbralError):
         _unused_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,

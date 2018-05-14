@@ -148,6 +148,24 @@ def _get_affine_coords_via_EC_POINT(ec_point, ec_group=None, curve_nid: int=None
     return (affine_x, affine_y)
 
 
+def _is_point_on_curve(ec_point, ec_group=None, curve_nid: int=None):
+    """
+    Returns a boolean value for whether or not a given ec_point is on the
+    provided curve_nid.
+    """
+    if curve_nid:
+        ec_group = _get_ec_group_by_curve_nid(curve_nid)
+    elif not ec_group:
+        raise ValueError("No group provided.")
+
+    with backend._tmp_bn_ctx() as bn_ctx:
+        res = backend._lib.EC_POINT_is_on_curve(ec_group, ec_point, bn_ctx)
+        if res <= 0:
+            return False
+        elif res == 1:
+            return True
+
+
 @contextmanager
 def _tmp_bn_mont_ctx(modulus):
     """

@@ -110,10 +110,19 @@ class Point(object):
 
             ec_point = openssl._get_new_EC_POINT(ec_group=affine_x.group)
             with backend._tmp_bn_ctx() as bn_ctx:
-                res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
-                    affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
-                )
-                backend.openssl_assert(res == 1)
+                try:
+                    res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
+                        affine_x.group, ec_point, affine_x.bignum, type_y, bn_ctx
+                    )
+                    backend.openssl_assert(res == 1)
+                except InternalError as e:
+                    # We want to catch specific InternalExceptions:
+                    # - Point not in the curve (code 107)
+                    # - Invalid compressed point (code 110)
+                    # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
+                    if e.err_code[0].reason in (107, 110):
+                        raise ValueError("Bytestring provided is not a valid point.")
+
             return cls(ec_point, curve_nid, affine_x.group)
 
         # Handle uncompressed point
@@ -252,25 +261,12 @@ def unsafe_hash_to_point(data, params, label=None):
         hash_digest = blake2b.finalize()[:params.CURVE_KEY_SIZE_BYTES]
 
         compressed02 = b"\x02" + hash_digest
-
         try:
             h = Point.from_bytes(compressed02, params.curve)
+        except ValueError:
+            i += 1
+        else:
             return h
-        except InternalError as e:
-            # We want to catch specific InternalExceptions:
-            # - Point not in the curve (code 107)
-            # - Invalid compressed point (code 110)
-            # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
-            if e.err_code[0].reason in (107, 110):
-                pass
-            else:
-                # Any other exception, we raise it
-                raise e
-        except ValueError as e:
-            # We raise that a point is not on curve as a ValueError
-            pass
-
-        i += 1
 
     # Only happens with probability 2^(-32)
     raise ValueError('Could not hash input into the curve')

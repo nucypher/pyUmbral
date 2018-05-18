@@ -275,7 +275,7 @@ class UmbralKeyingMaterial(object):
                 raise ValueError("UmbralKeyingMaterial must have size at least 32 bytes.")
             self.keying_material = keying_material
         else:
-            self.keying_material = os.urandom(64)
+            self.keying_material = os.getrandom(32, flags=1)
 
     def derive_privkey_by_label(self, label: bytes, salt: bytes=None, 
                                 params: UmbralParameters=None):

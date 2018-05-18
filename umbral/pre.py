@@ -266,7 +266,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
 
     kfrags = []
     for _ in range(N):
-        id = os.urandom(bn_size)
+        id = os.getrandom(bn_size, flags=1)
 
         share_x = CurveBN.hash(id, hashed_dh_tuple, params=params)
 

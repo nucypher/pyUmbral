@@ -3,18 +3,21 @@ import pytest
 from umbral import pre, keys
 from umbral.point import Point
 from umbral.fragments import CorrectnessProof
+from umbral.signing import Signer
 from .conftest import parameters
 
 
 def test_correctness_proof_serialization():
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pubkey()
+    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
+    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
+    signer_alice = Signer(priv_key_alice_sig)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    _unused_key, capsule = pre._encapsulate(pub_key_alice.point_key)
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
+    _unused_key, capsule = pre._encapsulate(pub_key_alice_deleg.point_key)
+    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
     metadata = b"This is an example of metadata for re-encryption request"
@@ -44,16 +47,19 @@ def test_correctness_proof_serialization():
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_cheating_ursula_replays_old_reencryption(N, M):
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pubkey()
+    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
+    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
+    signer_alice = Signer(priv_key_alice_sig)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    sym_key_alice1, capsule_alice1 = pre._encapsulate(pub_key_alice.point_key)
-    sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice.point_key)
+    sym_key_alice1, capsule_alice1 = pre._encapsulate(pub_key_alice_deleg.point_key)
+    sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice_deleg.point_key)
 
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
@@ -69,7 +75,6 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
             cfrag = pre.reencrypt(kfrag, capsule_alice1, metadata=metadata_i)
 
         capsule_alice1.attach_cfrag(cfrag)
-
         cfrags.append(cfrag)
 
     # Let's activate the capsule

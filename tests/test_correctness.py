@@ -83,12 +83,13 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     with pytest.raises(pre.GenericUmbralError):
         sym_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                priv_key_bob.bn_key,
-                                               pub_key_alice.point_key,
+                                               pub_key_alice_deleg.point_key,
                                                capsule_alice1
                                               )
 
     assert not cfrags[0].verify_correctness(capsule_alice1,
-                                      pub_key_alice,
+                                      pub_key_alice_deleg,
+                                      pub_key_alice_sig,
                                       pub_key_bob,
                                       )
 
@@ -96,14 +97,14 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     # so the rest of CFrags should be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         assert cfrag_i.verify_correctness(capsule_alice1,
-                                      pub_key_alice,
+                                      pub_key_alice_deleg,
                                       pub_key_bob,
                                       )
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice1, priv_key_bob, pub_key_alice)
+        _ = pre._open_capsule(capsule_alice1, priv_key_bob, pub_key_alice_deleg)
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
@@ -111,8 +112,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_cheating_ursula_sends_garbage(N, M):
-    priv_key_alice = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice = priv_key_alice.get_pubkey()
+    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
+    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
+    signer_alice = Signer(priv_key_alice_sig)
 
     # Bob
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
@@ -142,11 +145,11 @@ def test_cheating_ursula_sends_garbage(N, M):
     with pytest.raises(pre.GenericUmbralError):
         _unused_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                    priv_key_bob.bn_key,
-                                                   pub_key_alice.point_key,
+                                                   pub_key_alice_deleg.point_key,
                                                    capsule_alice)
 
     assert not cfrags[0].verify_correctness(capsule_alice,
-                                      pub_key_alice,
+                                      pub_key_alice_deleg,
                                       pub_key_bob,
                                       )
 
@@ -154,14 +157,14 @@ def test_cheating_ursula_sends_garbage(N, M):
     # so the rest of CFrags chould be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         assert cfrag_i.verify_correctness(capsule_alice,
-                                      pub_key_alice,
+                                      pub_key_alice_deleg,
                                       pub_key_bob,
                                       )
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice, priv_key_bob, pub_key_alice)
+        _ = pre._open_capsule(capsule_alice, priv_key_bob, pub_key_alice_deleg)
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1

@@ -13,6 +13,7 @@ from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
+from umbral.signing import Signer
 from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
 
 from io import BytesIO
@@ -228,6 +229,7 @@ class Capsule(object):
 
 
 def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
+                signer_a: Signer,
                 pubkey_b_point: Union[UmbralPublicKey, Point],
                 threshold: int, N: int,
                 params: UmbralParameters=None) -> List[KFrag]:
@@ -291,15 +293,14 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
         u1 = rk * u
 
         # TODO: change this Schnorr signature for Ed25519 or ECDSA (#97)
-        y = CurveBN.gen_rand(params.curve)
-        g_y = y * g
-        signature_input = (g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
+
+        signature_input = (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
         z1 = CurveBN.hash(*signature_input, params=params)
-        z2 = y - privkey_a_bn * z1
+        signature = signer_a(z1.to_bytes())
 
         kfrag = KFrag(id=id, bn_key=rk, 
                       point_noninteractive=ni, point_commitment=u1, 
-                      point_xcoord=xcoord, bn_sig1=z1, bn_sig2=z2)
+                      point_xcoord=xcoord, signature=signature)
         kfrags.append(kfrag)
 
     return kfrags

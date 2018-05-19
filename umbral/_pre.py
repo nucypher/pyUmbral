@@ -1,14 +1,15 @@
 from umbral.curvebn import CurveBN
 from umbral.config import default_params
+from umbral.keys import UmbralPublicKey
 from umbral.params import UmbralParameters
 
 
 def prove_cfrag_correctness(cfrag: "CapsuleFrag",
                             kfrag: "KFrag",
                             capsule: "Capsule",
-                            metadata: bytes=None,
-                            params: UmbralParameters=None
-                      ) -> "CorrectnessProof":
+                            metadata: bytes = None,
+                            params: UmbralParameters = None
+                            ) -> "CorrectnessProof":
     params = params if params is not None else default_params()
 
     rk = kfrag._bn_key
@@ -34,12 +35,9 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
         hash_input += (metadata,)
     h = CurveBN.hash(*hash_input, params=params)
 
-    z1 = kfrag._bn_sig1
-    z2 = kfrag._bn_sig2
-    z3 = t + h * rk
     ########
 
-    cfrag.attach_proof(e2, v2, u1, u2, z1, z2, z3, metadata)
+    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=t + h * rk, kfrag_signature=kfrag.signature)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
@@ -49,7 +47,8 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
 
 def assess_cfrag_correctness(cfrag,
                              capsule: "Capsule",
-                             pubkey_a_point,
+                             pubkey_a_deleg_point,
+                             pubkey_a_sig,
                              pubkey_b_point,
                              params: UmbralParameters = None):
     params = params if params is not None else default_params()
@@ -75,9 +74,7 @@ def assess_cfrag_correctness(cfrag,
         hash_input += (cfrag.proof.metadata,)
     h = CurveBN.hash(*hash_input, params=params)
 
-    z1 = cfrag.proof._bn_kfrag_sig1
-    z2 = cfrag.proof._bn_kfrag_sig2
-    z3 = cfrag.proof._bn_sig
+    kfrag_signature = cfrag.proof.kfrag_signature
     ########
 
     ni = cfrag._point_noninteractive
@@ -86,12 +83,12 @@ def assess_cfrag_correctness(cfrag,
 
     g = params.g
 
-    # TODO: change this Schnorr signature for Ed25519 or ECDSA (#97)
-    g_y = (z2 * g) + (z1 * pubkey_a_point)
-    signature_input = (g_y, kfrag_id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
-    kfrag_signature1 = CurveBN.hash(*signature_input, params=params)
-    valid_kfrag_signature = z1 == kfrag_signature1
+    signature_input = (kfrag_id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord)
+    kfrag_signed_message = CurveBN.hash(*signature_input, params=params)
 
+    valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_signed_message.to_bytes(), pubkey_a_sig)
+
+    z3 = cfrag.proof.bn_sig
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
 
     correct_reencryption_of_v = z3 * v == v2 + (h * v1)
@@ -105,11 +102,10 @@ def assess_cfrag_correctness(cfrag,
 
 
 def verify_kfrag(kfrag,
-                pubkey_a_point,
-                pubkey_b_point,
-                params: UmbralParameters = None
-                ):
-
+                 pubkey_a_point,
+                 pubkey_b_point,
+                 params: UmbralParameters = None
+                 ):
     params = params if params is not None else default_params()
 
     u = params.u
@@ -121,7 +117,6 @@ def verify_kfrag(kfrag,
     z2 = kfrag._bn_sig2
     ni = kfrag._point_noninteractive
     xcoord = kfrag._point_xcoord
-    
 
     #  We check that the commitment u1 is well-formed
     correct_commitment = u1 == key * u

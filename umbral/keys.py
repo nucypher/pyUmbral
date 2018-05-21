@@ -29,7 +29,7 @@ class UmbralPrivateKey(object):
 
         self.params = params
         self.bn_key = bn_key
-        self.pubkey = self.get_pubkey()
+        self.pubkey = UmbralPublicKey(self.bn_key * self.params.g)
 
     @classmethod
     def gen_key(cls, params: UmbralParameters=None):
@@ -121,7 +121,7 @@ class UmbralPrivateKey(object):
         """
         Calculates and returns the public key of the private key.
         """
-        return UmbralPublicKey(self.bn_key * self.params.g)
+        return self.pubkey
 
     def to_cryptography_privkey(self):
         """

@@ -1,3 +1,4 @@
+from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
@@ -39,21 +40,18 @@ class KFrag(object):
         Instantiate a KFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
-        data = BytesIO(data)
 
-        # CurveBNs are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        id = data.read(bn_size)
-        key = CurveBN.from_bytes(data.read(bn_size), curve)
-        ni = Point.from_bytes(data.read(point_size), curve)
-        commitment = Point.from_bytes(data.read(point_size), curve)
-        xcoord = Point.from_bytes(data.read(point_size), curve)
-        sig1 = CurveBN.from_bytes(data.read(bn_size), curve)
-        sig2 = CurveBN.from_bytes(data.read(bn_size), curve)
+        bn_size = CurveBN.get_size()
+        point_size = Point.get_size()
 
-        return cls(id, key, ni, commitment, xcoord, sig1, sig2)
+        splitter = BytestringSplitter(
+            bn_size, (CurveBN, bn_size), (Point, point_size),
+            (Point, point_size), (Point, point_size), (CurveBN, bn_size),
+            (CurveBN, bn_size)
+        )
+        components = splitter(data)
+
+        return cls(*components)
 
     def to_bytes(self):
         """
@@ -113,22 +111,16 @@ class CorrectnessProof(object):
         curve = curve if curve is not None else default_curve()
         bn_size = CurveBN.get_size(curve)
         point_size = Point.get_size(curve)
-        data = BytesIO(data)
 
-        # CurveBNs are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        e2 = Point.from_bytes(data.read(point_size), curve)
-        v2 = Point.from_bytes(data.read(point_size), curve)
-        kfrag_commitment = Point.from_bytes(data.read(point_size), curve)
-        kfrag_pok = Point.from_bytes(data.read(point_size), curve)
-        kfrag_sig1 = CurveBN.from_bytes(data.read(bn_size), curve)
-        kfrag_sig2 = CurveBN.from_bytes(data.read(bn_size), curve)
-        sig = CurveBN.from_bytes(data.read(bn_size), curve)
+        splitter = BytestringSplitter(
+            (Point, point_size), (Point, point_size), (Point, point_size),
+            (Point, point_size), (CurveBN, bn_size), (CurveBN, bn_size),
+            (CurveBN, bn_size)
+        )
+        components = splitter(data, return_remainder=True)
+        metadata = components.pop(-1) or None
 
-        metadata = data.read() or None
-
-        return cls(e2, v2, kfrag_commitment, kfrag_pok, 
-                   kfrag_sig1, kfrag_sig2, sig, metadata=metadata)
+        return cls(*components, metadata=metadata)
 
     def to_bytes(self) -> bytes:
         """
@@ -187,22 +179,19 @@ class CapsuleFrag(object):
         Instantiates a CapsuleFrag object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve=curve)
-        point_size = Point.get_size(curve=curve)
-        data = BytesIO(data)
 
-        # CurveBNs are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        e1 = Point.from_bytes(data.read(point_size), curve)
-        v1 = Point.from_bytes(data.read(point_size), curve)
-        kfrag_id = data.read(bn_size)
-        ni = Point.from_bytes(data.read(point_size), curve)
-        xcoord = Point.from_bytes(data.read(point_size), curve)
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
 
-        proof = data.read() or None
+        splitter = BytestringSplitter(
+            (Point, point_size), (Point, bn_size), (CurveBN, bn_size),
+            (Point, point_size)
+        )
+        components = splitter(data, return_remainder=True)
+
+        proof = components.pop(-1) or None
         proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
-
-        return cls(e1, v1, kfrag_id, ni, xcoord, proof)
+        return cls(*components, proof)
 
     def to_bytes(self):
         """

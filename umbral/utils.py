@@ -28,14 +28,14 @@ def poly_eval(coeff, x):
     return result
 
 
-def kdf(ecpoint, key_length):
+def kdf(ecpoint, key_length, salt=None, info=None):
     data = ecpoint.to_bytes(is_compressed=True)
 
     return HKDF(
         algorithm=hashes.BLAKE2b(64),
         length=key_length,
-        salt=None,
-        info=None,
+        salt=salt,
+        info=info,
         backend=default_backend()
     ).derive(data)
 

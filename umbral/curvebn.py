@@ -20,7 +20,7 @@ class CurveBN(object):
     def __init__(self, bignum, curve_nid, group, order):
 
         if curve_nid:
-            on_curve = openssl._bn_is_on_curve(bignum, curve_nid)
+            on_curve = openssl._bn_is_within_order(bignum, curve_nid)
             if not on_curve:
                 raise ValueError("The provided BIGNUM is not on the provided curve.")
 
@@ -56,7 +56,7 @@ class CurveBN(object):
         rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
         backend.openssl_assert(rand_res == 1)
 
-        if not openssl._bn_is_on_curve(new_rand_bn, curve_nid):
+        if not openssl._bn_is_within_order(new_rand_bn, curve_nid):
             new_rand_bn = cls.gen_rand(curve=curve)
             return new_rand_bn
 

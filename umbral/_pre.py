@@ -102,7 +102,8 @@ def assess_cfrag_correctness(cfrag,
 
 
 def verify_kfrag(kfrag,
-                 pubkey_a_point,
+                 pubkey_a_deleg_point,
+                 pubkey_a_sig,
                  pubkey_b_point,
                  params: UmbralParameters = None
                  ):
@@ -113,18 +114,14 @@ def verify_kfrag(kfrag,
     id = kfrag._id
     key = kfrag._bn_key
     u1 = kfrag._point_commitment
-    z1 = kfrag._bn_sig1
-    z2 = kfrag._bn_sig2
     ni = kfrag._point_noninteractive
     xcoord = kfrag._point_xcoord
 
     #  We check that the commitment u1 is well-formed
     correct_commitment = u1 == key * u
 
-    # We check the Schnorr signature over the kfrag components
-    g_y = (z2 * params.g) + (z1 * pubkey_a_point)
-
-    signature_input = (g_y, id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
-    valid_kfrag_signature = z1 == CurveBN.hash(*signature_input, params=params)
+    signature_input = (id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord)
+    message = CurveBN.hash(*signature_input, params=params)
+    valid_kfrag_signature = kfrag.signature.verify(message.to_bytes(), pubkey_a_sig)
 
     return correct_commitment & valid_kfrag_signature

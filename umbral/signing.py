@@ -1,3 +1,5 @@
+import secrets
+
 from cryptography.exceptions import InvalidSignature
 
 from umbral.config import default_curve
@@ -81,8 +83,9 @@ class Signature(object):
         return other + bytes(self)
 
     def __eq__(self, other):
-        # TODO: Consider constant time
-        return bytes(self) == bytes(other) or self._der_encoded_bytes() == other
+        simple_bytes_match = secrets.compare_digest(bytes(self), bytes(other))
+        der_encoded_match = secrets.compare_digest(self._der_encoded_bytes(), bytes(other))
+        return simple_bytes_match or der_encoded_match
 
 
 class Signer:

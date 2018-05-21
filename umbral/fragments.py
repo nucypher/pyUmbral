@@ -69,13 +69,17 @@ class KFrag(object):
 
         return self._id + key + ni + commitment + xcoord + sig1 + sig2
 
-    def verify(self, pubkey_a: UmbralPublicKey,
+    def verify(self,
+               pubkey_a_sig: UmbralPublicKey,
+               pubkey_a_deleg: UmbralPublicKey,
                pubkey_b: UmbralPublicKey,
                params: UmbralParameters = None):
-        pubkey_a_point = pubkey_a.point_key
-        pubkey_b_point = pubkey_b.point_key
 
-        return verify_kfrag(self, pubkey_a_point, pubkey_b_point, params)
+        return verify_kfrag(self,
+                            pubkey_a_deleg.point_key,
+                            pubkey_a_sig,
+                            pubkey_b.point_key,
+                            params)
 
     def __bytes__(self):
         return self.to_bytes()
@@ -139,7 +143,8 @@ class CorrectnessProof(object):
                  + v2 \
                  + kfrag_commitment \
                  + kfrag_pok \
-                 + self._kfrag_signature
+                 + self.bn_sig.to_bytes() \
+                 + self.kfrag_signature
 
         result += self.metadata or b''
 

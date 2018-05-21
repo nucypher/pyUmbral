@@ -40,8 +40,8 @@ class KFrag(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        bn_size = CurveBN.get_size()
-        point_size = Point.get_size()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
 
         splitter = BytestringSplitter(
             bn_size,             # id
@@ -49,8 +49,7 @@ class KFrag(object):
             (Point, point_size), # point_noninteractive
             (Point, point_size), # point_commitment
             (Point, point_size), # point_xcoord
-            (CurveBN, bn_size),  # bn_sig1
-            (CurveBN, bn_size)   # bn_sig2
+            (Signature, Signature.get_size(curve))
         )
         components = splitter(data)
 
@@ -64,10 +63,9 @@ class KFrag(object):
         ni = self._point_noninteractive.to_bytes()
         commitment = self._point_commitment.to_bytes()
         xcoord = self._point_xcoord.to_bytes()
-        sig1 = self._bn_sig1.to_bytes()
-        sig2 = self._bn_sig2.to_bytes()
+        signature = bytes(self.signature)
 
-        return self._id + key + ni + commitment + xcoord + sig1 + sig2
+        return self._id + key + ni + commitment + xcoord + signature
 
     def verify(self,
                pubkey_a_sig: UmbralPublicKey,
@@ -122,8 +120,8 @@ class CorrectnessProof(object):
             (Point, point_size), # point_v2
             (Point, point_size), # point_kfrag_commitment
             (Point, point_size), # point_kfrag_pok
-            (Signature, Signature.get_size()),
-            (CurveBN, bn_size)   # bn_sig
+            (CurveBN, bn_size),  # bn_sig
+            (Signature, Signature.get_size()), # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None

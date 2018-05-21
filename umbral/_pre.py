@@ -86,7 +86,8 @@ def assess_cfrag_correctness(cfrag,
     signature_input = (kfrag_id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord)
     kfrag_signed_message = CurveBN.hash(*signature_input, params=params)
 
-    valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_signed_message.to_bytes(), pubkey_a_sig)
+    valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_signed_message.to_bytes(),
+                                                               pubkey_a_sig)
 
     z3 = cfrag.proof.bn_sig
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)

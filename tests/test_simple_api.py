@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from umbral import pre, keys
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
+from umbral.signing import Signer
 from .conftest import parameters
 
 secp_curves = [
@@ -19,24 +20,31 @@ def test_simple_api(N, M, curve=default_curve()):
 
     params = UmbralParameters(curve=curve)
 
-    priv_key_alice = keys.UmbralPrivateKey.gen_key(params=params)
-    pub_key_alice = priv_key_alice.get_pubkey()
+    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key(params=params)
+    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
+    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key(params=params)
+    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
+    signer_alice = Signer(priv_key_alice_sig)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key(params=params)
     pub_key_bob = priv_key_bob.get_pubkey()
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data, params=params)
+    ciphertext, capsule = pre.encrypt(pub_key_alice_deleg, plain_data, params=params)
 
-    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice, params=params)
+    try:
+        cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice_deleg, params=params)
+    except Exception as e:
+        pre.decrypt(ciphertext, capsule, priv_key_alice_deleg, params=params)
     assert cleartext == plain_data
 
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, M, N, params=params)
+    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N, params=params)
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule, params=params)
         capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice, params=params)
+    reenc_cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice_deleg, pub_key_alice_sig,
+                                  params=params)
     assert reenc_cleartext == plain_data
 
 

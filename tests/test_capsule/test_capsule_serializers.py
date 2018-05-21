@@ -1,9 +1,10 @@
 import pytest
 
-from umbral import pre
+from umbral import pre, keys
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.config import default_curve
+from umbral.signing import Signer
 
 
 def test_capsule_serialization(alices_keys):
@@ -34,11 +35,16 @@ def test_capsule_serialization(alices_keys):
 
 
 def test_activated_capsule_serialization(alices_keys, bobs_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
+    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
+    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
+    signer_alice = Signer(priv_key_alice_sig)
+
     priv_key_bob, pub_key_bob = bobs_keys
 
     _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
+    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 

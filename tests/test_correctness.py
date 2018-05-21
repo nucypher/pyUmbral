@@ -67,6 +67,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
         # Example of potential metadata to describe the re-encryption request
         metadata_i = "This is an example of metadata for re-encryption request #{}"
         metadata_i = metadata_i.format(i).encode()
+        metadata.append(metadata_i)
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
@@ -76,6 +77,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
         capsule_alice1.attach_cfrag(cfrag)
         cfrags.append(cfrag)
+
 
     # Let's activate the capsule
     capsule_alice1._reconstruct_shamirs_secret(priv_key_bob)    
@@ -95,11 +97,17 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags should be correct:
+    correct_cases = 0
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
-        assert cfrag_i.verify_correctness(capsule_alice1,
+        if cfrag_i.verify_correctness(capsule_alice1,
                                       pub_key_alice_deleg,
+                                      pub_key_alice_sig,
                                       pub_key_bob,
-                                      )
+                                      ):
+            correct_cases += 1
+        else:
+            pytest.fail("One of the cfrags that was supposed to be correct wasn't.")
+    assert correct_cases == len(cfrags[1:])
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags

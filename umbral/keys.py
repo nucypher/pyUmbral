@@ -121,7 +121,7 @@ class UmbralPrivateKey(object):
         """
         Calculates and returns the public key of the private key.
         """
-        return UmbralPublicKey(self.bn_key * self.params.g)
+        return UmbralPublicKey(self.bn_key * self.params.g, params=self.params)
 
     def to_cryptography_privkey(self):
         """

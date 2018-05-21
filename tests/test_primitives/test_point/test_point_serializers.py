@@ -117,6 +117,5 @@ def test_point_not_on_curve():
     point_on_koblitz256_but_not_P256 = Point.from_bytes(b'\x03%\x98Dk\x88\xe2\x97\xab?\xabZ\xef\xd4' \
     b'\x9e\xaa\xc6\xb3\xa4\xa3\x89\xb2\xd7b.\x8f\x16Ci_&\xe0\x7f', curve=ec.SECP256K1)
 
-    from cryptography.exceptions import InternalError
-    with pytest.raises(InternalError):
+    with pytest.raises(ValueError):
         Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=ec.SECP256R1)

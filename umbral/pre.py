@@ -1,5 +1,6 @@
 from typing import Tuple, Union, List
 
+from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
@@ -88,27 +89,27 @@ class Capsule(object):
         Instantiates a Capsule object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        key_size = get_curve_keysize_bytes(curve)
-        capsule_buff = BytesIO(capsule_bytes)
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
 
-        # CurveBNs are the keysize in bytes, Points are compressed and the
-        # keysize + 1 bytes long.
-        if len(capsule_bytes) == 197:
-            e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            sig = CurveBN.from_bytes(capsule_buff.read(key_size), curve)
-            e_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            v_prime = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            ni = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
+        if len(capsule_bytes) == cls.get_size(curve, activated=True):
+            splitter = BytestringSplitter(
+                (Point, point_size), # point_e
+                (Point, point_size), # point_v
+                (CurveBN, bn_size),  # bn_sig
+                (Point, point_size), # point_e_prime
+                (Point, point_size), # point_v_prime
+                (Point, point_size)  # point_noninteractive
+            )
         else:
-            e = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            v = Point.from_bytes(capsule_buff.read(key_size + 1), curve)
-            sig = CurveBN.from_bytes(capsule_buff.read(key_size), curve)
-            e_prime = v_prime = ni = None
+            splitter = BytestringSplitter(
+                (Point, point_size), # point_e
+                (Point, point_size), # point_v
+                (CurveBN, bn_size)   # bn_sig
+            )
 
-        return cls(point_e=e, point_v=v, bn_sig=sig,
-                   point_e_prime=e_prime, point_v_prime=v_prime, 
-                   point_noninteractive=ni)
+        components = splitter(capsule_bytes)
+        return cls(*components)
 
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
@@ -427,7 +428,6 @@ def _open_capsule(capsule: Capsule, bob_privkey: UmbralPrivateKey,
     priv_b = bob_privkey.bn_key
     bob_pubkey = bob_privkey.get_pubkey()
 
-    # TODO: Change dict for a list if issue #116 goes through
     if check_proof:
         offending_cfrags = []
         for cfrag in capsule._attached_cfrags:

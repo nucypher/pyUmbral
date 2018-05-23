@@ -15,7 +15,7 @@ def test_capsule_serialization(alices_keys):
     assert capsule_bytes == capsule_bytes_casted
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a CurveBN (32).
-    assert len(capsule_bytes) == 33 + 33 + 32 == 98
+    assert len(capsule_bytes) == pre.Capsule.get_size()
 
     new_capsule = pre.Capsule.from_bytes(capsule_bytes)
 
@@ -54,8 +54,7 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
     bn_size = CurveBN.get_size(curve)
     point_size = Point.get_size(curve)
 
-    expected_length = (point_size * 3) + (point_size * 2 + bn_size)
-    assert len(rec_capsule_bytes) == expected_length
+    assert len(rec_capsule_bytes) == pre.Capsule.get_size(activated=True)
 
     new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes)
 

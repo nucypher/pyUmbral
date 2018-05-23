@@ -2,13 +2,11 @@ from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
-from umbral.curvebn import CurveBN
 from umbral.config import default_curve, default_params
+from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
-from umbral.point import Point
 from umbral.params import UmbralParameters
-
-from io import BytesIO
+from umbral.point import Point
 
 
 class KFrag(object):
@@ -45,9 +43,13 @@ class KFrag(object):
         point_size = Point.get_size()
 
         splitter = BytestringSplitter(
-            bn_size, (CurveBN, bn_size), (Point, point_size),
-            (Point, point_size), (Point, point_size), (CurveBN, bn_size),
-            (CurveBN, bn_size)
+            bn_size,             # id
+            (CurveBN, bn_size),  # bn_key
+            (Point, point_size), # point_noninteractive
+            (Point, point_size), # point_commitment
+            (Point, point_size), # point_xcoord
+            (CurveBN, bn_size),  # bn_sig1
+            (CurveBN, bn_size)   # bn_sig2
         )
         components = splitter(data)
 
@@ -113,9 +115,13 @@ class CorrectnessProof(object):
         point_size = Point.get_size(curve)
 
         splitter = BytestringSplitter(
-            (Point, point_size), (Point, point_size), (Point, point_size),
-            (Point, point_size), (CurveBN, bn_size), (CurveBN, bn_size),
-            (CurveBN, bn_size)
+            (Point, point_size), # point_e2
+            (Point, point_size), # point_v2
+            (Point, point_size), # point_kfrag_commitment
+            (Point, point_size), # point_kfrag_pok
+            (CurveBN, bn_size),  # bn_kfrag_sig1
+            (CurveBN, bn_size),  # bn_kfrag_sig2
+            (CurveBN, bn_size)   # bn_sig
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None
@@ -184,8 +190,11 @@ class CapsuleFrag(object):
         point_size = Point.get_size(curve)
 
         splitter = BytestringSplitter(
-            (Point, point_size), (Point, bn_size), (CurveBN, bn_size),
-            (Point, point_size)
+            (Point, point_size), # point_e1
+            (Point, point_size), # point_v1
+            bn_size,             # kfrag_id
+            (Point, point_size), # point_noninteractive
+            (Point, point_size)  # point_xcoord
         )
         components = splitter(data, return_remainder=True)
 

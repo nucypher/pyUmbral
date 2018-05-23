@@ -33,8 +33,8 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = pre.decrypt(capsule, alices_private_key,
-                            ciphertext, alices_public_key)
+    cleartext = pre.decrypt(ciphertext, capsule, 
+                            alices_private_key, alices_public_key)
 
 **Fragmentation**
 
@@ -59,8 +59,8 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
       capsule.attach_cfrag(cfrag)
 
   # Bob activates and opens the capsule.
-  cleartext = pre.decrypt(capsule, bobs_private_key,
-                          ciphertext, alices_public_key)
+  cleartext = pre.decrypt(ciphertext, capsule, 
+                          bobs_private_key, alices_public_key)
 
 
 Quick Installation

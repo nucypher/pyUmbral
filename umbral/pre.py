@@ -62,6 +62,18 @@ class Capsule(object):
 
         self._attached_cfrags = list()
 
+    @classmethod
+    def get_size(cls, curve: ec.EllipticCurve=None):
+        """
+        Returns the size (in bytes) of a Capsule given the curve.
+        If no curve is provided, it will use the default curve.
+        """
+        curve = curve if curve is not None else default_curve()
+        bn_size = CurveBN.get_size(curve)
+        point_size = Point.get_size(curve)
+
+        return (bn_size * 1) + (point_size * 2)
+
     class NotValid(ValueError):
         """
         raised if the capsule does not pass verification.

@@ -46,9 +46,9 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
 
 def assess_cfrag_correctness(cfrag,
                              capsule: "Capsule",
-                             pubkey_a_deleg_point,
-                             pubkey_a_sig,
-                             pubkey_b_point,
+                             delegating_point,
+                             signing_pubkey,
+                             encrypting_point,
                              params: UmbralParameters = None):
     params = params if params is not None else default_params()
 
@@ -78,8 +78,9 @@ def assess_cfrag_correctness(cfrag,
     xcoord = cfrag._point_xcoord
     kfrag_id = cfrag._kfrag_id
 
-    kfrag_validity_message = bytes().join(bytes(material) for material in (kfrag_id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord))
-    valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_validity_message, pubkey_a_sig)
+    kfrag_validity_message = bytes().join(
+        bytes(material) for material in (kfrag_id, delegating_point, encrypting_point, u1, ni, xcoord))
+    valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_validity_message, signing_pubkey)
 
     z3 = cfrag.proof.bn_sig
     correct_reencryption_of_e = z3 * e == e2 + (h * e1)
@@ -95,9 +96,9 @@ def assess_cfrag_correctness(cfrag,
 
 
 def verify_kfrag(kfrag,
-                 pubkey_a_deleg_point,
-                 pubkey_a_sig,
-                 pubkey_b_point,
+                 delegating_point,
+                 signing_pubkey,
+                 encrypting_point,
                  params: UmbralParameters = None
                  ):
     params = params if params is not None else default_params()
@@ -113,7 +114,8 @@ def verify_kfrag(kfrag,
     #  We check that the commitment u1 is well-formed
     correct_commitment = u1 == key * u
 
-    kfrag_validity_message = bytes().join(bytes(material) for material in (id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord))
-    valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, pubkey_a_sig)
+    kfrag_validity_message = bytes().join(
+        bytes(material) for material in (id, delegating_point, encrypting_point, u1, ni, xcoord))
+    valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, signing_pubkey)
 
     return correct_commitment & valid_kfrag_signature

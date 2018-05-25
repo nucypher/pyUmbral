@@ -7,17 +7,15 @@ from umbral.signing import Signer
 from .conftest import parameters
 
 
-def test_correctness_proof_serialization():
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    signer_alice = Signer(priv_key_alice_sig)
+def test_correctness_proof_serialization(alices_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    _unused_key, capsule = pre._encapsulate(pub_key_alice_deleg.point_key)
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, 1, 2)
+    _unused_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
     metadata = b"This is an example of metadata for re-encryption request"
@@ -45,20 +43,17 @@ def test_correctness_proof_serialization():
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_cheating_ursula_replays_old_reencryption(N, M):
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-    signer_alice = Signer(priv_key_alice_sig)
+def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
 
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    sym_key_alice1, capsule_alice1 = pre._encapsulate(pub_key_alice_deleg.point_key)
-    sym_key_alice2, capsule_alice2 = pre._encapsulate(pub_key_alice_deleg.point_key)
+    sym_key_alice1, capsule_alice1 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    sym_key_alice2, capsule_alice2 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
 
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
@@ -83,13 +78,13 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     with pytest.raises(pre.GenericUmbralError):
         sym_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                priv_key_bob.bn_key,
-                                               pub_key_alice_deleg.point_key,
+                                               delegating_privkey.get_pubkey().point_key,
                                                capsule_alice1
                                                )
 
     assert not cfrags[0].verify_correctness(capsule_alice1,
-                                            pub_key_alice_deleg,
-                                            pub_key_alice_sig,
+                                            delegating_privkey.get_pubkey(),
+                                            signing_privkey.get_pubkey(),
                                             pub_key_bob,
                                             )
 
@@ -98,8 +93,8 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     correct_cases = 0
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         if cfrag_i.verify_correctness(capsule_alice1,
-                                      pub_key_alice_deleg,
-                                      pub_key_alice_sig,
+                                      delegating_privkey.get_pubkey(),
+                                      signing_privkey.get_pubkey(),
                                       pub_key_bob,
                                       ):
             correct_cases += 1
@@ -112,8 +107,8 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
         _ = pre._open_capsule(capsule_alice1,
                               priv_key_bob,
-                              pub_key_alice_deleg,
-                              pub_key_alice_sig,
+                              delegating_privkey.get_pubkey(),
+                              signing_privkey.get_pubkey(),
                               )
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
@@ -121,19 +116,16 @@ def test_cheating_ursula_replays_old_reencryption(N, M):
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_cheating_ursula_sends_garbage(N, M):
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-    signer_alice = Signer(priv_key_alice_sig)
+def test_cheating_ursula_sends_garbage(N, M, alices_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
 
     # Bob
     priv_key_bob = keys.UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
 
-    sym_key, capsule_alice = pre._encapsulate(pub_key_alice_deleg.point_key)
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N)
+    sym_key, capsule_alice = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
     for i, kfrag in enumerate(kfrags[:M]):
@@ -155,12 +147,12 @@ def test_cheating_ursula_sends_garbage(N, M):
     with pytest.raises(pre.GenericUmbralError):
         _unused_key = pre._decapsulate_reencrypted(pub_key_bob.point_key,
                                                    priv_key_bob.bn_key,
-                                                   pub_key_alice_deleg.point_key,
+                                                   delegating_privkey.get_pubkey().point_key,
                                                    capsule_alice)
 
     assert not cfrags[0].verify_correctness(capsule_alice,
-                                            pub_key_alice_deleg,
-                                            pub_key_alice_sig,
+                                            delegating_privkey.get_pubkey(),
+                                            signing_privkey.get_pubkey(),
                                             pub_key_bob,
                                             )
 
@@ -168,16 +160,16 @@ def test_cheating_ursula_sends_garbage(N, M):
     # so the rest of CFrags chould be correct:
     for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
         assert cfrag_i.verify_correctness(capsule_alice,
-                                          pub_key_alice_deleg,
-                                          pub_key_alice_sig,
+                                          delegating_privkey.get_pubkey(),
+                                          signing_privkey.get_pubkey(),
                                           pub_key_bob,
                                           )
 
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice, priv_key_bob, pub_key_alice_deleg,
-                              pub_key_alice_sig)
+        _ = pre._open_capsule(capsule_alice, priv_key_bob, delegating_privkey.get_pubkey(),
+                              signing_privkey.get_pubkey())
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
@@ -207,20 +199,16 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_m_of_n(N, M, alices_keys, bobs_keys):
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-
-    signer_alice = Signer(priv_key_alice_sig)
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
 
     priv_key_bob, pub_key_bob = bobs_keys
 
-    sym_key, capsule = pre._encapsulate(pub_key_alice_deleg.point_key)
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     for kfrag in kfrags:
-        assert kfrag.verify(pub_key_alice_sig, pub_key_alice_deleg, pub_key_bob)
+        assert kfrag.verify(signing_privkey.get_pubkey(), delegating_privkey.get_pubkey(), pub_key_bob)
 
     for i, kfrag in enumerate(kfrags[:M]):
         # Example of potential metadata to describe the re-encryption request
@@ -231,8 +219,8 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
         capsule.attach_cfrag(cfrag)
 
         assert cfrag.verify_correctness(capsule,
-                                        pub_key_alice_deleg, pub_key_alice_sig, pub_key_bob,
+                                        delegating_privkey.get_pubkey(), signing_privkey.get_pubkey(), pub_key_bob,
                                         )
 
-    sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, pub_key_alice_deleg, pub_key_alice_sig)
+    sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, delegating_privkey.get_pubkey(), signing_privkey.get_pubkey())
     assert sym_key == sym_key_from_capsule

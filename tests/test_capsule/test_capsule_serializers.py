@@ -35,16 +35,13 @@ def test_capsule_serialization(alices_keys):
 
 
 def test_activated_capsule_serialization(alices_keys, bobs_keys):
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-    signer_alice = Signer(priv_key_alice_sig)
+    delegating_privkey, signing_privkey = alices_keys
+    signer_alice = Signer(signing_privkey)
 
     priv_key_bob, pub_key_bob = bobs_keys
 
     _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -52,13 +49,6 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
 
     capsule._reconstruct_shamirs_secret(priv_key_bob)
     rec_capsule_bytes = capsule.to_bytes()
-
-    # An activated Capsule is:
-    # three points, representable as 33 bytes each (the original), and
-    # two points and a CurveBN (32 bytes) (the activated components), for 197 total.
-    curve = default_curve()
-    bn_size = CurveBN.get_size(curve)
-    point_size = Point.get_size(curve)
 
     assert len(rec_capsule_bytes) == pre.Capsule.get_size(activated=True)
 

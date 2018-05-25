@@ -27,10 +27,7 @@ def test_simple_api(alices_keys, N, M, curve=default_curve()):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data, params=params)
 
-    try:
-        cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
-    except Exception as e:
-        pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
+    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
     assert cleartext == plain_data
 
     kfrags = pre.split_rekey(delegating_privkey, signer, decrypting_key.get_pubkey(), M, N, params=params)

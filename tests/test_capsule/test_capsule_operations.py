@@ -9,7 +9,7 @@ from umbral.signing import Signer
 
 def test_capsule_creation(alices_keys):
     with pytest.raises(TypeError):
-        rare_capsule = Capsule()    # Alice cannot make a capsule this way.
+        rare_capsule = Capsule()  # Alice cannot make a capsule this way.
 
     # Some users may create capsules their own way.
     custom_capsule = Capsule(point_e=Point.gen_rand(),
@@ -56,14 +56,10 @@ def test_decapsulation_by_alice(alices_keys):
 
 
 def test_bad_capsule_fails_reencryption(alices_keys):
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-    signer_alice = Signer(priv_key_alice_sig)
+    delegating_privkey, _signing_privkey = alices_keys
+    signer_alice = Signer(_signing_privkey)
 
-
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_alice_deleg, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
 
     bollocks_capsule = Capsule(point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
@@ -75,20 +71,17 @@ def test_bad_capsule_fails_reencryption(alices_keys):
 
 def test_capsule_as_dict_key(alices_keys):
     # TODO: This test is a little weird - why activate a Capsule from alice to alice?  Let's get bob involved.
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_sig = priv_key_alice_sig.get_pubkey()
-    signer_alice = Signer(priv_key_alice_sig)
+    delegating_privkey, signing_privkey = alices_keys
+    signer_alice = Signer(signing_privkey)
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice_deleg, plain_data)
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
 
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_alice_deleg, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
     cfrag = pre.reencrypt(kfrags[0], capsule)
     capsule.attach_cfrag(cfrag)
 
@@ -96,7 +89,8 @@ def test_capsule_as_dict_key(alices_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, priv_key_alice_deleg, pub_key_alice_deleg, pub_key_alice_sig)
+    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey,
+                            delegating_privkey.get_pubkey(), signing_privkey.get_pubkey())
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 

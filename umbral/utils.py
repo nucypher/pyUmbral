@@ -44,9 +44,15 @@ def kdf(ecpoint, key_length):
 def get_curve_keysize_bytes(curve):
     return (curve.key_size + 7) // 8
 
-def get_field_order_size_in_bytes(curve : ec.EllipticCurve):
+def get_field_order_size_in_bytes(curve):
+
     backend = default_backend()
-    curve_nid = backend._elliptic_curve_to_nid(curve)
+    try:
+        curve_nid = backend._elliptic_curve_to_nid(curve)
+    except AttributeError:
+        # Presume that the user passed in the curve_nid
+        curve_nid = curve
+
     group = openssl._get_ec_group_by_curve_nid(curve_nid)
     size_in_bits = openssl._get_ec_group_degree(group)
     return (size_in_bits + 7) // 8

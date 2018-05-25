@@ -14,10 +14,7 @@ from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.signing import Signer
-from umbral.utils import poly_eval, lambda_coeff, kdf, get_curve_keysize_bytes
-
-from io import BytesIO
-
+from umbral.utils import poly_eval, lambda_coeff, kdf
 import os
 
 CHACHA20_KEY_SIZE = 32
@@ -64,7 +61,7 @@ class Capsule(object):
         self._attached_cfrags = list()
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve=None, activated=False):
+    def get_size(cls, curve: ec.EllipticCurve = None, activated=False):
         """
         Returns the size (in bytes) of a Capsule given the curve.
         If no curve is provided, it will use the default curve.
@@ -94,23 +91,22 @@ class Capsule(object):
 
         if len(capsule_bytes) == cls.get_size(curve, activated=True):
             splitter = BytestringSplitter(
-                (Point, point_size), # point_e
-                (Point, point_size), # point_v
+                (Point, point_size),  # point_e
+                (Point, point_size),  # point_v
                 (CurveBN, bn_size),  # bn_sig
-                (Point, point_size), # point_e_prime
-                (Point, point_size), # point_v_prime
+                (Point, point_size),  # point_e_prime
+                (Point, point_size),  # point_v_prime
                 (Point, point_size)  # point_noninteractive
             )
         else:
             splitter = BytestringSplitter(
-                (Point, point_size), # point_e
-                (Point, point_size), # point_v
-                (CurveBN, bn_size)   # bn_sig
+                (Point, point_size),  # point_e
+                (Point, point_size),  # point_v
+                (CurveBN, bn_size)  # bn_sig
             )
 
         components = splitter(capsule_bytes)
         return cls(*components)
-
 
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
@@ -291,11 +287,9 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
 
         u1 = rk * u
 
-        # TODO: change this Schnorr signature for Ed25519 or ECDSA (#97)
-
-        signature_input = (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord)
-        z1 = CurveBN.hash(*signature_input, params=params)
-        signature = signer_a(z1.to_bytes())
+        kfrag_validity_message = bytes().join(
+            bytes(material) for material in (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord))
+        signature = signer_a(kfrag_validity_message)
 
         kfrag = KFrag(id=id, bn_key=rk,
                       point_noninteractive=ni, point_commitment=u1,

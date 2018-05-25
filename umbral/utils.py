@@ -3,7 +3,8 @@ import math
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-
+from cryptography.hazmat.primitives.asymmetric import ec
+from umbral import openssl
 
 def lambda_coeff(id_i, selected_ids):
     ids = [x for x in selected_ids if x != id_i]
@@ -42,3 +43,10 @@ def kdf(ecpoint, key_length):
 
 def get_curve_keysize_bytes(curve):
     return (curve.key_size + 7) // 8
+
+def get_field_order_size_in_bytes(curve : ec.EllipticCurve):
+    backend = default_backend()
+    curve_nid = backend._elliptic_curve_to_nid(curve)
+    group = openssl._get_ec_group_by_curve_nid(curve_nid)
+    size_in_bits = openssl._get_ec_group_degree(group)
+    return (size_in_bits + 7) // 8

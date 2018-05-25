@@ -53,6 +53,13 @@ def _get_ec_generator_by_curve_nid(curve_nid: int):
 
     return generator
 
+def _get_ec_group_degree(group):
+    """
+    Returns the number of bits needed to represent the order of the finite 
+    field upon the curve is based
+    """
+    return backend._lib.EC_GROUP_get_degree(group) 
+
 
 def _bn_is_on_curve(check_bn, curve_nid: int):
     """

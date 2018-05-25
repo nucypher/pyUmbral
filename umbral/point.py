@@ -6,7 +6,7 @@ from cryptography.exceptions import InternalError
 
 from umbral import openssl
 from umbral.config import default_curve
-from umbral.utils import get_curve_keysize_bytes
+from umbral.utils import get_field_order_size_in_bytes
 
 
 class Point(object):
@@ -26,7 +26,7 @@ class Point(object):
         If no curve is provided, it uses the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        return get_curve_keysize_bytes(curve) + 1
+        return get_field_order_size_in_bytes(curve) + 1
 
     @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve=None):
@@ -101,7 +101,7 @@ class Point(object):
         if data[0] in [2, 3]:
             type_y = data[0] - 2
 
-            if len(data[1:]) > get_curve_keysize_bytes(curve):
+            if len(data[1:]) != get_field_order_size_in_bytes(curve):
                 raise ValueError("X coordinate too large for curve.")
 
             affine_x = CurveBN.from_bytes(data[1:], curve)
@@ -116,9 +116,9 @@ class Point(object):
 
         # Handle uncompressed point
         elif data[0] == 4:
-            key_size = get_curve_keysize_bytes(curve)
-            affine_x = int.from_bytes(data[1:key_size+1], 'big')
-            affine_y = int.from_bytes(data[1+key_size:], 'big')
+            coord_size = get_field_order_size_in_bytes(curve)
+            affine_x = int.from_bytes(data[1:coord_size+1], 'big')
+            affine_y = int.from_bytes(data[1+coord_size:], 'big')
 
             return cls.from_affine((affine_x, affine_y), curve)
         else:

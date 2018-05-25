@@ -187,24 +187,22 @@ def test_cheating_ursula_sends_garbage(N, M):
 def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_keys, bobs_keys):
     """Manually injects umbralparameters for multi-curve testing."""
 
-    priv_key_alice_deleg = keys.UmbralPrivateKey.gen_key()
-    pub_key_alice_deleg = priv_key_alice_deleg.get_pubkey()
-    priv_key_alice_sig = keys.UmbralPrivateKey.gen_key()
-    signer_alice = Signer(priv_key_alice_sig)
-
-    priv_key_alice, pub_key_alice = alices_keys
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
     priv_key_bob, pub_key_bob = bobs_keys
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
-    kfrags = pre.split_rekey(priv_key_alice_deleg, signer_alice, pub_key_bob, M, N)
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
         capsule.attach_cfrag(cfrag)
 
     with pytest.raises(AttributeError):
-        _ = pre.decrypt(ciphertext, capsule, priv_key_bob, pub_key_alice)
+        _ = pre.decrypt(ciphertext, capsule, priv_key_bob,
+                        delegating_privkey.get_pubkey(),
+                        signing_privkey.get_pubkey())
 
 
 @pytest.mark.parametrize("N, M", parameters)

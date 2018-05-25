@@ -8,9 +8,9 @@ from umbral.signing import Signer
 
 
 def test_capsule_serialization(alices_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    delegating_privkey, _signing_privkey = alices_keys
 
-    _symmetric_key, capsule = pre._encapsulate(pub_key_alice.point_key)
+    _symmetric_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     capsule_bytes = capsule.to_bytes()
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted

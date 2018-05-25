@@ -34,7 +34,6 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
     if metadata is not None:
         hash_input += (metadata,)
     h = CurveBN.hash(*hash_input, params=params)
-
     ########
 
     cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=t + h * rk, kfrag_signature=kfrag.signature)
@@ -114,7 +113,7 @@ def verify_kfrag(kfrag,
     #  We check that the commitment u1 is well-formed
     correct_commitment = u1 == key * u
 
-    kfrag_validity_message = bytes().join(bytes(material) for material in (kfrag_id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord))
+    kfrag_validity_message = bytes().join(bytes(material) for material in (id, pubkey_a_deleg_point, pubkey_b_point, u1, ni, xcoord))
     valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, pubkey_a_sig)
 
     return correct_commitment & valid_kfrag_signature

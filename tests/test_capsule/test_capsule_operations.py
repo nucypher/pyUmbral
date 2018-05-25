@@ -19,9 +19,9 @@ def test_capsule_creation(alices_keys):
     assert isinstance(custom_capsule, Capsule)
 
     # Typical Alice, constructing a typical capsule
-    _, alices_public_key = alices_keys
+    delegating_privkey, _signing_key = alices_keys
     plaintext = b'peace at dawn'
-    ciphertext, typical_capsule = pre.encrypt(alices_public_key, plaintext)
+    ciphertext, typical_capsule = pre.encrypt(delegating_privkey.get_pubkey(), plaintext)
 
     assert isinstance(typical_capsule, Capsule)
 
@@ -45,13 +45,13 @@ def test_capsule_equality():
 
 
 def test_decapsulation_by_alice(alices_keys):
-    alice_priv, alice_pub = alices_keys
+    delegating_privkey, _signing_privkey = alices_keys
 
-    sym_key, capsule = pre._encapsulate(alice_pub.point_key)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
-    sym_key_2 = pre._decapsulate_original(alice_priv.bn_key, capsule)
+    sym_key_2 = pre._decapsulate_original(delegating_privkey.bn_key, capsule)
     assert sym_key_2 == sym_key
 
 

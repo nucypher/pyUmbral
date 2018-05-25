@@ -17,7 +17,8 @@ _BLAKE2B = hashes.BLAKE2b(64)
 
 class Signature(object):
     """
-    The Signature object allows signatures to be made and verified.
+    We store signatures as r and s; this class allows interoperation
+    between (r, s) and DER formatting.
     """
 
     def __init__(self, r: int, s: int):
@@ -95,7 +96,7 @@ class Signer:
 
     def __call__(self, message):
         """
-         Accepts a hashed message and signs it with the private key given.
+         Signs the message with this instance's private key.
 
          :param message: Message to hash and sign
          :return: signature

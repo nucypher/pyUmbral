@@ -36,7 +36,9 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
     h = CurveBN.hash(*hash_input, params=params)
     ########
 
-    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=t + h * rk, kfrag_signature=kfrag.signature)
+    z3 = t + h * rk
+
+    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature)
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles

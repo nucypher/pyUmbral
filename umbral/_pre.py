@@ -64,11 +64,17 @@ def assess_cfrag_correctness(cfrag,
     v1 = cfrag._point_v1
 
     u = params.u
-    u1 = cfrag.proof._point_kfrag_commitment
+    try:
+        u1 = cfrag.proof._point_kfrag_commitment
 
-    e2 = cfrag.proof._point_e2
-    v2 = cfrag.proof._point_v2
-    u2 = cfrag.proof._point_kfrag_pok
+        e2 = cfrag.proof._point_e2
+        v2 = cfrag.proof._point_v2
+        u2 = cfrag.proof._point_kfrag_pok
+    except AttributeError:
+        if cfrag.proof is None:
+            raise cfrag.NoProofProvided
+        else:
+            raise
 
     hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
     if cfrag.proof.metadata is not None:

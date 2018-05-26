@@ -162,6 +162,11 @@ class CapsuleFrag(object):
         self._point_xcoord = point_xcoord
         self.proof = proof
 
+    class NoProofProvided(TypeError):
+        """
+        Raised when a cfrag is assessed for correctness, but no proof is attached.
+        """
+
     @classmethod
     def get_size(cls, curve: ec.EllipticCurve = None):
         """

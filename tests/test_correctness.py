@@ -168,7 +168,7 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
     # Alternatively, we can try to open the capsule directly.
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice, priv_key_bob, delegating_privkey.get_pubkey(),
+        _decapsulated_key = pre._open_capsule(capsule_alice, priv_key_bob, delegating_privkey.get_pubkey(),
                               signing_privkey.get_pubkey())
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
@@ -191,8 +191,8 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
         cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
         capsule.attach_cfrag(cfrag)
 
-    with pytest.raises(AttributeError):
-        _ = pre.decrypt(ciphertext, capsule, priv_key_bob,
+    with pytest.raises(cfrag.NoProofProvided):
+        _cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob,
                         delegating_privkey.get_pubkey(),
                         signing_privkey.get_pubkey())
 

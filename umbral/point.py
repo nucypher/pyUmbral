@@ -20,7 +20,7 @@ class Point(object):
         self.group = group
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve=None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve=None):
         """
         Returns the size (in bytes) of a compressed Point given a curve.
         If no curve is provided, it uses the default curve.

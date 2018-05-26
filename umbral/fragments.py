@@ -22,14 +22,14 @@ class KFrag(object):
         self.signature = signature
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None):
         """
         Returns the size (in bytes) of a KFrag given the curve.
         If no curve is provided, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         return (bn_size * 4) + (point_size * 3)
 
@@ -40,8 +40,8 @@ class KFrag(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
             bn_size,             # id
@@ -49,7 +49,7 @@ class KFrag(object):
             (Point, point_size), # point_noninteractive
             (Point, point_size), # point_commitment
             (Point, point_size), # point_xcoord
-            (Signature, Signature.get_size(curve))
+            (Signature, Signature.expected_bytes_length(curve))
         )
         components = splitter(data)
 
@@ -95,14 +95,14 @@ class CorrectnessProof(object):
         self.kfrag_signature = kfrag_signature
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None):
         """
         Returns the size (in bytes) of a CorrectnessProof without the metadata.
         If no curve is given, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve=curve)
-        point_size = Point.get_size(curve=curve)
+        bn_size = CurveBN.expected_bytes_length(curve=curve)
+        point_size = Point.expected_bytes_length(curve=curve)
 
         return (bn_size * 3) + (point_size * 4)
 
@@ -112,8 +112,8 @@ class CorrectnessProof(object):
         Instantiate CorrectnessProof from serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
             (Point, point_size), # point_e2
@@ -121,7 +121,7 @@ class CorrectnessProof(object):
             (Point, point_size), # point_kfrag_commitment
             (Point, point_size), # point_kfrag_pok
             (CurveBN, bn_size),  # bn_sig
-            (Signature, Signature.get_size()), # kfrag_signature
+            (Signature), # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None
@@ -168,15 +168,15 @@ class CapsuleFrag(object):
         """
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None):
         """
         Returns the size (in bytes) of a CapsuleFrag given the curve without
         the CorrectnessProof.
         If no curve is provided, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         return (bn_size * 1) + (point_size * 4)
 
@@ -187,8 +187,8 @@ class CapsuleFrag(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
             (Point, point_size), # point_e1

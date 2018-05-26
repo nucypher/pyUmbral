@@ -14,7 +14,7 @@ def test_kfrag_serialization(alices_keys):
     kfrag_bytes = kfrags[0].to_bytes()
 
     curve = default_curve()
-    assert len(kfrag_bytes) == KFrag.get_size(curve)
+    assert len(kfrag_bytes) == KFrag.expected_bytes_length(curve)
 
     new_frag = pre.KFrag.from_bytes(kfrag_bytes)
     assert new_frag._id == kfrags[0]._id
@@ -109,7 +109,7 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys):
     assert proof is None
 
     curve = default_curve()
-    assert len(cfrag_bytes) == CapsuleFrag.get_size(curve)
+    assert len(cfrag_bytes) == CapsuleFrag.expected_bytes_length(curve)
 
     new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
     assert new_cfrag._point_e1 == cfrag._point_e1

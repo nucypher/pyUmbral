@@ -61,14 +61,14 @@ class Capsule(object):
         self._attached_cfrags = list()
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None, activated=False):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None, activated=False):
         """
         Returns the size (in bytes) of a Capsule given the curve.
         If no curve is provided, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         if not activated:
             return (bn_size * 1) + (point_size * 2)
@@ -86,10 +86,10 @@ class Capsule(object):
         Instantiates a Capsule object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
-        if len(capsule_bytes) == cls.get_size(curve, activated=True):
+        if len(capsule_bytes) == cls.expected_bytes_length(curve, activated=True):
             splitter = BytestringSplitter(
                 (Point, point_size),  # point_e
                 (Point, point_size),  # point_v
@@ -275,7 +275,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
     blake2b.update(dh_xcoord.to_bytes())
     hashed_dh_tuple = blake2b.finalize()
 
-    bn_size = CurveBN.get_size(params.curve)
+    bn_size = CurveBN.expected_bytes_length(params.curve)
 
     kfrags = []
     for _ in range(N):

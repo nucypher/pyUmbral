@@ -16,7 +16,7 @@ def test_capsule_serialization(alices_keys):
     assert capsule_bytes == capsule_bytes_casted
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a CurveBN (32).
-    assert len(capsule_bytes) == pre.Capsule.get_size()
+    assert len(capsule_bytes) == pre.Capsule.expected_bytes_length()
 
     new_capsule = pre.Capsule.from_bytes(capsule_bytes)
 
@@ -50,7 +50,7 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
     capsule._reconstruct_shamirs_secret(priv_key_bob)
     rec_capsule_bytes = capsule.to_bytes()
 
-    assert len(rec_capsule_bytes) == pre.Capsule.get_size(activated=True)
+    assert len(rec_capsule_bytes) == pre.Capsule.expected_bytes_length(activated=True)
 
     new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes)
 

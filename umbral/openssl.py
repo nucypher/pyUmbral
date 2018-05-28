@@ -50,6 +50,7 @@ def _get_ec_generator_by_curve_nid(curve_nid: int):
 
     generator = backend._lib.EC_GROUP_get0_generator(ec_group)
     backend.openssl_assert(generator != backend._ffi.NULL)
+    generator = backend._ffi.gc(generator, backend._lib.EC_POINT_clear_free)
 
     return generator
 

@@ -15,7 +15,7 @@ from umbral.utils import get_curve_keysize_bytes
 _BLAKE2B = hashes.BLAKE2b(64)
 
 
-class Signature():
+class Signature:
     """
     We store signatures as r and s; this class allows interoperation
     between (r, s) and DER formatting.
@@ -34,7 +34,7 @@ class Signature():
         curve = curve if curve is not None else default_curve()
         return get_curve_keysize_bytes(curve) * 2
 
-    def verify(self, message: bytes, pubkey: UmbralPublicKey) -> bool:
+    def verify(self, message: bytes, verifying_key: UmbralPublicKey) -> bool:
         """
         Verifies that a message's signature was valid.
 
@@ -43,7 +43,7 @@ class Signature():
 
         :return: True if valid, False if invalid
         """
-        cryptography_pub_key = pubkey.to_cryptography_pubkey()
+        cryptography_pub_key = verifying_key.to_cryptography_pubkey()
 
         try:
             cryptography_pub_key.verify(

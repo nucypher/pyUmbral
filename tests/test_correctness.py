@@ -133,6 +133,7 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
         # Example of potential metadata to describe the re-encryption request
         metadata_i = "This is an example of metadata for re-encryption request #{}"
         metadata_i = metadata_i.format(i).encode()
+        metadata.append(metadata_i)
 
         cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
 

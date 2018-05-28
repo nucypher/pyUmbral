@@ -63,7 +63,10 @@ def _bn_is_on_curve(check_bn, curve_nid: int):
     """
     ec_order = _get_ec_order_by_curve_nid(curve_nid)
 
-    check_sign = backend._lib.BN_cmp(check_bn, backend._int_to_bn(0))
+    zero = backend._int_to_bn(0)
+    zero = backend._ffi.gc(zero, backend._lib.BN_clear_free)
+
+    check_sign = backend._lib.BN_cmp(check_bn, zero)
     range_check = backend._lib.BN_cmp(check_bn, ec_order)
     return check_sign == 1 and range_check == -1
 

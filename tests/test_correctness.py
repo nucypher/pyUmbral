@@ -229,3 +229,43 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
 
     sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob)
     assert sym_key == sym_key_from_capsule
+
+
+@pytest.mark.parametrize("N, M", [(N,M) for (N,M) in parameters if M>1])
+def test_inconsistent_cfrags(N, M, alices_keys, bobs_keys):
+
+    delegating_privkey, signing_privkey = alices_keys
+    delegating_pubkey = delegating_privkey.get_pubkey()
+    signer = Signer(signing_privkey)
+
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
+
+    cfrags = []
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
+    for kfrag in kfrags[:M+1]:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        cfrags.append(cfrag)
+
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 receiving=pub_key_bob,
+                                 verifying=signing_privkey.get_pubkey())
+    
+    # For all cfrags that belong to the same policy, the values 
+    # cfrag._point_noninteractive and cfrag._point_noninteractive
+    # must be the same. If we swap them, it shouldn't be possible 
+    # to attach the cfrag to the capsule
+    cfrags[0]._point_noninteractive, cfrags[0]._point_xcoord = cfrags[0]._point_xcoord, cfrags[0]._point_noninteractive
+    with pytest.raises(pre.UmbralCorrectnessError):
+        capsule.attach_cfrag(cfrags[0])
+
+    # The remaining M cfrags should be fine. Just for fun, let's try to 
+    # reconstruct the capsule with them:
+    for cfrag in cfrags[1:]:   
+        capsule.attach_cfrag(cfrag)
+
+    capsule._reconstruct_shamirs_secret(priv_key_bob)
+
+    

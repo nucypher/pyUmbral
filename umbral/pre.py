@@ -283,6 +283,9 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
     Returns a list of KFrags.
     """
 
+    if threshold <= 0 or threshold > N:
+        raise ValueError('Arguments threshold and N must satisfy 0 < threshold <= N')
+
     if delegating_privkey.params != receiving_pubkey.params:
         raise ValueError("Keys must have the same parameter set.")
 

@@ -22,6 +22,13 @@ parameters = [
     (50, 30)
 ]
 
+wrong_parameters = [
+    # (N, M)
+    (-1, -1),   (-1, 0),    (-1, 5),
+    (0, -1),    (0, 0),     (0, 5),
+    (1, -1),    (1, 0),     (1, 5),
+    (5, -1),    (5, 0),     (5, 10)
+]
 
 @pytest.fixture(scope='function')
 def alices_keys():

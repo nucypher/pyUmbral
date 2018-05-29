@@ -97,7 +97,7 @@ class Point(object):
             # Presume that the user passed in the curve_nid
             curve_nid = curve
 
-        compressed_size = cls.get_size(curve)
+        compressed_size = cls.expected_bytes_length(curve)
         # Check if compressed
         if data[0] in [2, 3]:
             if len(data) != compressed_size:

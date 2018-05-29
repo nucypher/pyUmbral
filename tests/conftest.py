@@ -25,9 +25,9 @@ parameters = [
 
 @pytest.fixture(scope='function')
 def alices_keys():
-    priv = keys.UmbralPrivateKey.gen_key()
-    pub = priv.get_pubkey()
-    return MockKeyPair(priv, pub)
+    delegating_priv = keys.UmbralPrivateKey.gen_key()
+    signing_priv = keys.UmbralPrivateKey.gen_key()
+    return delegating_priv, signing_priv
 
 
 @pytest.fixture(scope='function')

@@ -4,9 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+# Wheels for cryptography until the next release.
 cryptography35_linux = { file='./wheelhouse/cryptography-2.3.dev1-cp35-cp35m-linux_x86_64.whl', markers="python_version >= '3.5' and python_version < '3.6' and platform_system == 'Linux'"}
 cryptography36_linux = { file='./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl', markers="python_version >= '3.6' and python_version < '3.7' and platform_system == 'Linux'"}
 cryptography36_darwin = { file='./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-macosx_10_13_x86_64.whl', markers="python_version >= '3.6' and python_version < '3.7' and platform_system == 'Darwin'"}
+
+# Use bytestringSplitter from github until we release it on PyPi.
+bytestringSplitter = {git = "https://github.com/nucypher/bytestringSplitter.git", ref = "nucypher-depend"}
+
 pynacl = "*"
 
 # Since wheel-specified dependencies aren't locked...

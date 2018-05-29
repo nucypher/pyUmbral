@@ -1,14 +1,15 @@
 import pytest
 
-from umbral import pre
+from umbral import pre, keys
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.pre import Capsule
+from umbral.signing import Signer
 
 
 def test_capsule_creation(alices_keys):
     with pytest.raises(TypeError):
-        rare_capsule = Capsule()    # Alice cannot make a capsule this way.
+        rare_capsule = Capsule()  # Alice cannot make a capsule this way.
 
     # Some users may create capsules their own way.
     custom_capsule = Capsule(point_e=Point.gen_rand(),
@@ -18,9 +19,9 @@ def test_capsule_creation(alices_keys):
     assert isinstance(custom_capsule, Capsule)
 
     # Typical Alice, constructing a typical capsule
-    _, alices_public_key = alices_keys
+    delegating_privkey, _signing_key = alices_keys
     plaintext = b'peace at dawn'
-    ciphertext, typical_capsule = pre.encrypt(alices_public_key, plaintext)
+    ciphertext, typical_capsule = pre.encrypt(delegating_privkey.get_pubkey(), plaintext)
 
     assert isinstance(typical_capsule, Capsule)
 
@@ -44,20 +45,21 @@ def test_capsule_equality():
 
 
 def test_decapsulation_by_alice(alices_keys):
-    alice_priv, alice_pub = alices_keys
+    delegating_privkey, _signing_privkey = alices_keys
 
-    sym_key, capsule = pre._encapsulate(alice_pub.point_key)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
-    sym_key_2 = pre._decapsulate_original(alice_priv.bn_key, capsule)
+    sym_key_2 = pre._decapsulate_original(delegating_privkey.bn_key, capsule)
     assert sym_key_2 == sym_key
 
 
 def test_bad_capsule_fails_reencryption(alices_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    delegating_privkey, _signing_privkey = alices_keys
+    signer_alice = Signer(_signing_privkey)
 
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_alice, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
 
     bollocks_capsule = Capsule(point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
@@ -68,15 +70,18 @@ def test_bad_capsule_fails_reencryption(alices_keys):
 
 
 def test_capsule_as_dict_key(alices_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    # TODO: This test is a little weird - why activate a Capsule from alice to alice?  Let's get bob involved.
+    delegating_privkey, signing_privkey = alices_keys
+    signer_alice = Signer(signing_privkey)
+
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(pub_key_alice, plain_data)
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
 
-    kfrags = pre.split_rekey(alices_keys.priv, alices_keys.pub, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
     cfrag = pre.reencrypt(kfrags[0], capsule)
     capsule.attach_cfrag(cfrag)
 
@@ -84,7 +89,8 @@ def test_capsule_as_dict_key(alices_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, alices_keys.priv, alices_keys.pub)
+    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey,
+                            delegating_privkey.get_pubkey(), signing_privkey.get_pubkey())
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 

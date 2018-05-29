@@ -1,21 +1,22 @@
 import pytest
 
-from umbral import pre
+from umbral import pre, keys
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.config import default_curve
+from umbral.signing import Signer
 
 
 def test_capsule_serialization(alices_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    delegating_privkey, _signing_privkey = alices_keys
 
-    _symmetric_key, capsule = pre._encapsulate(pub_key_alice.point_key)
+    _symmetric_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     capsule_bytes = capsule.to_bytes()
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted
 
     # A Capsule can be represented as the 98 total bytes of two Points (33 each) and a CurveBN (32).
-    assert len(capsule_bytes) == 33 + 33 + 32 == 98
+    assert len(capsule_bytes) == pre.Capsule.get_size()
 
     new_capsule = pre.Capsule.from_bytes(capsule_bytes)
 
@@ -34,11 +35,13 @@ def test_capsule_serialization(alices_keys):
 
 
 def test_activated_capsule_serialization(alices_keys, bobs_keys):
-    priv_key_alice, pub_key_alice = alices_keys
+    delegating_privkey, signing_privkey = alices_keys
+    signer_alice = Signer(signing_privkey)
+
     priv_key_bob, pub_key_bob = bobs_keys
 
     _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
-    kfrags = pre.split_rekey(priv_key_alice, pub_key_bob, 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
@@ -47,15 +50,7 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
     capsule._reconstruct_shamirs_secret(priv_key_bob)
     rec_capsule_bytes = capsule.to_bytes()
 
-    # An activated Capsule is:
-    # three points, representable as 33 bytes each (the original), and
-    # two points and a CurveBN (32 bytes) (the activated components), for 197 total.
-    curve = default_curve()
-    bn_size = CurveBN.get_size(curve)
-    point_size = Point.get_size(curve)
-
-    expected_length = (point_size * 3) + (point_size * 2 + bn_size)
-    assert len(rec_capsule_bytes) == expected_length
+    assert len(rec_capsule_bytes) == pre.Capsule.get_size(activated=True)
 
     new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes)
 

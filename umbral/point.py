@@ -224,6 +224,9 @@ class Point(object):
             backend.openssl_assert(res == 1)
         return Point(inv, self.curve_nid, self.group)
 
+    def __bytes__(self):
+        return self.to_bytes()
+
 
 def unsafe_hash_to_point(data, params, label=None):
     """

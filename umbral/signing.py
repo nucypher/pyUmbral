@@ -15,7 +15,7 @@ from umbral.utils import get_curve_keysize_bytes
 _BLAKE2B = hashes.BLAKE2b(64)
 
 
-class Signature(object):
+class Signature:
     """
     We store signatures as r and s; this class allows interoperation
     between (r, s) and DER formatting.
@@ -30,11 +30,11 @@ class Signature(object):
         return "ECDSA Signature: {}".format(bytes(self).hex()[:15])
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None):
         curve = curve if curve is not None else default_curve()
         return get_curve_keysize_bytes(curve) * 2
 
-    def verify(self, message: bytes, pubkey: UmbralPublicKey) -> bool:
+    def verify(self, message: bytes, verifying_key: UmbralPublicKey) -> bool:
         """
         Verifies that a message's signature was valid.
 
@@ -43,7 +43,7 @@ class Signature(object):
 
         :return: True if valid, False if invalid
         """
-        cryptography_pub_key = pubkey.to_cryptography_pubkey()
+        cryptography_pub_key = verifying_key.to_cryptography_pubkey()
 
         try:
             cryptography_pub_key.verify(

@@ -61,14 +61,14 @@ class Capsule(object):
         self._attached_cfrags = list()
 
     @classmethod
-    def get_size(cls, curve: ec.EllipticCurve = None, activated=False):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve = None, activated=False):
         """
         Returns the size (in bytes) of a Capsule given the curve.
         If no curve is provided, it will use the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
         if not activated:
             return (bn_size * 1) + (point_size * 2)
@@ -86,10 +86,10 @@ class Capsule(object):
         Instantiates a Capsule object from the serialized data.
         """
         curve = curve if curve is not None else default_curve()
-        bn_size = CurveBN.get_size(curve)
-        point_size = Point.get_size(curve)
+        bn_size = CurveBN.expected_bytes_length(curve)
+        point_size = Point.expected_bytes_length(curve)
 
-        if len(capsule_bytes) == cls.get_size(curve, activated=True):
+        if len(capsule_bytes) == cls.expected_bytes_length(curve, activated=True):
             splitter = BytestringSplitter(
                 (Point, point_size),  # point_e
                 (Point, point_size),  # point_v
@@ -275,7 +275,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
     blake2b.update(dh_xcoord.to_bytes())
     hashed_dh_tuple = blake2b.finalize()
 
-    bn_size = CurveBN.get_size(params.curve)
+    bn_size = CurveBN.expected_bytes_length(params.curve)
 
     kfrags = []
     for _ in range(N):
@@ -428,9 +428,11 @@ def _open_capsule(capsule: Capsule,
     if check_proof:
         offending_cfrags = []
         for cfrag in capsule._attached_cfrags:
-            if not cfrag.verify_correctness(capsule, delegating_pubkey,
-                                            alice_pubkey,
-                                            bob_pubkey, params):
+            if not cfrag.verify_correctness(capsule=capsule,
+                                            delegating_pubkey=delegating_pubkey,
+                                            signing_pubkey=alice_pubkey,
+                                            encrypting_pubkey=bob_pubkey,
+                                            params=params):
                 offending_cfrags.append(cfrag)
 
         if offending_cfrags:
@@ -447,7 +449,7 @@ def decrypt(ciphertext: bytes,
             capsule: Capsule,
             decrypting_key: UmbralPrivateKey,
             delegating_pubkey: UmbralPublicKey = None,
-            alice_pub_key_sig: UmbralPublicKey = None,
+            verifying_key: UmbralPublicKey = None,
             params: UmbralParameters = None, check_proof=True) -> bytes:
     """
     Opens the capsule and gets what's inside.
@@ -461,7 +463,7 @@ def decrypt(ciphertext: bytes,
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
         # (i.e., this is a re-encrypted capsule)
 
-        encapsulated_key = _open_capsule(capsule, decrypting_key, delegating_pubkey, alice_pub_key_sig,
+        encapsulated_key = _open_capsule(capsule, decrypting_key, delegating_pubkey, verifying_key,
                                          params=params, check_proof=check_proof)
         dem = UmbralDEM(encapsulated_key)
 

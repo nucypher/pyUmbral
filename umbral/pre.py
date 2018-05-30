@@ -138,14 +138,14 @@ class Capsule(object):
     def set_verifying_key(self, key: UmbralPublicKey):
         return self._set_cfrag_checking_key("verifying", key)
 
-    def set_three_keys(self,
-                              delegating_key: UmbralPublicKey = None,
-                              encrypting_key: UmbralPublicKey = None,
-                              verifying_key: UmbralPublicKey = None
-                              ):
-        delegating_key_details = self.set_delegating_key(delegating_key)
-        encrypting_key_details = self.set_encrypting_key(encrypting_key)
-        verifying_key_details = self.set_verifying_key(verifying_key)
+    def set_keys(self,
+                 delegating: UmbralPublicKey = None,
+                 encrypting: UmbralPublicKey = None,
+                 verifying: UmbralPublicKey = None
+                 ):
+        delegating_key_details = self.set_delegating_key(delegating)
+        encrypting_key_details = self.set_encrypting_key(encrypting)
+        verifying_key_details = self.set_verifying_key(verifying)
 
         return delegating_key_details, encrypting_key_details, verifying_key_details
 

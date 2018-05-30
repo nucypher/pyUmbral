@@ -68,10 +68,10 @@ def test_attach_keys_one_at_a_time(alices_keys, bobs_keys):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
-    capsule.set_three_keys(delegating_privkey.get_pubkey(),
-                                  pub_key_bob,
-                                  signing_privkey.get_pubkey()
-                                  )
+    capsule.set_keys(delegating_privkey.get_pubkey(),
+                     pub_key_bob,
+                     signing_privkey.get_pubkey()
+                     )
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 2, 2)
     for kfrag in kfrags:
@@ -122,7 +122,7 @@ def test_cannot_attach_cfrag_without_proof():
                         point_noninteractive=Point.gen_rand(),
                         point_xcoord=Point.gen_rand(),
                         )
-    key_details = capsule.set_three_keys(
+    key_details = capsule.set_keys(
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey())

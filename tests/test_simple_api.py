@@ -27,9 +27,9 @@ def test_simple_api(alices_keys, N, M, curve=default_curve()):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data, params=params)
 
-    capsule.set_delegating_key(delegating_privkey.get_pubkey())
-    capsule.set_encrypting_key(decrypting_key.get_pubkey())
-    capsule.set_verifying_key(signing_privkey.get_pubkey())
+    capsule.set_keys(delegating=delegating_privkey.get_pubkey(),
+                     encrypting=decrypting_key.get_pubkey(),
+                     verifying=signing_privkey.get_pubkey())
 
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
     assert cleartext == plain_data

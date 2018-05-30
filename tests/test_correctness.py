@@ -50,6 +50,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
     sym_key_alice1, capsule_alice1 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     sym_key_alice2, capsule_alice2 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
 
+    capsule_alice1.get_or_set_delegating_key(delegating_privkey.get_pubkey())
+    capsule_alice1.get_or_set_encrypting_key(pub_key_bob)
+    capsule_alice1.get_or_set_verifying_key(signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
@@ -122,6 +126,11 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
     pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule_alice.get_or_set_delegating_key(delegating_privkey.get_pubkey())
+    capsule_alice.get_or_set_encrypting_key(pub_key_bob)
+    capsule_alice.get_or_set_verifying_key(signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
@@ -183,10 +192,19 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
+    capsule.get_or_set_delegating_key(delegating_privkey.get_pubkey())
+    capsule.get_or_set_encrypting_key(pub_key_bob)
+    capsule.get_or_set_verifying_key(signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
     for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
+
+    # Even thought we can successfully attach a CFrag, if the proof is lost
+    # (for example, it is chopped off a serialized CFrag or similar), then decrypt
+    # will still fail.
+    cfrag.proof = None
 
     with pytest.raises(cfrag.NoProofProvided):
         _cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob,
@@ -202,6 +220,11 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     priv_key_bob, pub_key_bob = bobs_keys
 
     sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule.get_or_set_delegating_key(delegating_privkey.get_pubkey())
+    capsule.get_or_set_encrypting_key(pub_key_bob)
+    capsule.get_or_set_verifying_key(signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     for kfrag in kfrags:

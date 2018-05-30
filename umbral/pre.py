@@ -37,7 +37,9 @@ class Capsule(object):
                  bn_sig=None,
                  point_e_prime=None,
                  point_v_prime=None,
-                 point_noninteractive=None):
+                 point_noninteractive=None,
+                 delegating_pubkey: UmbralPublicKey = None,
+                 encrypting_pubkey: UmbralPublicKey = None):
 
         if isinstance(point_e, Point):
             if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
@@ -49,6 +51,9 @@ class Capsule(object):
             raise TypeError(
                 "Need proper Points and/or CurveBNs to make a Capsule.  Pass either Alice's data or Bob's. " \
                 "Passing both is also fine.")
+
+        self._delegating_pubkey = delegating_pubkey
+        self._encrypting_pubkey = encrypting_pubkey
 
         self._point_e = point_e
         self._point_v = point_v
@@ -107,6 +112,49 @@ class Capsule(object):
 
         components = splitter(capsule_bytes)
         return cls(*components)
+
+    def get_or_set_delegating_key(self, delegating_key: UmbralPublicKey = None):
+        """
+        Sets the delegating key if it's not already set.
+
+        If it is already set, and delegating_key matches, then return it.
+
+        :param delegating_key: A delegating key to set.
+        :return: The delegating key of this capulse, and whether or not it was newly set.
+        """
+        if self._delegating_pubkey is None:
+            if delegating_key is None:
+                raise ValueError("The Delegating Key is not set and you didn't pass one.")
+            else:
+                self._delegating_pubkey = delegating_key
+                return delegating_key, True
+        else:
+            if delegating_key != self._delegating_pubkey:
+                raise ValueError("The Delegating Key is already set; you can't set it again.")
+            else:
+                return delegating_key, False
+
+
+    def get_or_set_encrypting_key(self, encrypting_key: UmbralPublicKey = None):
+        """
+        Sets the encrypting key if it's not already set.
+
+        If it is already set, and encrypting_key matches, then return it.
+
+        :param encrypting_key: A encrypting key to set.
+        :return: The encrypting key of this capulse, and whether or not it was newly set.
+        """
+        if self._encrypting_pubkey is None:
+            if encrypting_key is None:
+                raise ValueError("The encrypting Key is not set and you didn't pass one.")
+            else:
+                self._encrypting_pubkey = encrypting_key
+                return encrypting_key, True
+        else:
+            if encrypting_key != self._encrypting_pubkey:
+                raise ValueError("The encrypting Key is already set; you can't set it again.")
+            else:
+                return encrypting_key, False
 
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())

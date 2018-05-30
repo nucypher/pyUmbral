@@ -76,11 +76,11 @@ def test_capsule_as_dict_key(alices_keys):
     encrypting_key = delegating_privkey.get_pubkey()
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(encrypting_key , plain_data)
+    ciphertext, capsule = pre.encrypt(encrypting_key, plain_data)
 
-    capsule.set_delegating_key(delegating_privkey.get_pubkey())
-    capsule.set_encrypting_key(encrypting_key )
-    capsule.set_verifying_key(signing_privkey.get_pubkey())
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 encrypting=encrypting_key,
+                                 verifying=signing_privkey.get_pubkey())
 
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}

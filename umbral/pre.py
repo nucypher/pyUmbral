@@ -53,7 +53,7 @@ class Capsule(object):
                 "Need proper Points and/or CurveBNs to make a Capsule.  Pass either Alice's data or Bob's. " \
                 "Passing both is also fine.")
 
-        self._cfrag_checking_keys = {"delegating": delegating_pubkey,
+        self._cfrag_correctness_keys = {"delegating": delegating_pubkey,
                                      "encrypting": encrypting_pubkey,
                                      "verifying": verifying_pubkey}
 
@@ -115,37 +115,28 @@ class Capsule(object):
         components = splitter(capsule_bytes)
         return cls(*components)
 
-    def _set_cfrag_checking_key(self, key_type, key: UmbralPublicKey):
-        current_key = self._cfrag_checking_keys[key_type]
+    def _set_cfrag_correctness_key(self, key_type, key: UmbralPublicKey):
+        current_key = self._cfrag_correctness_keys[key_type]
 
         if current_key is None:
             if key is None:
                 raise TypeError("The Delegating Key is not set and you didn't pass one.")
             else:
-                self._cfrag_checking_keys[key_type] = key
+                self._cfrag_correctness_keys[key_type] = key
                 return True
-        elif key in (None, self._cfrag_checking_keys[key_type]):
+        elif key in (None, self._cfrag_correctness_keys[key_type]):
             return False
         else:
             raise ValueError("The Delegating Key is already set; you can't set it again.")
 
-    def set_delegating_key(self, key: UmbralPublicKey):
-        return self._set_cfrag_checking_key("delegating", key)
-
-    def set_encrypting_key(self, key: UmbralPublicKey):
-        return self._set_cfrag_checking_key("encrypting", key)
-
-    def set_verifying_key(self, key: UmbralPublicKey):
-        return self._set_cfrag_checking_key("verifying", key)
-
-    def set_keys(self,
+    def set_correctness_keys(self,
                  delegating: UmbralPublicKey = None,
                  encrypting: UmbralPublicKey = None,
                  verifying: UmbralPublicKey = None
                  ):
-        delegating_key_details = self.set_delegating_key(delegating)
-        encrypting_key_details = self.set_encrypting_key(encrypting)
-        verifying_key_details = self.set_verifying_key(verifying)
+        delegating_key_details = self._set_cfrag_correctness_key("delegating", delegating)
+        encrypting_key_details = self._set_cfrag_correctness_key("encrypting", encrypting)
+        verifying_key_details = self._set_cfrag_correctness_key("verifying", verifying)
 
         return delegating_key_details, encrypting_key_details, verifying_key_details
 
@@ -173,25 +164,15 @@ class Capsule(object):
 
     def attach_cfrag(self,
                      cfrag: CapsuleFrag,
-                     delegating_pubkey: UmbralPublicKey = None,
-                     encrypting_pubkey: UmbralPublicKey = None,
-                     verifying_pubkey: UmbralPublicKey = None,
                      params: UmbralParameters = None) -> None:
-
-        delegating_key_is_new = self.set_delegating_key(delegating_pubkey)
-        encrypting_key_is_new = self.set_encrypting_key(encrypting_pubkey)
-        verifying_key_is_new = self.set_verifying_key(verifying_pubkey)
-
         self.verify_cfrag(cfrag, params)
         self._attached_cfrags.append(cfrag)
 
-        return delegating_key_is_new, encrypting_key_is_new, verifying_key_is_new
-
     def verify_cfrag(self, cfrag, params: UmbralParameters = None):
         return cfrag.verify_correctness(self,
-                                        self._cfrag_checking_keys["delegating"],
-                                        self._cfrag_checking_keys["encrypting"],
-                                        self._cfrag_checking_keys["verifying"],
+                                        self._cfrag_correctness_keys["delegating"],
+                                        self._cfrag_correctness_keys["encrypting"],
+                                        self._cfrag_correctness_keys["verifying"],
                                         params
                                         )
 

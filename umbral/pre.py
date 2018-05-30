@@ -126,7 +126,7 @@ class Capsule(object):
         """
         if self._delegating_pubkey is None:
             if delegating_key is None:
-                raise ValueError("The Delegating Key is not set and you didn't pass one.")
+                raise TypeError("The Delegating Key is not set and you didn't pass one.")
             else:
                 self._delegating_pubkey = delegating_key
                 return delegating_key, True
@@ -148,7 +148,7 @@ class Capsule(object):
         """
         if self._encrypting_pubkey is None:
             if encrypting_key is None:
-                raise ValueError("The encrypting Key is not set and you didn't pass one.")
+                raise TypeError("The encrypting Key is not set and you didn't pass one.")
             else:
                 self._encrypting_pubkey = encrypting_key
                 return encrypting_key, True
@@ -170,7 +170,7 @@ class Capsule(object):
         """
         if self._verifying_pubkey is None:
             if verifying_key is None:
-                raise ValueError("The verifying Key is not set and you didn't pass one.")
+                raise TypeError("The verifying Key is not set and you didn't pass one.")
             else:
                 self._verifying_pubkey = verifying_key
                 return verifying_key, True
@@ -223,7 +223,7 @@ class Capsule(object):
 
         _, delegating_key_is_new = self.get_or_set_delegating_key(delegating_pubkey)
         _, encrypting_key_is_new = self.get_or_set_encrypting_key(encrypting_pubkey)
-        _, verifying_key_is_new = self.get_or_set_encrypting_key(verifying_pubkey)
+        _, verifying_key_is_new = self.get_or_set_verifying_key(verifying_pubkey)
 
         self.verify_cfrag(cfrag, params)
         self._attached_cfrags.append(cfrag)

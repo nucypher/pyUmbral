@@ -2,14 +2,116 @@ import os
 
 import pytest
 
+from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.fragments import CapsuleFrag
 from umbral.keys import UmbralPrivateKey
 from umbral.point import Point
 from umbral.pre import Capsule
+from umbral.signing import Signer
+
+
+def test_cannot_attach_cfrag_with_keys():
+    """
+    We need the proper keys to verify the correctness of CFrags
+    in order to attach them to a Capsule.
+    """
+    capsule = Capsule(point_e=Point.gen_rand(),
+                      point_v=Point.gen_rand(),
+                      bn_sig=CurveBN.gen_rand())
+
+    cfrag = CapsuleFrag(point_e1=Point.gen_rand(),
+                        point_v1=Point.gen_rand(),
+                        kfrag_id=os.urandom(10),
+                        point_noninteractive=Point.gen_rand(),
+                        point_xcoord=Point.gen_rand(),
+                        )
+    with pytest.raises(TypeError):
+        capsule.attach_cfrag(cfrag)
+
+
+def test_attach_keys_one_at_a_time(alices_keys, bobs_keys):
+    """
+    The Capsule can be passed around the application; the required keys
+    might not appear together in the same local scope.
+
+    Here we show attaching them separately, one-at-a-time.
+    """
+
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
+
+    capsule.get_or_set_delegating_key(delegating_privkey.get_pubkey())
+    capsule.get_or_set_encrypting_key(pub_key_bob)
+    capsule.get_or_set_verifying_key(signing_privkey.get_pubkey())
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 2, 2)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+
+
+def test_attach_keys_one_at_a_time(alices_keys, bobs_keys):
+    """
+    If the three keys do appear together, along with the capsule,
+    we can attach them all at once.
+    """
+
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
+
+    capsule.get_or_set_three_keys(delegating_privkey.get_pubkey(),
+                                  pub_key_bob,
+                                  signing_privkey.get_pubkey()
+                                  )
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 2, 2)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+
+
+def test_attach_keys_while_attaching_cfrag(alices_keys, bobs_keys):
+    """
+    Finally, in some cases we have the keys, the capsule, and the cfrag in scope
+    all at the same time.  For this situation, we provide
+    a convenience interface on attach_cfrag.
+
+    Note, though, that doing this naively with a large value of M will be
+    less performant than only providing the keys the first time, as each
+    inclusion will trigger an OpenSSL point comparison. 
+    """
+
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    plain_data = b'peace at dawn'
+    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 2, 2)
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag,
+                             delegating_pubkey=delegating_privkey.get_pubkey(),
+                             encrypting_pubkey=pub_key_bob,
+                             verifying_pubkey=signing_privkey.get_pubkey()
+                             )
 
 
 def test_cannot_attach_cfrag_without_proof():
+    """
+    However, even when properly attaching keys, we can't attach the CFrag
+    if it is unproven.
+    """
     capsule = Capsule(point_e=Point.gen_rand(),
                       point_v=Point.gen_rand(),
                       bn_sig=CurveBN.gen_rand())
@@ -31,3 +133,25 @@ def test_cannot_attach_cfrag_without_proof():
 
     with pytest.raises(cfrag.NoProofProvided):
         capsule.attach_cfrag(cfrag)
+
+
+def test_cannot_set_different_keys():
+    """
+    Once a key is set on a Capsule, it can't be changed to a different key.
+    """
+    capsule = Capsule(point_e=Point.gen_rand(),
+                      point_v=Point.gen_rand(),
+                      bn_sig=CurveBN.gen_rand())
+
+    capsule.get_or_set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
+    capsule.get_or_set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
+    capsule.get_or_set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())
+
+    with pytest.raises(ValueError):
+        capsule.get_or_set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
+
+    with pytest.raises(ValueError):
+        capsule.get_or_set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
+
+    with pytest.raises(ValueError):
+        capsule.get_or_set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())

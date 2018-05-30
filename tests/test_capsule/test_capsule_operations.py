@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.pre import Capsule

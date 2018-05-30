@@ -21,9 +21,6 @@ def test_correctness_proof_serialization(alices_keys):
     metadata = b"This is an example of metadata for re-encryption request"
 
     cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
-
-    capsule.attach_cfrag(cfrag)
-
     proof = cfrag.proof
     proof_bytes = proof.to_bytes()
 

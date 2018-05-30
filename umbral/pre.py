@@ -53,9 +53,9 @@ class Capsule(object):
                 "Need proper Points and/or CurveBNs to make a Capsule.  Pass either Alice's data or Bob's. " \
                 "Passing both is also fine.")
 
-        self._delegating_pubkey = delegating_pubkey
-        self._encrypting_pubkey = encrypting_pubkey
-        self._verifying_pubkey = verifying_pubkey
+        self._cfrag_checking_keys = {"delegating": delegating_pubkey,
+                                     "encrypting": encrypting_pubkey,
+                                     "verifying": verifying_pubkey}
 
         self._point_e = point_e
         self._point_v = point_v
@@ -115,80 +115,37 @@ class Capsule(object):
         components = splitter(capsule_bytes)
         return cls(*components)
 
-    def get_or_set_delegating_key(self, delegating_key: UmbralPublicKey = None):
-        """
-        Sets the delegating key if it's not already set.
+    def _set_cfrag_checking_key(self, key_type, key: UmbralPublicKey):
+        current_key = self._cfrag_checking_keys[key_type]
 
-        If it is already set, and delegating_key matches, then return it.
-
-        :param delegating_key: A delegating key to set.
-        :return: The delegating key of this capulse, and whether or not it was newly set.
-        """
-        if self._delegating_pubkey is None:
-            if delegating_key is None:
+        if current_key is None:
+            if key is None:
                 raise TypeError("The Delegating Key is not set and you didn't pass one.")
             else:
-                self._delegating_pubkey = delegating_key
-                return delegating_key, True
-        elif delegating_key is None:
-            delegating_key = self._delegating_pubkey
-        elif delegating_key != self._delegating_pubkey:
+                self._cfrag_checking_keys[key_type] = key
+                return True
+        elif key in (None, self._cfrag_checking_keys[key_type]):
+            return False
+        else:
             raise ValueError("The Delegating Key is already set; you can't set it again.")
 
-        return delegating_key, False
+    def set_delegating_key(self, key: UmbralPublicKey):
+        return self._set_cfrag_checking_key("delegating", key)
 
-    def get_or_set_encrypting_key(self, encrypting_key: UmbralPublicKey = None):
-        """
-        Sets the encrypting key if it's not already set.
+    def set_encrypting_key(self, key: UmbralPublicKey):
+        return self._set_cfrag_checking_key("encrypting", key)
 
-        If it is already set, and encrypting_key matches, then return it.
+    def set_verifying_key(self, key: UmbralPublicKey):
+        return self._set_cfrag_checking_key("verifying", key)
 
-        :param encrypting_key: A encrypting key to set.
-        :return: The encrypting key of this capulse, and whether or not it was newly set.
-        """
-        if self._encrypting_pubkey is None:
-            if encrypting_key is None:
-                raise TypeError("The encrypting Key is not set and you didn't pass one.")
-            else:
-                self._encrypting_pubkey = encrypting_key
-                return encrypting_key, True
-        elif encrypting_key is None:
-            encrypting_key = self._encrypting_pubkey
-        elif encrypting_key != self._encrypting_pubkey:
-            raise ValueError("The encrypting Key is already set; you can't set it again.")
-
-        return encrypting_key, False
-
-    def get_or_set_verifying_key(self, verifying_key: UmbralPublicKey = None):
-        """
-        Sets the verifying key if it's not already set.
-
-        If it is already set, and verifying_key matches, then return it.
-
-        :param verifying_key: A verifying key to set.
-        :return: The verifying key of this capulse, and whether or not it was newly set.
-        """
-        if self._verifying_pubkey is None:
-            if verifying_key is None:
-                raise TypeError("The verifying Key is not set and you didn't pass one.")
-            else:
-                self._verifying_pubkey = verifying_key
-                return verifying_key, True
-        elif verifying_key is None:
-            verifying_key = self._verifying_pubkey
-        elif verifying_key != self._verifying_pubkey:
-            raise ValueError("The verifying Key is already set; you can't set it again.")
-
-        return verifying_key, False
-
-    def get_or_set_three_keys(self,
+    def set_three_keys(self,
                               delegating_key: UmbralPublicKey = None,
                               encrypting_key: UmbralPublicKey = None,
                               verifying_key: UmbralPublicKey = None
                               ):
-        delegating_key_details = self.get_or_set_delegating_key(delegating_key)
-        encrypting_key_details = self.get_or_set_encrypting_key(encrypting_key)
-        verifying_key_details = self.get_or_set_verifying_key(verifying_key)
+        delegating_key_details = self.set_delegating_key(delegating_key)
+        encrypting_key_details = self.set_encrypting_key(encrypting_key)
+        verifying_key_details = self.set_verifying_key(verifying_key)
 
         return delegating_key_details, encrypting_key_details, verifying_key_details
 
@@ -221,9 +178,9 @@ class Capsule(object):
                      verifying_pubkey: UmbralPublicKey = None,
                      params: UmbralParameters = None) -> None:
 
-        _, delegating_key_is_new = self.get_or_set_delegating_key(delegating_pubkey)
-        _, encrypting_key_is_new = self.get_or_set_encrypting_key(encrypting_pubkey)
-        _, verifying_key_is_new = self.get_or_set_verifying_key(verifying_pubkey)
+        delegating_key_is_new = self.set_delegating_key(delegating_pubkey)
+        encrypting_key_is_new = self.set_encrypting_key(encrypting_pubkey)
+        verifying_key_is_new = self.set_verifying_key(verifying_pubkey)
 
         self.verify_cfrag(cfrag, params)
         self._attached_cfrags.append(cfrag)
@@ -232,9 +189,9 @@ class Capsule(object):
 
     def verify_cfrag(self, cfrag, params: UmbralParameters = None):
         return cfrag.verify_correctness(self,
-                                        self._delegating_pubkey,
-                                        self._encrypting_pubkey,
-                                        self._verifying_pubkey,
+                                        self._cfrag_checking_keys["delegating"],
+                                        self._cfrag_checking_keys["encrypting"],
+                                        self._cfrag_checking_keys["verifying"],
                                         params
                                         )
 
@@ -335,7 +292,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
                 params: UmbralParameters = None) -> List[KFrag]:
     """
     Creates a re-encryption key from Alice to Bob and splits it in KFrags,
-    using Shamir's Secret Sharing. Requires a threshold number of KFrags 
+    using Shamir's Secret Sharing. Requires a threshold number of KFrags
     out of N to guarantee correctness of re-encryption.
 
     Returns a list of KFrags.
@@ -367,7 +324,7 @@ def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
 
     # 'xcoord' stands for 'X coordinate'.
     # This point is used as an ephemeral public key in a DH key exchange,
-    # and the resulting shared secret 'dh_xcoord' contributes to prevent 
+    # and the resulting shared secret 'dh_xcoord' contributes to prevent
     # reconstruction of the re-encryption key without Bob's intervention
     priv_xcoord = CurveBN.gen_rand(params.curve)
     xcoord = priv_xcoord * g

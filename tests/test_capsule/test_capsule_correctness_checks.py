@@ -45,9 +45,9 @@ def test_attach_keys_one_at_a_time(alices_keys, bobs_keys):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
-    capsule.get_or_set_delegating_key(delegating_privkey.get_pubkey())
-    capsule.get_or_set_encrypting_key(pub_key_bob)
-    capsule.get_or_set_verifying_key(signing_privkey.get_pubkey())
+    capsule.set_delegating_key(delegating_privkey.get_pubkey())
+    capsule.set_encrypting_key(pub_key_bob)
+    capsule.set_verifying_key(signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 2, 2)
     for kfrag in kfrags:
@@ -68,7 +68,7 @@ def test_attach_keys_one_at_a_time(alices_keys, bobs_keys):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
-    capsule.get_or_set_three_keys(delegating_privkey.get_pubkey(),
+    capsule.set_three_keys(delegating_privkey.get_pubkey(),
                                   pub_key_bob,
                                   signing_privkey.get_pubkey()
                                   )
@@ -87,7 +87,7 @@ def test_attach_keys_while_attaching_cfrag(alices_keys, bobs_keys):
 
     Note, though, that doing this naively with a large value of M will be
     less performant than only providing the keys the first time, as each
-    inclusion will trigger an OpenSSL point comparison. 
+    inclusion will trigger an OpenSSL point comparison.
     """
 
     delegating_privkey, signing_privkey = alices_keys
@@ -122,14 +122,14 @@ def test_cannot_attach_cfrag_without_proof():
                         point_noninteractive=Point.gen_rand(),
                         point_xcoord=Point.gen_rand(),
                         )
-    key_details = capsule.get_or_set_three_keys(
+    key_details = capsule.set_three_keys(
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey())
 
     delegating_details, encrypting_details, verifying_details = key_details
 
-    assert all((delegating_details[1], encrypting_details[1], verifying_details[1]))
+    assert all((delegating_details, encrypting_details, verifying_details))
 
     with pytest.raises(cfrag.NoProofProvided):
         capsule.attach_cfrag(cfrag)
@@ -143,15 +143,15 @@ def test_cannot_set_different_keys():
                       point_v=Point.gen_rand(),
                       bn_sig=CurveBN.gen_rand())
 
-    capsule.get_or_set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
-    capsule.get_or_set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
-    capsule.get_or_set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())
+    capsule.set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
+    capsule.set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
+    capsule.set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
-        capsule.get_or_set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
+        capsule.set_delegating_key(UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
-        capsule.get_or_set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
+        capsule.set_encrypting_key(UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
-        capsule.get_or_set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())
+        capsule.set_verifying_key(UmbralPrivateKey.gen_key().get_pubkey())

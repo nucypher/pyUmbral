@@ -5,7 +5,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from umbral._pre import prove_cfrag_correctness
+from umbral._pre import prove_cfrag_correctness, assess_cfrag_correctness
 from umbral.curvebn import CurveBN
 from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM
@@ -39,7 +39,8 @@ class Capsule(object):
                  point_v_prime=None,
                  point_noninteractive=None,
                  delegating_pubkey: UmbralPublicKey = None,
-                 encrypting_pubkey: UmbralPublicKey = None):
+                 encrypting_pubkey: UmbralPublicKey = None,
+                 verifying_pubkey: UmbralPublicKey = None):
 
         if isinstance(point_e, Point):
             if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
@@ -54,6 +55,7 @@ class Capsule(object):
 
         self._delegating_pubkey = delegating_pubkey
         self._encrypting_pubkey = encrypting_pubkey
+        self._verifying_pubkey = verifying_pubkey
 
         self._point_e = point_e
         self._point_v = point_v
@@ -128,12 +130,12 @@ class Capsule(object):
             else:
                 self._delegating_pubkey = delegating_key
                 return delegating_key, True
-        else:
-            if delegating_key != self._delegating_pubkey:
-                raise ValueError("The Delegating Key is already set; you can't set it again.")
-            else:
-                return delegating_key, False
+        elif delegating_key is None:
+            delegating_key = self._delegating_pubkey
+        elif delegating_key != self._delegating_pubkey:
+            raise ValueError("The Delegating Key is already set; you can't set it again.")
 
+        return delegating_key, False
 
     def get_or_set_encrypting_key(self, encrypting_key: UmbralPublicKey = None):
         """
@@ -150,11 +152,45 @@ class Capsule(object):
             else:
                 self._encrypting_pubkey = encrypting_key
                 return encrypting_key, True
-        else:
-            if encrypting_key != self._encrypting_pubkey:
-                raise ValueError("The encrypting Key is already set; you can't set it again.")
+        elif encrypting_key is None:
+            encrypting_key = self._encrypting_pubkey
+        elif encrypting_key != self._encrypting_pubkey:
+            raise ValueError("The encrypting Key is already set; you can't set it again.")
+
+        return encrypting_key, False
+
+    def get_or_set_verifying_key(self, verifying_key: UmbralPublicKey = None):
+        """
+        Sets the verifying key if it's not already set.
+
+        If it is already set, and verifying_key matches, then return it.
+
+        :param verifying_key: A verifying key to set.
+        :return: The verifying key of this capulse, and whether or not it was newly set.
+        """
+        if self._verifying_pubkey is None:
+            if verifying_key is None:
+                raise ValueError("The verifying Key is not set and you didn't pass one.")
             else:
-                return encrypting_key, False
+                self._verifying_pubkey = verifying_key
+                return verifying_key, True
+        elif verifying_key is None:
+            verifying_key = self._verifying_pubkey
+        elif verifying_key != self._verifying_pubkey:
+            raise ValueError("The verifying Key is already set; you can't set it again.")
+
+        return verifying_key, False
+
+    def get_or_set_three_keys(self,
+                              delegating_key: UmbralPublicKey = None,
+                              encrypting_key: UmbralPublicKey = None,
+                              verifying_key: UmbralPublicKey = None
+                              ):
+        delegating_key_details = self.get_or_set_delegating_key(delegating_key)
+        encrypting_key_details = self.get_or_set_encrypting_key(encrypting_key)
+        verifying_key_details = self.get_or_set_verifying_key(verifying_key)
+
+        return delegating_key_details, encrypting_key_details, verifying_key_details
 
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
@@ -178,8 +214,29 @@ class Capsule(object):
 
         return s * params.g == v + (h * e)
 
-    def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
+    def attach_cfrag(self,
+                     cfrag: CapsuleFrag,
+                     delegating_pubkey: UmbralPublicKey = None,
+                     encrypting_pubkey: UmbralPublicKey = None,
+                     verifying_pubkey: UmbralPublicKey = None,
+                     params: UmbralParameters = None) -> None:
+
+        _, delegating_key_is_new = self.get_or_set_delegating_key(delegating_pubkey)
+        _, encrypting_key_is_new = self.get_or_set_encrypting_key(encrypting_pubkey)
+        _, verifying_key_is_new = self.get_or_set_encrypting_key(verifying_pubkey)
+
+        self.verify_cfrag(cfrag, params)
         self._attached_cfrags.append(cfrag)
+
+        return delegating_key_is_new, encrypting_key_is_new, verifying_key_is_new
+
+    def verify_cfrag(self, cfrag, params: UmbralParameters = None):
+        return cfrag.verify_correctness(self,
+                                        self._delegating_pubkey,
+                                        self._encrypting_pubkey,
+                                        self._verifying_pubkey,
+                                        params
+                                        )
 
     def original_components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig

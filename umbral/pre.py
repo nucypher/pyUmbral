@@ -57,8 +57,8 @@ class Capsule(object):
                 "Passing both is also fine.")
 
         self._cfrag_correctness_keys = {"delegating": delegating_pubkey,
-                                     "receiving": receiving_pubkey,
-                                     "verifying": verifying_pubkey}
+                                        "receiving": receiving_pubkey,
+                                        "verifying": verifying_pubkey}
 
         self._point_e = point_e
         self._point_v = point_v
@@ -132,6 +132,8 @@ class Capsule(object):
         if current_key is None:
             if key is None:
                 raise TypeError("The {} key is not set and you didn't pass one.".format(key_type))
+            elif self._umbral_params != key.params:
+                raise TypeError("You are trying to set a key with different UmbralParameters.")
             else:
                 self._cfrag_correctness_keys[key_type] = key
                 return True

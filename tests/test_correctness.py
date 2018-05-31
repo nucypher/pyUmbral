@@ -21,9 +21,6 @@ def test_correctness_proof_serialization(alices_keys):
     metadata = b"This is an example of metadata for re-encryption request"
 
     cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
-
-    capsule.attach_cfrag(cfrag)
-
     proof = cfrag.proof
     proof_bytes = proof.to_bytes()
 
@@ -52,6 +49,10 @@ def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
 
     sym_key_alice1, capsule_alice1 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
     sym_key_alice2, capsule_alice2 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule_alice1.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                        encrypting=pub_key_bob,
+                                        verifying=signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
@@ -125,6 +126,11 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
     pub_key_bob = priv_key_bob.get_pubkey()
 
     sym_key, capsule_alice = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule_alice.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                       encrypting=pub_key_bob,
+                                       verifying=signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     cfrags, metadata = [], []
@@ -169,7 +175,7 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
     # We should get an exception with an attached list of incorrect cfrags
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
         _decapsulated_key = pre._open_capsule(capsule_alice, priv_key_bob, delegating_privkey.get_pubkey(),
-                              signing_privkey.get_pubkey())
+                                              signing_privkey.get_pubkey())
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
@@ -186,15 +192,24 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 encrypting=pub_key_bob,
+                                 verifying=signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
     for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
+
+    # Even thought we can successfully attach a CFrag, if the proof is lost
+    # (for example, it is chopped off a serialized CFrag or similar), then decrypt
+    # will still fail.
+    cfrag.proof = None
 
     with pytest.raises(cfrag.NoProofProvided):
         _cleartext = pre.decrypt(ciphertext, capsule, priv_key_bob,
-                        delegating_privkey.get_pubkey(),
-                        signing_privkey.get_pubkey())
+                                 delegating_privkey.get_pubkey(),
+                                 signing_privkey.get_pubkey())
 
 
 @pytest.mark.parametrize("N, M", parameters)
@@ -205,6 +220,11 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     priv_key_bob, pub_key_bob = bobs_keys
 
     sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 encrypting=pub_key_bob,
+                                 verifying=signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
 
     for kfrag in kfrags:
@@ -222,5 +242,6 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
                                         delegating_privkey.get_pubkey(), signing_privkey.get_pubkey(), pub_key_bob,
                                         )
 
-    sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, delegating_privkey.get_pubkey(), signing_privkey.get_pubkey())
+    sym_key_from_capsule = pre._open_capsule(capsule, priv_key_bob, delegating_privkey.get_pubkey(),
+                                             signing_privkey.get_pubkey())
     assert sym_key == sym_key_from_capsule

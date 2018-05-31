@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.pre import Capsule
@@ -73,15 +73,20 @@ def test_capsule_as_dict_key(alices_keys):
     # TODO: This test is a little weird - why activate a Capsule from alice to alice?  Let's get bob involved.
     delegating_privkey, signing_privkey = alices_keys
     signer_alice = Signer(signing_privkey)
+    encrypting_key = delegating_privkey.get_pubkey()
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
+    ciphertext, capsule = pre.encrypt(encrypting_key, plain_data)
+
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 encrypting=encrypting_key,
+                                 verifying=signing_privkey.get_pubkey())
 
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
 
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, encrypting_key , 1, 2)
     cfrag = pre.reencrypt(kfrags[0], capsule)
     capsule.attach_cfrag(cfrag)
 

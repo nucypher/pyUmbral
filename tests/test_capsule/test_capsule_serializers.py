@@ -41,6 +41,11 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
     priv_key_bob, pub_key_bob = bobs_keys
 
     _unused_key, capsule = pre._encapsulate(pub_key_bob.point_key)
+
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 encrypting=pub_key_bob,
+                                 verifying=signing_privkey.get_pubkey())
+
     kfrags = pre.split_rekey(delegating_privkey, signer_alice, pub_key_bob, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)

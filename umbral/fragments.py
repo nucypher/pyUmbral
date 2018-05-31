@@ -225,6 +225,9 @@ class CapsuleFrag(object):
                            signing_pubkey: UmbralPublicKey,
                            encrypting_pubkey: UmbralPublicKey,
                            params: UmbralParameters = None):
+        if not all((delegating_pubkey, signing_pubkey, encrypting_pubkey)):
+            raise TypeError("Need all three keys to verify correctness.")
+
         pubkey_a_point = delegating_pubkey.point_key
         pubkey_b_point = encrypting_pubkey.point_key
 

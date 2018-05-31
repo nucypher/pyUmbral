@@ -119,18 +119,21 @@ class Capsule(object):
         return cls(*components)
 
     def _set_cfrag_correctness_key(self, key_type, key: UmbralPublicKey):
+        if key_type not in ("delegating", "receiving", "verifying"): 
+            raise ValueError("You can only set 'delegating', 'receiving' or 'verifying' keys.") 
+
         current_key = self._cfrag_correctness_keys[key_type]
 
         if current_key is None:
             if key is None:
-                raise TypeError("The Delegating Key is not set and you didn't pass one.")
+                raise TypeError("The {} key is not set and you didn't pass one.".format(key_type))
             else:
                 self._cfrag_correctness_keys[key_type] = key
                 return True
-        elif key in (None, self._cfrag_correctness_keys[key_type]):
+        elif key in (None, current_key):
             return False
         else:
-            raise ValueError("The Delegating Key is already set; you can't set it again.")
+            raise ValueError("The {} key is already set; you can't set it again.".format(key_type))
 
     def set_correctness_keys(self,
                  delegating: UmbralPublicKey = None,

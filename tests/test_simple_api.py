@@ -15,17 +15,20 @@ secp_curves = [
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
+def test_simple_api(N, M, curve=default_curve()):
     """Manually injects umbralparameters for multi-curve testing."""
 
     params = UmbralParameters(curve=curve)
 
-    delegating_privkey, signing_privkey = alices_keys
+    delegating_privkey = keys.UmbralPrivateKey.gen_key(params=params)
     delegating_pubkey = delegating_privkey.get_pubkey()
-    signing_pubkey = signing_privkey.get_pubkey()
 
-    receiving_privkey, receiving_pubkey = bobs_keys
+    signing_privkey = keys.UmbralPrivateKey.gen_key(params=params)
+    signing_pubkey = signing_privkey.get_pubkey()
     signer = Signer(signing_privkey)
+
+    receiving_privkey = keys.UmbralPrivateKey.gen_key(params=params)
+    receiving_pubkey = receiving_privkey.get_pubkey()
 
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data, params=params)
@@ -52,17 +55,7 @@ def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
 @pytest.mark.parametrize("curve", secp_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
-    params = UmbralParameters(curve=curve)
-
-    delegating_privkey = keys.UmbralPrivateKey.gen_key(params=params)
-    signing_privkey = keys.UmbralPrivateKey.gen_key(params=params)
-    alices_keys = delegating_privkey, signing_privkey
-
-    receiving_privkey = keys.UmbralPrivateKey.gen_key(params=params)
-    receiving_pubkey = receiving_privkey.get_pubkey()
-    bobs_keys = receiving_privkey, receiving_pubkey
-    
-    test_simple_api(alices_keys, bobs_keys, N, M, curve)
+    test_simple_api(N, M, curve)
 
 
 def test_public_key_encryption(alices_keys):

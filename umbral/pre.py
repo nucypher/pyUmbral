@@ -91,15 +91,18 @@ class Capsule(object):
         """
 
     @classmethod
-    def from_bytes(cls, capsule_bytes: bytes, curve: ec.EllipticCurve = None):
+    def from_bytes(cls, capsule_bytes: bytes, params: UmbralParameters = None):
         """
         Instantiates a Capsule object from the serialized data.
         """
-        curve = curve if curve is not None else default_curve()
+        params = params if params is not None else default_params()
+        curve = params.curve
+
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
 
-        if len(capsule_bytes) == cls.expected_bytes_length(curve, activated=True):
+        capsule_bytes_length = len(capsule_bytes)
+        if capsule_bytes_length == cls.expected_bytes_length(curve, activated=True):
             splitter = BytestringSplitter(
                 (Point, point_size),  # point_e
                 (Point, point_size),  # point_v
@@ -108,15 +111,17 @@ class Capsule(object):
                 (Point, point_size),  # point_v_prime
                 (Point, point_size)  # point_noninteractive
             )
-        else:
+        elif capsule_bytes_length == cls.expected_bytes_length(curve, activated=False):
             splitter = BytestringSplitter(
                 (Point, point_size),  # point_e
                 (Point, point_size),  # point_v
                 (CurveBN, bn_size)  # bn_sig
             )
+        else:
+            raise ValueError("Byte string does not have a valid length for a Capsule")
 
         components = splitter(capsule_bytes)
-        return cls(*components)
+        return cls(*components, params=params)
 
     def _set_cfrag_correctness_key(self, key_type, key: UmbralPublicKey):
         if key_type not in ("delegating", "receiving", "verifying"): 

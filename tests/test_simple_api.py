@@ -15,32 +15,36 @@ secp_curves = [
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_simple_api(alices_keys, N, M, curve=default_curve()):
+def test_simple_api(alices_keys, bobs_keys, N, M, curve=default_curve()):
     """Manually injects umbralparameters for multi-curve testing."""
 
     params = UmbralParameters(curve=curve)
 
     delegating_privkey, signing_privkey = alices_keys
-    decrypting_key = keys.UmbralPrivateKey.gen_key(params=params)
+    delegating_pubkey = delegating_privkey.get_pubkey()
+    signing_pubkey = signing_privkey.get_pubkey()
+
+    receiving_privkey, receiving_pubkey = bobs_keys
     signer = Signer(signing_privkey)
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data, params=params)
-
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                     encrypting=decrypting_key.get_pubkey(),
-                     verifying=signing_privkey.get_pubkey())
+    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data, params=params)
 
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
     assert cleartext == plain_data
 
-    kfrags = pre.split_rekey(delegating_privkey, signer, decrypting_key.get_pubkey(), M, N, params=params)
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_pubkey)
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N, params=params)
+
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule, params=params)
         capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, decrypting_key,
-                                  delegating_privkey.get_pubkey(), signing_privkey.get_pubkey(),
+    reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey,
+                                  delegating_pubkey, signing_pubkey,
                                   params=params)
     assert reenc_cleartext == plain_data
 
@@ -49,8 +53,16 @@ def test_simple_api(alices_keys, N, M, curve=default_curve()):
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
     params = UmbralParameters(curve=curve)
-    alices_keys = keys.UmbralPrivateKey.gen_key(params=params), keys.UmbralPrivateKey.gen_key(params=params)
-    test_simple_api(alices_keys, N, M, curve)
+
+    delegating_privkey = keys.UmbralPrivateKey.gen_key(params=params)
+    signing_privkey = keys.UmbralPrivateKey.gen_key(params=params)
+    alices_keys = delegating_privkey, signing_privkey
+
+    receiving_privkey = keys.UmbralPrivateKey.gen_key(params=params)
+    receiving_pubkey = receiving_privkey.get_pubkey()
+    bobs_keys = receiving_privkey, receiving_pubkey
+    
+    test_simple_api(alices_keys, bobs_keys, N, M, curve)
 
 
 def test_public_key_encryption(alices_keys):

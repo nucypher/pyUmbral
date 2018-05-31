@@ -4,13 +4,14 @@ from umbral.fragments import KFrag, CapsuleFrag
 from umbral.signing import Signer
 
 
-def test_kfrag_serialization(alices_keys):
+def test_kfrag_serialization(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
     signer_alice = Signer(signing_privkey)
+    _receiving_privkey, receiving_pubkey = bobs_keys
 
     kfrags = pre.split_rekey(delegating_privkey,
                              signer_alice,
-                             delegating_privkey.get_pubkey(), 1, 2)
+                             receiving_pubkey, 1, 2)
     kfrag_bytes = kfrags[0].to_bytes()
 
     curve = default_curve()
@@ -24,13 +25,16 @@ def test_kfrag_serialization(alices_keys):
     assert new_frag._point_xcoord == kfrags[0]._point_xcoord
 
 
-def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
+def test_cfrag_serialization_with_proof_and_metadata(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
+    delegating_pubkey = delegating_privkey.get_pubkey()
     signer_alice = Signer(signing_privkey)
+    _receiving_privkey, receiving_pubkey = bobs_keys
 
-    _unused_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
-                             delegating_privkey.get_pubkey(), 1, 2)
+                             receiving_pubkey, 1, 2)
 
     # Example of potential metadata to describe the re-encryption request
     metadata = b'This is an example of metadata for re-encryption request'
@@ -59,13 +63,16 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys):
     assert new_proof.metadata == proof.metadata
 
 
-def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys):
+def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
+    delegating_pubkey = delegating_privkey.get_pubkey()
+
+    _receiving_privkey, receiving_pubkey = bobs_keys
     signer_alice = Signer(signing_privkey)
 
-    _unused_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
-                             delegating_privkey.get_pubkey(), 1, 2)
+                             receiving_pubkey, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True)
     cfrag_bytes = cfrag.to_bytes()
@@ -94,13 +101,16 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys):
     assert new_proof.metadata is None
 
 
-def test_cfrag_serialization_no_proof_no_metadata(alices_keys):
+def test_cfrag_serialization_no_proof_no_metadata(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
+    delegating_pubkey = delegating_privkey.get_pubkey()
+
+    _receiving_privkey, receiving_pubkey = bobs_keys
     signer_alice = Signer(signing_privkey)
 
-    _unused_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
-                             delegating_privkey.get_pubkey(), 1, 2)
+                             receiving_pubkey, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=False)
     cfrag_bytes = cfrag.to_bytes()

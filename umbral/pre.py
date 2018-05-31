@@ -39,7 +39,7 @@ class Capsule(object):
                  point_v_prime=None,
                  point_noninteractive=None,
                  delegating_pubkey: UmbralPublicKey = None,
-                 encrypting_pubkey: UmbralPublicKey = None,
+                 receiving_pubkey: UmbralPublicKey = None,
                  verifying_pubkey: UmbralPublicKey = None,
                  params: UmbralParameters = None):
 
@@ -57,7 +57,7 @@ class Capsule(object):
                 "Passing both is also fine.")
 
         self._cfrag_correctness_keys = {"delegating": delegating_pubkey,
-                                     "encrypting": encrypting_pubkey,
+                                     "receiving": receiving_pubkey,
                                      "verifying": verifying_pubkey}
 
         self._point_e = point_e
@@ -134,14 +134,14 @@ class Capsule(object):
 
     def set_correctness_keys(self,
                  delegating: UmbralPublicKey = None,
-                 encrypting: UmbralPublicKey = None,
+                 receiving: UmbralPublicKey = None,
                  verifying: UmbralPublicKey = None
                  ):
         delegating_key_details = self._set_cfrag_correctness_key("delegating", delegating)
-        encrypting_key_details = self._set_cfrag_correctness_key("encrypting", encrypting)
+        receiving_key_details = self._set_cfrag_correctness_key("receiving", receiving)
         verifying_key_details = self._set_cfrag_correctness_key("verifying", verifying)
 
-        return delegating_key_details, encrypting_key_details, verifying_key_details
+        return delegating_key_details, receiving_key_details, verifying_key_details
 
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
@@ -157,12 +157,13 @@ class Capsule(object):
 
     def verify(self) -> bool:
 
+        g = self._umbral_params.g
         e = self._point_e
         v = self._point_v
         s = self._bn_sig
         h = CurveBN.hash(e, v, params=self._umbral_params)
 
-        return s * self._umbral_params.g == v + (h * e)
+        return s * g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
         self.verify_cfrag(cfrag)
@@ -171,7 +172,7 @@ class Capsule(object):
     def verify_cfrag(self, cfrag):
         return cfrag.verify_correctness(self,
                                         self._cfrag_correctness_keys["delegating"],
-                                        self._cfrag_correctness_keys["encrypting"],
+                                        self._cfrag_correctness_keys["receiving"],
                                         self._cfrag_correctness_keys["verifying"],
                                         self._umbral_params
                                         )
@@ -471,7 +472,7 @@ def _open_capsule(capsule: Capsule,
             if not cfrag.verify_correctness(capsule=capsule,
                                             delegating_pubkey=delegating_pubkey,
                                             signing_pubkey=alice_pubkey,
-                                            encrypting_pubkey=bob_pubkey,
+                                            receiving_pubkey=bob_pubkey,
                                             params=params):
                 offending_cfrags.append(cfrag)
 

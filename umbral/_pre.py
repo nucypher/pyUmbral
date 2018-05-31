@@ -42,7 +42,7 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
 
     # Check correctness of original ciphertext (check nº 2) at the end
     # to avoid timing oracles
-    if not capsule.verify(params):
+    if not capsule.verify():
         raise capsule.NotValid("Capsule verification failed.")
 
 

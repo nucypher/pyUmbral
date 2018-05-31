@@ -40,7 +40,10 @@ class Capsule(object):
                  point_noninteractive=None,
                  delegating_pubkey: UmbralPublicKey = None,
                  encrypting_pubkey: UmbralPublicKey = None,
-                 verifying_pubkey: UmbralPublicKey = None):
+                 verifying_pubkey: UmbralPublicKey = None,
+                 params: UmbralParameters = None):
+
+        self._umbral_params = params if params is not None else default_params()
 
         if isinstance(point_e, Point):
             if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
@@ -152,28 +155,25 @@ class Capsule(object):
             bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
         return bytes_representation
 
-    def verify(self, params: UmbralParameters = None) -> bool:
-        params = params if params is not None else default_params()
+    def verify(self) -> bool:
 
         e = self._point_e
         v = self._point_v
         s = self._bn_sig
-        h = CurveBN.hash(e, v, params=params)
+        h = CurveBN.hash(e, v, params=self._umbral_params)
 
-        return s * params.g == v + (h * e)
+        return s * self._umbral_params.g == v + (h * e)
 
-    def attach_cfrag(self,
-                     cfrag: CapsuleFrag,
-                     params: UmbralParameters = None) -> None:
-        self.verify_cfrag(cfrag, params)
+    def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
+        self.verify_cfrag(cfrag)
         self._attached_cfrags.append(cfrag)
 
-    def verify_cfrag(self, cfrag, params: UmbralParameters = None):
+    def verify_cfrag(self, cfrag):
         return cfrag.verify_correctness(self,
                                         self._cfrag_correctness_keys["delegating"],
                                         self._cfrag_correctness_keys["encrypting"],
                                         self._cfrag_correctness_keys["verifying"],
-                                        params
+                                        self._umbral_params
                                         )
 
     def original_components(self) -> Tuple[Point, Point, CurveBN]:
@@ -183,12 +183,9 @@ class Capsule(object):
         return self._point_e_prime, self._point_v_prime, self._point_noninteractive
 
     def _reconstruct_shamirs_secret(self,
-                                    priv_b: Union[UmbralPrivateKey, CurveBN],
-                                    params: UmbralParameters = None) -> None:
-
-        params = params if params is not None else default_params()
-
-        g = params.g
+                                    priv_b: Union[UmbralPrivateKey, CurveBN]
+                                    ) -> None:
+        g = self._umbral_params.g
 
         if isinstance(priv_b, UmbralPrivateKey):
             pub_b = priv_b.get_pubkey()
@@ -210,9 +207,9 @@ class Capsule(object):
         hashed_dh_tuple = blake2b.finalize()
 
         if len(self._attached_cfrags) > 1:
-            xs = [CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=params)
+            xs = [CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=self._umbral_params)
                   for cfrag in self._attached_cfrags]
-            x_0 = CurveBN.hash(id_0, hashed_dh_tuple, params=params)
+            x_0 = CurveBN.hash(id_0, hashed_dh_tuple, params=self._umbral_params)
             lambda_0 = lambda_coeff(x_0, xs)
             e = lambda_0 * cfrag_0._point_e1
             v = lambda_0 * cfrag_0._point_v1
@@ -221,7 +218,7 @@ class Capsule(object):
                 if (ni, xcoord) != (cfrag._point_noninteractive, cfrag._point_xcoord):
                     raise ValueError("Attached CFrags are not pairwise consistent")
 
-                x_i = CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=params)
+                x_i = CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=self._umbral_params)
                 lambda_i = lambda_coeff(x_i, xs)
                 e = e + (lambda_i * cfrag._point_e1)
                 v = v + (lambda_i * cfrag._point_v1)
@@ -347,7 +344,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, params: UmbralParameters = None,
     if params is None:
         params = default_params()
 
-    if not capsule.verify(params):
+    if not capsule.verify():
         raise capsule.NotValid
 
     rk = kfrag._bn_key
@@ -385,7 +382,7 @@ def _encapsulate(alice_pub_key: Point, key_length=32,
     # Key to be used for symmetric encryption
     key = kdf(shared_key, key_length)
 
-    return key, Capsule(point_e=pub_r, point_v=pub_u, bn_sig=s)
+    return key, Capsule(point_e=pub_r, point_v=pub_u, bn_sig=s, params=params)
 
 
 def _decapsulate_original(priv_key: CurveBN, capsule: Capsule, key_length=32,
@@ -396,7 +393,7 @@ def _decapsulate_original(priv_key: CurveBN, capsule: Capsule, key_length=32,
     shared_key = priv_key * (capsule._point_e + capsule._point_v)
     key = kdf(shared_key, key_length)
 
-    if not capsule.verify(params):
+    if not capsule.verify():
         # Check correctness of original ciphertext
         # (check nº 2) at the end to avoid timing oracles
         raise capsule.NotValid("Capsule verification failed.")
@@ -482,7 +479,7 @@ def _open_capsule(capsule: Capsule,
             error_msg = "Decryption error: Some CFrags are not correct"
             raise UmbralCorrectnessError(error_msg, offending_cfrags)
 
-    capsule._reconstruct_shamirs_secret(priv_b, params=params)
+    capsule._reconstruct_shamirs_secret(priv_b)
 
     key = _decapsulate_reencrypted(bob_pubkey.point_key, priv_b, delegating_pubkey.point_key, capsule, params=params)
     return key

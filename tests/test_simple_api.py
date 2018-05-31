@@ -37,7 +37,7 @@ def test_simple_api(alices_keys, N, M, curve=default_curve()):
     kfrags = pre.split_rekey(delegating_privkey, signer, decrypting_key.get_pubkey(), M, N, params=params)
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule, params=params)
-        capsule.attach_cfrag(cfrag, params=params)
+        capsule.attach_cfrag(cfrag)
 
     reenc_cleartext = pre.decrypt(ciphertext, capsule, decrypting_key,
                                   delegating_privkey.get_pubkey(), signing_privkey.get_pubkey(),

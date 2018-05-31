@@ -21,3 +21,14 @@ class UmbralParameters(object):
 
         parameters_seed = b'NuCypherKMS/UmbralParameters/'
         self.u = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'u')
+
+    def __eq__(self, other):
+
+        self_curve_nid = backend._elliptic_curve_to_nid(self.curve)
+        other_curve_nid = backend._elliptic_curve_to_nid(other.curve)
+
+        # TODO: This is not comparing the order, which currently is an OpenSSL pointer
+        self_attributes = self_curve_nid, self.g, self.CURVE_KEY_SIZE_BYTES, self.u
+        others_attributes = other_curve_nid, other.g, other.CURVE_KEY_SIZE_BYTES, other.u
+
+        return self_attributes == others_attributes

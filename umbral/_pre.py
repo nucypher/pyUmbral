@@ -7,10 +7,9 @@ from umbral.params import UmbralParameters
 def prove_cfrag_correctness(cfrag: "CapsuleFrag",
                             kfrag: "KFrag",
                             capsule: "Capsule",
-                            metadata: bytes = None,
-                            params: UmbralParameters = None
+                            metadata: bytes = None
                             ) -> "CorrectnessProof":
-    params = params if params is not None else default_params()
+    params = capsule._umbral_params
 
     rk = kfrag._bn_key
     t = CurveBN.gen_rand(params.curve)
@@ -50,9 +49,8 @@ def assess_cfrag_correctness(cfrag,
                              capsule: "Capsule",
                              delegating_point,
                              signing_pubkey,
-                             receiving_point,
-                             params: UmbralParameters = None):
-    params = params if params is not None else default_params()
+                             receiving_point):
+    params = capsule._umbral_params
 
     ####
     ## Here are the formulaic constituents shared with `prove_cfrag_correctness`.
@@ -107,9 +105,8 @@ def verify_kfrag(kfrag,
                  delegating_point,
                  signing_pubkey,
                  receiving_point,
-                 params: UmbralParameters = None
+                 params: UmbralParameters
                  ):
-    params = params if params is not None else default_params()
 
     u = params.u
 

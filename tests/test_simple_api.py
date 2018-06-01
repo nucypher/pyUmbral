@@ -31,24 +31,23 @@ def test_simple_api(N, M, curve=default_curve()):
     receiving_pubkey = receiving_privkey.get_pubkey()
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data, params=params)
+    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey, params=params)
+    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
 
     capsule.set_correctness_keys(delegating=delegating_pubkey,
                                  receiving=receiving_pubkey,
                                  verifying=signing_pubkey)
 
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N, params=params)
+    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
 
     for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule, params=params)
+        cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
 
     reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey,
-                                  delegating_pubkey, signing_pubkey,
-                                  params=params)
+                                  delegating_pubkey, signing_pubkey)
     assert reenc_cleartext == plain_data
 
 

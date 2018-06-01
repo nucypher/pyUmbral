@@ -6,14 +6,21 @@ from umbral.point import Point
 from umbral.pre import Capsule
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey
+from umbral.config import default_params
 
 
 def test_capsule_creation(alices_keys):
+
+    params = default_params()
+
     with pytest.raises(TypeError):
-        rare_capsule = Capsule()  # Alice cannot make a capsule this way.
+        rare_capsule = Capsule(params)  # Alice cannot make a capsule this way.
+
+
 
     # Some users may create capsules their own way.
-    custom_capsule = Capsule(point_e=Point.gen_rand(),
+    custom_capsule = Capsule(params,
+                             point_e=Point.gen_rand(),
                              point_v=Point.gen_rand(),
                              bn_sig=CurveBN.gen_rand())
 
@@ -28,17 +35,22 @@ def test_capsule_creation(alices_keys):
 
 
 def test_capsule_equality():
-    one_capsule = Capsule(point_e=Point.gen_rand(),
+    params = default_params()
+
+    one_capsule = Capsule(params,
+                          point_e=Point.gen_rand(),
                           point_v=Point.gen_rand(),
                           bn_sig=CurveBN.gen_rand())
 
-    another_capsule = Capsule(point_e=Point.gen_rand(),
+    another_capsule = Capsule(params,
+                              point_e=Point.gen_rand(),
                               point_v=Point.gen_rand(),
                               bn_sig=CurveBN.gen_rand())
 
     assert one_capsule != another_capsule
 
-    activated_capsule = Capsule(point_e_prime=Point.gen_rand(),
+    activated_capsule = Capsule(params,
+                                point_e_prime=Point.gen_rand(),
                                 point_v_prime=Point.gen_rand(),
                                 point_noninteractive=Point.gen_rand())
 
@@ -46,9 +58,11 @@ def test_capsule_equality():
 
 
 def test_decapsulation_by_alice(alices_keys):
+    params = default_params()
+
     delegating_privkey, _signing_privkey = alices_keys
 
-    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key, params)
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
@@ -57,6 +71,7 @@ def test_decapsulation_by_alice(alices_keys):
 
 
 def test_bad_capsule_fails_reencryption(alices_keys, bobs_keys):
+    params = default_params()
     delegating_privkey, _signing_privkey = alices_keys
     signer_alice = Signer(_signing_privkey)
 
@@ -64,7 +79,8 @@ def test_bad_capsule_fails_reencryption(alices_keys, bobs_keys):
 
     kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 1, 2)
 
-    bollocks_capsule = Capsule(point_e=Point.gen_rand(),
+    bollocks_capsule = Capsule(params,
+                               point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
                                bn_sig=CurveBN.gen_rand())
 

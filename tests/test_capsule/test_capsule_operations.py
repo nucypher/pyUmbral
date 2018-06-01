@@ -5,6 +5,7 @@ from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.pre import Capsule
 from umbral.signing import Signer
+from umbral.keys import UmbralPrivateKey
 
 
 def test_capsule_creation(alices_keys):
@@ -55,11 +56,13 @@ def test_decapsulation_by_alice(alices_keys):
     assert sym_key_2 == sym_key
 
 
-def test_bad_capsule_fails_reencryption(alices_keys):
+def test_bad_capsule_fails_reencryption(alices_keys, bobs_keys):
     delegating_privkey, _signing_privkey = alices_keys
     signer_alice = Signer(_signing_privkey)
 
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, delegating_privkey.get_pubkey(), 1, 2)
+    _receiving_privkey, receiving_pubkey = bobs_keys
+
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 1, 2)
 
     bollocks_capsule = Capsule(point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
@@ -69,24 +72,26 @@ def test_bad_capsule_fails_reencryption(alices_keys):
         pre.reencrypt(kfrags[0], bollocks_capsule)
 
 
-def test_capsule_as_dict_key(alices_keys):
-    # TODO: This test is a little weird - why activate a Capsule from alice to alice?  Let's get bob involved.
+def test_capsule_as_dict_key(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
     signer_alice = Signer(signing_privkey)
-    encrypting_key = delegating_privkey.get_pubkey()
+    delegating_pubkey = delegating_privkey.get_pubkey()
+    signing_pubkey = signing_privkey.get_pubkey()
+
+    receiving_privkey, receiving_pubkey = bobs_keys
 
     plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(encrypting_key, plain_data)
+    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 encrypting=encrypting_key,
-                                 verifying=signing_privkey.get_pubkey())
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_pubkey)
 
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
 
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, encrypting_key , 1, 2)
+    kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey , 1, 2)
     cfrag = pre.reencrypt(kfrags[0], capsule)
     capsule.attach_cfrag(cfrag)
 
@@ -94,8 +99,8 @@ def test_capsule_as_dict_key(alices_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey,
-                            delegating_privkey.get_pubkey(), signing_privkey.get_pubkey())
+    cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey,
+                            delegating_pubkey, signing_pubkey)
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 

@@ -29,7 +29,7 @@ class UmbralPrivateKey(object):
 
         self.params = params
         self.bn_key = bn_key
-        self.pubkey = UmbralPublicKey(self.bn_key * self.params.g)
+        self.pubkey = UmbralPublicKey(self.bn_key * self.params.g, params=params)
 
     @classmethod
     def gen_key(cls, params: UmbralParameters=None):

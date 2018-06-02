@@ -266,6 +266,9 @@ class Capsule(object):
         component_bytes = tuple(component.to_bytes() for component in self.original_components())
         return hash(component_bytes)
 
+    def __len__(self):
+        return len(self._attached_cfrags)
+
 
 def split_rekey(privkey_a_bn: Union[UmbralPrivateKey, CurveBN],
                 signer_a: Signer,

@@ -177,15 +177,11 @@ class Capsule(object):
         return s * g == v + (h * e)
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
-        self.verify_cfrag(cfrag)
-        self._attached_cfrags.append(cfrag)
-
-    def verify_cfrag(self, cfrag):
-        return cfrag.verify_correctness(self,
-                                        self._cfrag_correctness_keys["delegating"],
-                                        self._cfrag_correctness_keys["receiving"],
-                                        self._cfrag_correctness_keys["verifying"],
-                                        )
+        if cfrag.verify_correctness(self):
+            self._attached_cfrags.append(cfrag)
+        else:
+            error_msg = "CFrag is not correct and cannot be attached to the Capsule"
+            raise UmbralCorrectnessError(error_msg, [cfrag])
 
     def original_components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig

@@ -46,10 +46,20 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
 
 
 def assess_cfrag_correctness(cfrag,
-                             capsule: "Capsule",
-                             delegating_point,
-                             signing_pubkey,
-                             receiving_point):
+                             capsule: "Capsule"):
+
+    correctness_keys = capsule.get_correctness_keys()
+
+    delegating_pubkey = correctness_keys['delegating']
+    signing_pubkey = correctness_keys['verifying']
+    receiving_pubkey = correctness_keys['receiving']
+
+    if not all((delegating_pubkey, signing_pubkey, receiving_pubkey)):
+        raise TypeError("Need all three keys to verify correctness.")
+
+    delegating_point = delegating_pubkey.point_key
+    receiving_point = receiving_pubkey.point_key
+
     params = capsule._umbral_params
 
     ####

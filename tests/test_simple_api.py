@@ -46,8 +46,7 @@ def test_simple_api(N, M, curve=default_curve()):
         cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey,
-                                  delegating_pubkey, signing_pubkey)
+    reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
     assert reenc_cleartext == plain_data
 
 

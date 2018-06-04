@@ -11,7 +11,7 @@ def test_capsule_serialization(alices_keys):
     delegating_privkey, _signing_privkey = alices_keys
     params = delegating_privkey.params
 
-    _symmetric_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key, params)
+    _symmetric_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
     capsule_bytes = capsule.to_bytes()
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted
@@ -44,16 +44,17 @@ def test_activated_capsule_serialization(alices_keys, bobs_keys):
 
     receiving_privkey, receiving_pubkey = bobs_keys
 
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key, params)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
-
+    
     kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 1, 2)
 
     cfrag = pre.reencrypt(kfrags[0], capsule)
 
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
+    
     capsule.attach_cfrag(cfrag)
 
     capsule._reconstruct_shamirs_secret(receiving_privkey)

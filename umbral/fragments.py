@@ -220,19 +220,8 @@ class CapsuleFrag(object):
 
         return serialized_cfrag
 
-    def verify_correctness(self,
-                           capsule: "Capsule",
-                           delegating_pubkey: UmbralPublicKey,
-                           signing_pubkey,
-                           receiving_pubkey: UmbralPublicKey):
-        if not all((delegating_pubkey, signing_pubkey, receiving_pubkey)):
-            raise TypeError("Need all three keys to verify correctness.")
-
-        pubkey_a_point = delegating_pubkey.point_key
-        pubkey_b_point = receiving_pubkey.point_key
-
-        return assess_cfrag_correctness(self, capsule, pubkey_a_point,
-                                        signing_pubkey, pubkey_b_point)
+    def verify_correctness(self, capsule: "Capsule"):
+        return assess_cfrag_correctness(self, capsule)
 
     def attach_proof(self, e2, v2, u1, u2, z3, kfrag_signature, metadata):
         self.proof = CorrectnessProof(point_e2=e2,

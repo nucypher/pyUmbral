@@ -62,11 +62,11 @@ def test_decapsulation_by_alice(alices_keys):
 
     delegating_privkey, _signing_privkey = alices_keys
 
-    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key, params)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
     assert len(sym_key) == 32
 
     # The symmetric key sym_key is perhaps used for block cipher here in a real-world scenario.
-    sym_key_2 = pre._decapsulate_original(delegating_privkey.bn_key, capsule)
+    sym_key_2 = pre._decapsulate_original(delegating_privkey, capsule)
     assert sym_key_2 == sym_key
 
 
@@ -115,8 +115,7 @@ def test_capsule_as_dict_key(alices_keys, bobs_keys):
     capsule.attach_cfrag(cfrag)
 
     # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey,
-                            delegating_pubkey, signing_pubkey)
+    cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
     assert cleartext == plain_data
 
@@ -132,13 +131,13 @@ def test_capsule_length(alices_keys, bobs_keys):
 
     priv_key_bob, pub_key_bob = bobs_keys
 
-    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 10, 15)
 
     capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
                                  receiving=pub_key_bob,
                                  verifying=signing_privkey.get_pubkey())
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 10, 15)
 
     for counter, kfrag in enumerate(kfrags):
         assert len(capsule) == counter

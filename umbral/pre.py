@@ -99,20 +99,23 @@ class Capsule(object):
         point_size = Point.expected_bytes_length(curve)
 
         capsule_bytes_length = len(capsule_bytes)
-        if capsule_bytes_length == cls.expected_bytes_length(curve, activated=True):
+        expected_len_original = cls.expected_bytes_length(curve, activated=False)
+        expected_len_activated = cls.expected_bytes_length(curve, activated=True)
+        arguments = {'curve': curve}
+        if capsule_bytes_length == expected_len_original:
             splitter = BytestringSplitter(
-                (Point, point_size),  # point_e
-                (Point, point_size),  # point_v
-                (CurveBN, bn_size),  # bn_sig
-                (Point, point_size),  # point_e_prime
-                (Point, point_size),  # point_v_prime
-                (Point, point_size)  # point_noninteractive
+                (Point, point_size, arguments),  # point_e
+                (Point, point_size, arguments),  # point_v
+                (CurveBN, bn_size, arguments)  # bn_sig
             )
-        elif capsule_bytes_length == cls.expected_bytes_length(curve, activated=False):
+        elif capsule_bytes_length == expected_len_activated:
             splitter = BytestringSplitter(
-                (Point, point_size),  # point_e
-                (Point, point_size),  # point_v
-                (CurveBN, bn_size)  # bn_sig
+                (Point, point_size, arguments),  # point_e
+                (Point, point_size, arguments),  # point_v
+                (CurveBN, bn_size, arguments),  # bn_sig
+                (Point, point_size, arguments),  # point_e_prime
+                (Point, point_size, arguments),  # point_v_prime
+                (Point, point_size, arguments)  # point_noninteractive
             )
         else:
             raise ValueError("Byte string does not have a valid length for a Capsule")

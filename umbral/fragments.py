@@ -42,14 +42,15 @@ class KFrag(object):
 
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
+        arguments = {'curve': curve}
 
         splitter = BytestringSplitter(
             bn_size,             # id
-            (CurveBN, bn_size),  # bn_key
-            (Point, point_size), # point_noninteractive
-            (Point, point_size), # point_commitment
-            (Point, point_size), # point_xcoord
-            (Signature, Signature.expected_bytes_length(curve))
+            (CurveBN, bn_size, arguments),  # bn_key
+            (Point, point_size, arguments), # point_noninteractive
+            (Point, point_size, arguments), # point_commitment
+            (Point, point_size, arguments), # point_xcoord
+            (Signature, Signature.expected_bytes_length(curve), arguments)
         )
         components = splitter(data)
 
@@ -109,14 +110,14 @@ class CorrectnessProof(object):
         curve = curve if curve is not None else default_curve()
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
-
+        arguments = {'curve': curve}
         splitter = BytestringSplitter(
-            (Point, point_size), # point_e2
-            (Point, point_size), # point_v2
-            (Point, point_size), # point_kfrag_commitment
-            (Point, point_size), # point_kfrag_pok
-            (CurveBN, bn_size),  # bn_sig
-            (Signature), # kfrag_signature
+            (Point, point_size, arguments), # point_e2
+            (Point, point_size, arguments), # point_v2
+            (Point, point_size, arguments), # point_kfrag_commitment
+            (Point, point_size, arguments), # point_kfrag_pok
+            (CurveBN, bn_size, arguments),  # bn_sig
+            (Signature, Signature.expected_bytes_length(curve), arguments), # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None
@@ -184,13 +185,14 @@ class CapsuleFrag(object):
 
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
+        arguments = {'curve': curve}
 
         splitter = BytestringSplitter(
-            (Point, point_size), # point_e1
-            (Point, point_size), # point_v1
+            (Point, point_size, arguments), # point_e1
+            (Point, point_size, arguments), # point_v1
             bn_size,             # kfrag_id
-            (Point, point_size), # point_noninteractive
-            (Point, point_size)  # point_xcoord
+            (Point, point_size, arguments), # point_noninteractive
+            (Point, point_size, arguments)  # point_xcoord
         )
         components = splitter(data, return_remainder=True)
 

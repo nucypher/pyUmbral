@@ -2,14 +2,13 @@ import hmac
 
 from cryptography.exceptions import InvalidSignature
 
-from umbral.config import default_curve
-from umbral.keys import UmbralPublicKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
-
-from umbral.keys import UmbralPrivateKey
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
+from umbral.config import default_curve
+from umbral.keys import UmbralPublicKey, UmbralPrivateKey
+from umbral.curvebn import CurveBN
 from umbral.utils import get_curve_keysize_bytes
 
 _BLAKE2B = hashes.BLAKE2b(64)
@@ -21,8 +20,7 @@ class Signature:
     between (r, s) and DER formatting.
     """
 
-    def __init__(self, r: int, s: int):
-        #  TODO: Sanity check for proper r and s.
+    def __init__(self, r: CurveBN, s: CurveBN):
         self.r = r
         self.s = s
 
@@ -56,23 +54,26 @@ class Signature:
         return True
 
     @classmethod
-    def from_bytes(cls, signature_as_bytes, der_encoded=False):
-        # TODO: Change the int literals to variables which account for the order of the curve.
+    def from_bytes(cls, signature_as_bytes, der_encoded=False, curve: ec.EllipticCurve = None):
+        curve = curve if curve is not None else default_curve()
         if der_encoded:
             r, s = decode_dss_signature(signature_as_bytes)
         else:
-            if not len(signature_as_bytes) == 64:
-                raise ValueError("Looking for exactly 64 bytes if you call from_bytes with der_encoded=False.")
+            expected_len = cls.expected_bytes_length(curve)
+            if not len(signature_as_bytes) == expected_len:
+                raise ValueError("Looking for exactly {} bytes if you call from_bytes \
+                    with der_encoded=False and curve={}.".format(expected_len, curve))
             else:
-                r = int.from_bytes(signature_as_bytes[:32], "big")
-                s = int.from_bytes(signature_as_bytes[32:], "big")
-        return cls(r, s)
+                r = int.from_bytes(signature_as_bytes[:(expected_len//2)], "big")
+                s = int.from_bytes(signature_as_bytes[(expected_len//2):], "big")
+        
+        return cls(CurveBN.from_int(r, curve), CurveBN.from_int(s, curve))
 
     def _der_encoded_bytes(self):
-        return encode_dss_signature(self.r, self.s)
+        return encode_dss_signature(int(self.r), int(self.s))
 
     def __bytes__(self):
-        return self.r.to_bytes(32, "big") + self.s.to_bytes(32, "big")
+        return self.r.to_bytes() + self.s.to_bytes()
 
     def __len__(self):
         return len(bytes(self))
@@ -93,6 +94,7 @@ class Signer:
 
     def __init__(self, private_key: UmbralPrivateKey):
         self.__cryptography_private_key = private_key.to_cryptography_privkey()
+        self._curve = private_key.params.curve
 
     def __call__(self, message):
         """
@@ -102,4 +104,4 @@ class Signer:
          :return: signature
          """
         signature_der_bytes = self.__cryptography_private_key.sign(message, ec.ECDSA(_BLAKE2B))
-        return Signature.from_bytes(signature_der_bytes, der_encoded=True)
+        return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self._curve)

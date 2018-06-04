@@ -108,3 +108,23 @@ def test_capsule_as_dict_key(alices_keys, bobs_keys):
     some_dict[capsule] = "Bob has changed his mind."
     assert some_dict[capsule] == "Bob has changed his mind."
     assert len(some_dict.keys()) == 1
+
+
+def test_capsule_length(alices_keys, bobs_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    signer = Signer(signing_privkey)
+
+    priv_key_bob, pub_key_bob = bobs_keys
+
+    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
+
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 receiving=pub_key_bob,
+                                 verifying=signing_privkey.get_pubkey())
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 10, 15)
+
+    for counter, kfrag in enumerate(kfrags):
+        assert len(capsule) == counter
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)

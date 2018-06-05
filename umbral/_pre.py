@@ -45,8 +45,7 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
         raise capsule.NotValid("Capsule verification failed.")
 
 
-def assess_cfrag_correctness(cfrag,
-                             capsule: "Capsule"):
+def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
 
     correctness_keys = capsule.get_correctness_keys()
 

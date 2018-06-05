@@ -39,7 +39,7 @@ class Capsule(object):
                  point_noninteractive=None,
                  delegating_pubkey: UmbralPublicKey = None,
                  receiving_pubkey: UmbralPublicKey = None,
-                 verifying_pubkey = None):
+                 verifying_pubkey=None):
 
         self._umbral_params = params
 
@@ -146,7 +146,7 @@ class Capsule(object):
     def set_correctness_keys(self,
                  delegating: UmbralPublicKey = None,
                  receiving: UmbralPublicKey = None,
-                 verifying: UmbralPublicKey = None
+                 verifying=None
                  ):
         delegating_key_details = self._set_cfrag_correctness_key("delegating", delegating)
         receiving_key_details = self._set_cfrag_correctness_key("receiving", receiving)
@@ -365,7 +365,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof = True,
 
 
 def _encapsulate(alice_pubkey: UmbralPublicKey, 
-                 key_length = DEM_KEYSIZE) -> Tuple[bytes, Capsule]:
+                 key_length=DEM_KEYSIZE) -> Tuple[bytes, Capsule]:
     """Generates a symmetric key and its associated KEM ciphertext"""
 
     params = alice_pubkey.params
@@ -389,7 +389,7 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
 
 
 def _decapsulate_original(priv_key: UmbralPrivateKey, capsule: Capsule, 
-                          key_length = DEM_KEYSIZE) -> bytes:
+                          key_length=DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
 
     priv_key = priv_key.bn_key
@@ -406,7 +406,7 @@ def _decapsulate_original(priv_key: UmbralPrivateKey, capsule: Capsule,
 
 
 def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsule,
-                             key_length = DEM_KEYSIZE) -> bytes:
+                             key_length=DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
     params = capsule._umbral_params
 
@@ -452,8 +452,7 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
     return ciphertext, capsule
 
 
-def _open_capsule(capsule: Capsule,
-                  receiving_privkey: UmbralPrivateKey,
+def _open_capsule(capsule: Capsule, receiving_privkey: UmbralPrivateKey,
                   check_proof=True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
@@ -480,9 +479,7 @@ def _open_capsule(capsule: Capsule,
     return key
 
 
-def decrypt(ciphertext: bytes,
-            capsule: Capsule,
-            decrypting_key: UmbralPrivateKey,
+def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKey,
             check_proof=True) -> bytes:
     """
     Opens the capsule and gets what's inside.

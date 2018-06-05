@@ -72,13 +72,7 @@ class KFrag(object):
                delegating_pubkey: UmbralPublicKey,
                receiving_pubkey: UmbralPublicKey):
 
-        params = delegating_pubkey.params
-
-        return verify_kfrag(self,
-                            delegating_pubkey.point_key,
-                            signing_pubkey,
-                            receiving_pubkey.point_key,
-                            params)
+        return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
 
     def __bytes__(self):
         return self.to_bytes()

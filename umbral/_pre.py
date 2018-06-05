@@ -111,13 +111,20 @@ def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
 
 
 def verify_kfrag(kfrag,
-                 delegating_point,
+                 delegating_pubkey: UmbralPublicKey,
                  signing_pubkey,
-                 receiving_point,
-                 params: UmbralParameters
+                 receiving_pubkey: UmbralPublicKey
                  ):
 
+
+    params = delegating_pubkey.params
+    if not params == receiving_pubkey.params:
+        raise ValueError("The delegating and receiving keys must use the same UmbralParameters")
+
     u = params.u
+
+    delegating_point = delegating_pubkey.point_key
+    receiving_point = receiving_pubkey.point_key
 
     id = kfrag._id
     key = kfrag._bn_key

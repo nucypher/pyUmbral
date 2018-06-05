@@ -149,7 +149,7 @@ class CorrectnessProof(object):
 
         return result
 
-    def _bytes__(self):
+    def __bytes__(self):
         return self.to_bytes()
 
 

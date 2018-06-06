@@ -9,6 +9,7 @@ from umbral.keys import UmbralPrivateKey
 from umbral.point import Point
 from umbral.pre import Capsule
 from umbral.signing import Signer
+from umbral.config import default_params
 
 
 def test_cannot_attach_cfrag_without_keys():
@@ -16,7 +17,11 @@ def test_cannot_attach_cfrag_without_keys():
     We need the proper keys to verify the correctness of CFrags
     in order to attach them to a Capsule.
     """
-    capsule = Capsule(point_e=Point.gen_rand(),
+
+    params = default_params()
+
+    capsule = Capsule(params,
+                      point_e=Point.gen_rand(),
                       point_v=Point.gen_rand(),
                       bn_sig=CurveBN.gen_rand())
 
@@ -59,7 +64,10 @@ def test_cannot_attach_cfrag_without_proof():
     However, even when properly attaching keys, we can't attach the CFrag
     if it is unproven.
     """
-    capsule = Capsule(point_e=Point.gen_rand(),
+    params = default_params()
+
+    capsule = Capsule(params,
+                      point_e=Point.gen_rand(),
                       point_v=Point.gen_rand(),
                       bn_sig=CurveBN.gen_rand())
 
@@ -86,7 +94,10 @@ def test_cannot_set_different_keys():
     """
     Once a key is set on a Capsule, it can't be changed to a different key.
     """
-    capsule = Capsule(point_e=Point.gen_rand(),
+    params = default_params()
+
+    capsule = Capsule(params,
+                      point_e=Point.gen_rand(),
                       point_v=Point.gen_rand(),
                       bn_sig=CurveBN.gen_rand())
 

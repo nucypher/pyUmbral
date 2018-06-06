@@ -7,10 +7,9 @@ from umbral.params import UmbralParameters
 def prove_cfrag_correctness(cfrag: "CapsuleFrag",
                             kfrag: "KFrag",
                             capsule: "Capsule",
-                            metadata: bytes = None,
-                            params: UmbralParameters = None
+                            metadata: bytes = None
                             ) -> "CorrectnessProof":
-    params = params if params is not None else default_params()
+    params = capsule._umbral_params
 
     rk = kfrag._bn_key
     t = CurveBN.gen_rand(params.curve)
@@ -46,13 +45,21 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
         raise capsule.NotValid("Capsule verification failed.")
 
 
-def assess_cfrag_correctness(cfrag,
-                             capsule: "Capsule",
-                             delegating_point,
-                             signing_pubkey,
-                             receiving_point,
-                             params: UmbralParameters = None):
-    params = params if params is not None else default_params()
+def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
+
+    correctness_keys = capsule.get_correctness_keys()
+
+    delegating_pubkey = correctness_keys['delegating']
+    signing_pubkey = correctness_keys['verifying']
+    receiving_pubkey = correctness_keys['receiving']
+
+    if not all((delegating_pubkey, signing_pubkey, receiving_pubkey)):
+        raise TypeError("Need all three keys to verify correctness.")
+
+    delegating_point = delegating_pubkey.point_key
+    receiving_point = receiving_pubkey.point_key
+
+    params = capsule._umbral_params
 
     ####
     ## Here are the formulaic constituents shared with `prove_cfrag_correctness`.
@@ -104,14 +111,20 @@ def assess_cfrag_correctness(cfrag,
 
 
 def verify_kfrag(kfrag,
-                 delegating_point,
+                 delegating_pubkey: UmbralPublicKey,
                  signing_pubkey,
-                 receiving_point,
-                 params: UmbralParameters = None
+                 receiving_pubkey: UmbralPublicKey
                  ):
-    params = params if params is not None else default_params()
+
+
+    params = delegating_pubkey.params
+    if not params == receiving_pubkey.params:
+        raise ValueError("The delegating and receiving keys must use the same UmbralParameters")
 
     u = params.u
+
+    delegating_point = delegating_pubkey.point_key
+    receiving_point = receiving_pubkey.point_key
 
     id = kfrag._id
     key = kfrag._bn_key

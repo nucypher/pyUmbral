@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from umbral import openssl
 from umbral.config import default_curve, default_params
 from umbral.utils import get_curve_keysize_bytes
+from umbral.params import UmbralParameters
 
 
 class CurveBN(object):
@@ -84,8 +85,7 @@ class CurveBN(object):
         return cls(conv_bn, curve_nid, group, order)
 
     @classmethod
-    def hash(cls, *crypto_items, params=None):
-        params = params if params is not None else default_params()
+    def hash(cls, *crypto_items, params: UmbralParameters):
 
         curve_nid = backend._elliptic_curve_to_nid(params.curve)
         order = openssl._get_ec_order_by_curve_nid(curve_nid)

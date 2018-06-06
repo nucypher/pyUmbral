@@ -7,6 +7,7 @@ from cryptography.exceptions import InternalError
 from umbral import openssl
 from umbral.config import default_curve
 from umbral.utils import get_field_order_size_in_bytes
+from umbral.params import UmbralParameters
 
 
 class Point(object):
@@ -231,7 +232,7 @@ class Point(object):
         return self.to_bytes()
 
 
-def unsafe_hash_to_point(data, params, label=None):
+def unsafe_hash_to_point(data, params : UmbralParameters, label=None):
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.

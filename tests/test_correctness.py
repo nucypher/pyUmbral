@@ -51,7 +51,7 @@ def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
     sym_key_alice2, capsule_alice2 = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
 
     capsule_alice1.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                        encrypting=pub_key_bob,
+                                        receiving=pub_key_bob,
                                         verifying=signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
@@ -128,7 +128,7 @@ def test_cheating_ursula_sends_garbage(N, M, alices_keys):
     sym_key, capsule_alice = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
 
     capsule_alice.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                       encrypting=pub_key_bob,
+                                       receiving=pub_key_bob,
                                        verifying=signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
@@ -193,7 +193,7 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
 
     capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 encrypting=pub_key_bob,
+                                 receiving=pub_key_bob,
                                  verifying=signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)
@@ -222,7 +222,7 @@ def test_m_of_n(N, M, alices_keys, bobs_keys):
     sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey().point_key)
 
     capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 encrypting=pub_key_bob,
+                                 receiving=pub_key_bob,
                                  verifying=signing_privkey.get_pubkey())
 
     kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, M, N)

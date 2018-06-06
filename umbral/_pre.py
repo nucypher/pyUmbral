@@ -50,7 +50,7 @@ def assess_cfrag_correctness(cfrag,
                              capsule: "Capsule",
                              delegating_point,
                              signing_pubkey,
-                             encrypting_point,
+                             receiving_point,
                              params: UmbralParameters = None):
     params = params if params is not None else default_params()
 
@@ -87,7 +87,7 @@ def assess_cfrag_correctness(cfrag,
     kfrag_id = cfrag._kfrag_id
 
     kfrag_validity_message = bytes().join(
-        bytes(material) for material in (kfrag_id, delegating_point, encrypting_point, u1, ni, xcoord))
+        bytes(material) for material in (kfrag_id, delegating_point, receiving_point, u1, ni, xcoord))
     valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_validity_message, signing_pubkey)
 
     z3 = cfrag.proof.bn_sig
@@ -106,7 +106,7 @@ def assess_cfrag_correctness(cfrag,
 def verify_kfrag(kfrag,
                  delegating_point,
                  signing_pubkey,
-                 encrypting_point,
+                 receiving_point,
                  params: UmbralParameters = None
                  ):
     params = params if params is not None else default_params()
@@ -123,7 +123,7 @@ def verify_kfrag(kfrag,
     correct_commitment = u1 == key * u
 
     kfrag_validity_message = bytes().join(
-        bytes(material) for material in (id, delegating_point, encrypting_point, u1, ni, xcoord))
+        bytes(material) for material in (id, delegating_point, receiving_point, u1, ni, xcoord))
     valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, signing_pubkey)
 
     return correct_commitment & valid_kfrag_signature

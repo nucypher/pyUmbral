@@ -70,13 +70,13 @@ class KFrag(object):
     def verify(self,
                signing_pubkey: UmbralPublicKey,
                delegating_pubkey: UmbralPublicKey,
-               encrypting_pubkey: UmbralPublicKey,
+               receiving_pubkey: UmbralPublicKey,
                params: UmbralParameters = None):
 
         return verify_kfrag(self,
                             delegating_pubkey.point_key,
                             signing_pubkey,
-                            encrypting_pubkey.point_key,
+                            receiving_pubkey.point_key,
                             params)
 
     def __bytes__(self):
@@ -223,13 +223,13 @@ class CapsuleFrag(object):
                            capsule: "Capsule",
                            delegating_pubkey: UmbralPublicKey,
                            signing_pubkey: UmbralPublicKey,
-                           encrypting_pubkey: UmbralPublicKey,
+                           receiving_pubkey: UmbralPublicKey,
                            params: UmbralParameters = None):
-        if not all((delegating_pubkey, signing_pubkey, encrypting_pubkey)):
+        if not all((delegating_pubkey, signing_pubkey, receiving_pubkey)):
             raise TypeError("Need all three keys to verify correctness.")
 
         pubkey_a_point = delegating_pubkey.point_key
-        pubkey_b_point = encrypting_pubkey.point_key
+        pubkey_b_point = receiving_pubkey.point_key
 
         return assess_cfrag_correctness(self, capsule, pubkey_a_point,
                                         signing_pubkey, pubkey_b_point, params)

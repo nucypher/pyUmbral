@@ -74,9 +74,9 @@ def test_cannot_attach_cfrag_without_proof():
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey())
 
-    delegating_details, encrypting_details, verifying_details = key_details
+    delegating_details, receiving_details, verifying_details = key_details
 
-    assert all((delegating_details, encrypting_details, verifying_details))
+    assert all((delegating_details, receiving_details, verifying_details))
 
     with pytest.raises(cfrag.NoProofProvided):
         capsule.attach_cfrag(cfrag)
@@ -91,14 +91,14 @@ def test_cannot_set_different_keys():
                       bn_sig=CurveBN.gen_rand())
 
     capsule.set_correctness_keys(delegating=UmbralPrivateKey.gen_key().get_pubkey(),
-                                 encrypting=UmbralPrivateKey.gen_key().get_pubkey(),
+                                 receiving=UmbralPrivateKey.gen_key().get_pubkey(),
                                  verifying=UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
         capsule.set_correctness_keys(delegating=UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
-        capsule.set_correctness_keys(encrypting=UmbralPrivateKey.gen_key().get_pubkey())
+        capsule.set_correctness_keys(receiving=UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(ValueError):
         capsule.set_correctness_keys(verifying=UmbralPrivateKey.gen_key().get_pubkey())

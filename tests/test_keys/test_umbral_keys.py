@@ -46,7 +46,7 @@ def test_derive_key_from_label():
 
 def test_private_key_serialization(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key)
+    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
 
     encoded_key = umbral_key.to_bytes()
 
@@ -56,7 +56,7 @@ def test_private_key_serialization(random_ec_curvebn1):
 
 def test_private_key_serialization_with_encryption(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key)
+    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
 
     encoded_key = umbral_key.to_bytes(password=b'test')
 
@@ -70,7 +70,7 @@ def test_public_key_serialization(random_ec_curvebn1):
     params = default_params()
     pub_key = priv_key * params.g
 
-    umbral_key = keys.UmbralPublicKey(pub_key)
+    umbral_key = keys.UmbralPublicKey(pub_key, params)
 
     encoded_key = umbral_key.to_bytes()
 
@@ -84,7 +84,7 @@ def test_public_key_to_bytes(random_ec_curvebn1):
     params = default_params()
     pub_key = priv_key * params.g
 
-    umbral_key = keys.UmbralPublicKey(pub_key)
+    umbral_key = keys.UmbralPublicKey(pub_key, params)
     key_bytes = bytes(umbral_key)
 
     assert type(key_bytes) == bytes
@@ -92,7 +92,7 @@ def test_public_key_to_bytes(random_ec_curvebn1):
 
 def test_key_encoder_decoder(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key)
+    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
 
     encoded_key = umbral_key.to_bytes(encoder=base64.urlsafe_b64encode)
 

@@ -32,7 +32,7 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys, bobs_keys):
     _receiving_privkey, receiving_pubkey = bobs_keys
 
 
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
 
@@ -70,7 +70,7 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys, bobs_keys):
     _receiving_privkey, receiving_pubkey = bobs_keys
     signer_alice = Signer(signing_privkey)
 
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
 
@@ -108,7 +108,7 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys, bobs_keys):
     _receiving_privkey, receiving_pubkey = bobs_keys
     signer_alice = Signer(signing_privkey)
 
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey.point_key)
+    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
 

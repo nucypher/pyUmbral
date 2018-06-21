@@ -1,0 +1,81 @@
+version: 2.0
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - bundle_dependencies-36
+      - bundle_dependencies-35
+      - run_tests-36:
+          requires:
+            - bundle_dependencies-36
+      - run_tests-35:
+          requires:
+            - bundle_dependencies-35
+
+jobs:
+  bundle_dependencies-36:
+    working_directory: ~/pyUmbral-36
+    docker: 
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+      - run:
+          name: Install Pipenv
+          command: pip install pipenv --upgrade
+      - run:
+          name: Install Python dependencies with Pipenv
+          command: pipenv install --three --dev
+      - save_cache:
+          paths:
+            - "~/.local/share/virtualenvs/"
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+
+  bundle_dependencies-35:
+    working_directory: ~/pyUmbral-35
+    docker:
+      - image: circleci/python:3.5
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+      - run:
+          name: Install Pipenv
+          command: pip install pipenv --upgrade
+      - run:
+          name: Install Python dependencies with Pipenv
+          command: pipenv install --three --dev
+      - save_cache:
+          paths:
+            - "~/.local/share/virtualenvs/"
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+
+  run_tests-36:
+    working_directory: ~/pyUmbral-36
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+      - run:
+          name: pyUmbral Tests (Python 3.6)
+          command: pipenv run py.test --cov=umbral
+      - store_test_results:
+          path: ./reports/pytest/
+
+  run_tests-35:
+    working_directory: ~/pyUmbral-35
+    docker:
+      - image: circleci/python:3.5
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+      - run:
+          name: pyUmbral Tests (Python 3.5)
+          command: pipenv run py.test --cov=umbral
+      - store_test_results:
+          path: ./reports/pytest/

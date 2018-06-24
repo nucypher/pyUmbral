@@ -2,12 +2,10 @@ from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
-from umbral.config import default_curve, default_params
+from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
-from umbral.params import UmbralParameters
 from umbral.point import Point
-
 from umbral.signing import Signature
 
 
@@ -44,11 +42,11 @@ class KFrag(object):
         point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
-            bn_size,             # id
+            bn_size,  # id
             (CurveBN, bn_size),  # bn_key
-            (Point, point_size), # point_noninteractive
-            (Point, point_size), # point_commitment
-            (Point, point_size), # point_xcoord
+            (Point, point_size),  # point_noninteractive
+            (Point, point_size),  # point_commitment
+            (Point, point_size),  # point_xcoord
             (Signature, Signature.expected_bytes_length(curve))
         )
         components = splitter(data)
@@ -71,7 +69,6 @@ class KFrag(object):
                signing_pubkey,
                delegating_pubkey: UmbralPublicKey,
                receiving_pubkey: UmbralPublicKey):
-
         return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
 
     def __bytes__(self):
@@ -81,7 +78,7 @@ class KFrag(object):
         return bytes(self) == bytes(other)
 
     def __hash__(self):
-        return hash(bytes(self))
+        return hash(bytes(self._id))
 
 
 class CorrectnessProof(object):
@@ -117,12 +114,12 @@ class CorrectnessProof(object):
         point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
-            (Point, point_size), # point_e2
-            (Point, point_size), # point_v2
-            (Point, point_size), # point_kfrag_commitment
-            (Point, point_size), # point_kfrag_pok
+            (Point, point_size),  # point_e2
+            (Point, point_size),  # point_v2
+            (Point, point_size),  # point_kfrag_commitment
+            (Point, point_size),  # point_kfrag_pok
             (CurveBN, bn_size),  # bn_sig
-            (Signature), # kfrag_signature
+            (Signature),  # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None
@@ -192,10 +189,10 @@ class CapsuleFrag(object):
         point_size = Point.expected_bytes_length(curve)
 
         splitter = BytestringSplitter(
-            (Point, point_size), # point_e1
-            (Point, point_size), # point_v1
-            bn_size,             # kfrag_id
-            (Point, point_size), # point_noninteractive
+            (Point, point_size),  # point_e1
+            (Point, point_size),  # point_v1
+            bn_size,  # kfrag_id
+            (Point, point_size),  # point_noninteractive
             (Point, point_size)  # point_xcoord
         )
         components = splitter(data, return_remainder=True)

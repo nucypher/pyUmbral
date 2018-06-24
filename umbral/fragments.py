@@ -1,3 +1,4 @@
+import hmac
 from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -75,7 +76,7 @@ class KFrag(object):
         return self.to_bytes()
 
     def __eq__(self, other):
-        return bytes(self) == bytes(other)
+        return hmac.compare_digest(bytes(self), bytes(other))
 
     def __hash__(self):
         return hash(bytes(self._id))

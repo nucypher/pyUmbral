@@ -21,13 +21,19 @@ class Point(object):
         self.group = group
 
     @classmethod
-    def expected_bytes_length(cls, curve: ec.EllipticCurve=None):
+    def expected_bytes_length(cls, curve: ec.EllipticCurve=None,
+                              is_compressed: bool=True):
         """
         Returns the size (in bytes) of a compressed Point given a curve.
         If no curve is provided, it uses the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        return get_field_order_size_in_bytes(curve) + 1
+        base_size = get_field_order_size_in_bytes(curve)
+
+        if not is_compressed:
+            base_size += get_field_order_size_in_bytes(curve)
+
+        return base_size + 1
 
     @classmethod
     def gen_rand(cls, curve: ec.EllipticCurve=None):

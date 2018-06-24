@@ -2,9 +2,10 @@ import base64
 
 import pytest
 
-from umbral import pre, keys
+from umbral import keys
 from umbral.config import default_params
 from umbral.keys import UmbralPublicKey
+from umbral.point import Point
 
 
 def test_gen_key():
@@ -15,8 +16,8 @@ def test_gen_key():
     umbral_pub_key = umbral_priv_key.get_pubkey()
     assert type(umbral_pub_key) == keys.UmbralPublicKey
 
+
 def test_derive_key_from_label():
-    
     umbral_keying_material = keys.UmbralKeyingMaterial()
 
     label = b"my_healthcare_information"
@@ -43,6 +44,7 @@ def test_derive_key_from_label():
     priv_key4 = umbral_keying_material.derive_privkey_by_label(label)
     pub_key4 = priv_key4.get_pubkey()
     assert priv_key1.bn_key != priv_key4.bn_key
+
 
 def test_private_key_serialization(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
@@ -78,16 +80,26 @@ def test_public_key_serialization(random_ec_curvebn1):
     assert pub_key == decoded_key.point_key
 
 
-def test_public_key_to_bytes(random_ec_curvebn1):
+def test_public_key_to_compressed_bytes(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    
+
     params = default_params()
     pub_key = priv_key * params.g
 
     umbral_key = keys.UmbralPublicKey(pub_key, params)
     key_bytes = bytes(umbral_key)
+    assert len(key_bytes) == Point.expected_bytes_length(is_compressed=True)
 
-    assert type(key_bytes) == bytes
+
+def test_public_key_to_uncompressed_bytes(random_ec_curvebn1):
+    priv_key = random_ec_curvebn1
+
+    params = default_params()
+    pub_key = priv_key * params.g
+
+    umbral_key = keys.UmbralPublicKey(pub_key, params)
+    key_bytes = umbral_key.to_bytes(is_compressed=False)
+    assert len(key_bytes) == Point.expected_bytes_length(is_compressed=False)
 
 
 def test_key_encoder_decoder(random_ec_curvebn1):
@@ -113,6 +125,7 @@ def test_umbral_key_to_cryptography_keys():
     x, y = crypto_pubkey.public_numbers().x, crypto_pubkey.public_numbers().y
     assert umbral_affine == (x, y)
 
+
 def test_keying_material_serialization():
     umbral_keying_material = keys.UmbralKeyingMaterial()
 
@@ -123,13 +136,13 @@ def test_keying_material_serialization():
 
 
 def test_keying_material_serialization_with_encryption():
-    
     umbral_keying_material = keys.UmbralKeyingMaterial()
 
     encoded_key = umbral_keying_material.to_bytes(password=b'test')
 
     decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key, password=b'test')
     assert umbral_keying_material.keying_material == decoded_key.keying_material
+
 
 def test_umbral_public_key_equality():
     umbral_priv_key = keys.UmbralPrivateKey.gen_key()

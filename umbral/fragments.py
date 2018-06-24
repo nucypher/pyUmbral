@@ -1,8 +1,9 @@
+import hmac
 from typing import Optional
 
+from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
-from bytestring_splitter import BytestringSplitter
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
@@ -45,11 +46,11 @@ class KFrag(object):
         arguments = {'curve': curve}
 
         splitter = BytestringSplitter(
-            bn_size,             # id
+            bn_size,  # id
             (CurveBN, bn_size, arguments),  # bn_key
-            (Point, point_size, arguments), # point_noninteractive
-            (Point, point_size, arguments), # point_commitment
-            (Point, point_size, arguments), # point_xcoord
+            (Point, point_size, arguments),  # point_noninteractive
+            (Point, point_size, arguments),  # point_commitment
+            (Point, point_size, arguments),  # point_xcoord
             (Signature, Signature.expected_bytes_length(curve), arguments)
         )
         components = splitter(data)
@@ -72,14 +73,13 @@ class KFrag(object):
                signing_pubkey: UmbralPublicKey,
                delegating_pubkey: UmbralPublicKey,
                receiving_pubkey: UmbralPublicKey) -> bool:
-
         return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
 
     def __eq__(self, other):
-        return bytes(self) == bytes(other)
+        return hmac.compare_digest(bytes(self), bytes(other))
 
     def __hash__(self):
         return hash(bytes(self._id))
@@ -87,7 +87,8 @@ class KFrag(object):
 
 class CorrectnessProof(object):
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
-                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: bytes, metadata: Optional[bytes] = None) -> None:
+                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: bytes,
+                 metadata: Optional[bytes] = None) -> None:
         self._point_e2 = point_e2
         self._point_v2 = point_v2
         self._point_kfrag_commitment = point_kfrag_commitment
@@ -118,12 +119,12 @@ class CorrectnessProof(object):
         point_size = Point.expected_bytes_length(curve)
         arguments = {'curve': curve}
         splitter = BytestringSplitter(
-            (Point, point_size, arguments), # point_e2
-            (Point, point_size, arguments), # point_v2
-            (Point, point_size, arguments), # point_kfrag_commitment
-            (Point, point_size, arguments), # point_kfrag_pok
+            (Point, point_size, arguments),  # point_e2
+            (Point, point_size, arguments),  # point_v2
+            (Point, point_size, arguments),  # point_kfrag_commitment
+            (Point, point_size, arguments),  # point_kfrag_pok
             (CurveBN, bn_size, arguments),  # bn_sig
-            (Signature, Signature.expected_bytes_length(curve), arguments), # kfrag_signature
+            (Signature, Signature.expected_bytes_length(curve), arguments),  # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
         metadata = components.pop(-1) or None
@@ -162,7 +163,6 @@ class CapsuleFrag(object):
                  point_noninteractive: Point,
                  point_xcoord: Point,
                  proof: Optional[CorrectnessProof] = None) -> None:
-
         self._point_e1 = point_e1
         self._point_v1 = point_v1
         self._kfrag_id = kfrag_id
@@ -200,10 +200,10 @@ class CapsuleFrag(object):
         arguments = {'curve': curve}
 
         splitter = BytestringSplitter(
-            (Point, point_size, arguments), # point_e1
-            (Point, point_size, arguments), # point_v1
-            bn_size,             # kfrag_id
-            (Point, point_size, arguments), # point_noninteractive
+            (Point, point_size, arguments),  # point_e1
+            (Point, point_size, arguments),  # point_v1
+            bn_size,  # kfrag_id
+            (Point, point_size, arguments),  # point_noninteractive
             (Point, point_size, arguments)  # point_xcoord
         )
         components = splitter(data, return_remainder=True)
@@ -231,7 +231,8 @@ class CapsuleFrag(object):
     def verify_correctness(self, capsule: 'Capsule') -> bool:
         return assess_cfrag_correctness(self, capsule)
 
-    def attach_proof(self, e2: Point, v2: Point, u1: Point, u2: Point, z3: CurveBN, kfrag_signature: Signature, metadata: Optional[bytes]) -> None:
+    def attach_proof(self, e2: Point, v2: Point, u1: Point, u2: Point, z3: CurveBN, kfrag_signature: Signature,
+                     metadata: Optional[bytes]) -> None:
         self.proof = CorrectnessProof(point_e2=e2,
                                       point_v2=v2,
                                       point_kfrag_commitment=u1,

@@ -77,6 +77,12 @@ class KFrag(object):
     def __bytes__(self):
         return self.to_bytes()
 
+    def __eq__(self, other):
+        return bytes(self) == bytes(other)
+
+    def __hash__(self):
+        return hash(bytes(self))
+
 
 class CorrectnessProof(object):
     def __init__(self, point_e2, point_v2, point_kfrag_commitment,

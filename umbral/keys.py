@@ -188,13 +188,13 @@ class UmbralPublicKey(object):
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def to_bytes(self, encoder: Callable = None):
+    def to_bytes(self, encoder: Callable = None, is_compressed: bool = True):
         """
         Returns an Umbral public key as bytes.
         Optionally, if an encoder function is provided it will be used to encode
         the data before returning it.
         """
-        umbral_pubkey = self.point_key.to_bytes()
+        umbral_pubkey = self.point_key.to_bytes(is_compressed=is_compressed)
 
         if encoder:
             umbral_pubkey = encoder(umbral_pubkey)

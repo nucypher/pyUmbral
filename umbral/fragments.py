@@ -82,7 +82,7 @@ class KFrag(object):
         return bytes(self) == bytes(other)
 
     def __hash__(self):
-        return hash(bytes(self))
+        return hash(bytes(self._id))
 
 
 class CorrectnessProof(object):

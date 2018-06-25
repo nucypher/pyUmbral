@@ -12,7 +12,7 @@ CURVE = default_curve()
 PARAMS = UmbralParameters(curve=CURVE)
 
 
-def produce_kfrags(N, M):
+def produce_kfrags(M, N):
 
     delegating_privkey = keys.UmbralPrivateKey.gen_key(params=PARAMS)
     delegating_pubkey = delegating_privkey.get_pubkey()
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     _, reencryptions = sys.argv
 
     print("Making kfrags...")
-    kfrags, capsule = produce_kfrags(6, 10)
+    kfrags, capsule = produce_kfrags(M=6, N=10)
     one_kfrag, *remaining_kfrags = kfrags
 
     print('Re-encrypting...')

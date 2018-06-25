@@ -1,6 +1,4 @@
 [run]
-    omit = *tests/*,
-            setup.py,
-            umbral/__init__.py
-
-
+omit =
+    setup.py,
+    *__init__.py

@@ -27,9 +27,6 @@ jobs:
       - restore_cache:
           key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
       - run:
-          name: Install Pipenv
-          command: pip install pipenv --upgrade
-      - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --three --dev
       - save_cache:
@@ -45,9 +42,6 @@ jobs:
       - checkout
       - restore_cache:
           key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
-      - run:
-          name: Install Pipenv
-          command: pip install pipenv --upgrade
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --three --dev
@@ -66,9 +60,11 @@ jobs:
           key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
       - run:
           name: pyUmbral Tests (Python 3.6)
-          command: pipenv run py.test --cov=umbral
+          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python36-results.xml
       - store_test_results:
-          path: ./reports/pytest/
+          path: /reports/pytest
+      - store_artifacts:
+          path: ./htmlcov
 
   run_tests-35:
     working_directory: ~/pyUmbral-35
@@ -80,9 +76,11 @@ jobs:
           key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
       - run:
           name: pyUmbral Tests (Python 3.5)
-          command: pipenv run py.test --cov=umbral
+          command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
       - store_test_results:
-          path: ./reports/pytest/
+          path: /reports/pytest
+      - store_artifacts:
+          path: ./htmlcov
 
   reencryption_memory_profile-36:
     working_directory: ~/pyUmbral-36
@@ -102,6 +100,5 @@ jobs:
           name: Profile Re-Encryption Memory Usage
           command: |
               pipenv run valgrind --tool=massif --massif-out-file=./reencryption_memory_profile.massif.out python3 ./tests/scripts/reencryption_memory_profile.py 1000
-
       - store_artifacts:
           path: ./reencryption_memory_profile.massif.out

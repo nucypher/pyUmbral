@@ -20,7 +20,8 @@ def _get_new_BN(set_consttime_flag=True):
 
 def _get_ec_group_by_curve_nid(curve_nid: int):
     """
-    Returns the group of a given curve via its OpenSSL nid.
+    Returns the group of a given curve via its OpenSSL nid. This must be freed
+    after each use otherwise it leaks memory.
     """
     group = backend._lib.EC_GROUP_new_by_curve_name(curve_nid)
     backend.openssl_assert(group != backend._ffi.NULL)

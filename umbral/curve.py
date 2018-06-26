@@ -19,3 +19,27 @@ class Curve:
         self.curve_nid = curve_nid
         self.ec_group = openssl._get_ec_group_by_curve_nid(self.curve_nid)
         self.order = openssl._get_ec_order_by_curve_nid(self.curve_nid)
+
+
+class SECP256R1(Curve):
+    """
+    Instantiates a NIST secp256r1 (P-256) curve.
+    """
+    def __init__(self):
+        super().__init__(CURVE_WHITELIST['secp256r1'])
+
+
+class SECP256K1(Curve):
+    """
+    Instantiates a SECG secp256k1 curve.
+    """
+    def __init__(self):
+        super().__init__(CURVE_WHITELIST['secp256k1'])
+
+
+class SECP384R1(Curve):
+    """
+    Instantiates a NIST secp384r1 (P-384) curve.
+    """
+    def __init__(self):
+        super().__init__(CURVE_WHITELIST['secp384r1'])

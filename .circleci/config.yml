@@ -21,6 +21,11 @@ workflows:
             - run_tests-35
             - run_tests-36
 
+      - doctests-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+
 python_35_base: &python_35_base
     working_directory: ~/pyUmbral-35
     docker:
@@ -120,3 +125,18 @@ jobs:
               pipenv run mypy --xslt-html-report ./mypy_report ./umbral --config-file=mypy.ini
       - store_artifacts:
           path: ./mypy_report
+
+  doctests-36:
+    working_directory: ~/pyUmbral-36/
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+      - run:
+          name: Run Documentation Tests
+          command: |
+              pipenv install -e . --skip-lock
+              cd docs
+              pipenv run make doctest

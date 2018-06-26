@@ -140,3 +140,5 @@ jobs:
               pipenv install -e . --skip-lock
               cd docs
               pipenv run make doctest
+      - store_artifacts:
+          path: ./docs/build/doctest/output.txt

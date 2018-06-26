@@ -25,14 +25,14 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python36
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --three --dev
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python36
 
   bundle_dependencies-35:
     working_directory: ~/pyUmbral-35
@@ -41,14 +41,14 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python35
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --three --dev
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python35
 
   run_tests-36:
     working_directory: ~/pyUmbral-36
@@ -57,7 +57,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python36
       - run:
           name: pyUmbral Tests (Python 3.6)
           command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python36-results.xml
@@ -73,7 +73,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python35
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python35
       - run:
           name: pyUmbral Tests (Python 3.5)
           command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
@@ -89,7 +89,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps-{{ .Branch }}-{{ checksum "Pipfile" }}-Python36
+          key: deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}-Python36
       - run:
           name: Install Profiling Tools
           command: |

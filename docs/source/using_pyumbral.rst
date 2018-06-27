@@ -163,6 +163,13 @@ Bob fails to open the capsule
 If Bob attempts to open a capsule that was not encrypted for his public key,
 or re-encrypted for him by Ursula, he will not be able to open it.
 
+.. doctest::
+
+    >>> fail = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=bobs_private_key)
+    Traceback (most recent call last):
+        ...
+    cryptography.exceptions.InvalidTag
+
 
 .. code-block:: python
 

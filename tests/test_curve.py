@@ -1,5 +1,4 @@
 import pytest
-
 from umbral.curve import Curve, SECP256R1, SECP256K1, SECP384R1
 
 

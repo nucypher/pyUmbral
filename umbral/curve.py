@@ -33,6 +33,9 @@ class Curve:
     def supported_curves(self):
         return self.__AVAIL_CURVES
 
+    def __eq__(self, other):
+        return self.curve_nid == other.curve_nid
+
 
 class SECP256R1(Curve):
     """

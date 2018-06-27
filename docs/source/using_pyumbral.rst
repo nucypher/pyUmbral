@@ -73,7 +73,7 @@ A delegating key pair and a Signing key pair.
 Encrypt with a public key
 --------------------------
 Now let's encrypt data with Alice's public key.
-Invocation of `umbral.encrypt` returns both the `ciphertext`,
+Invocation of `pre.encrypt` returns both the `ciphertext`,
 and a `capsule`, Anyone with Alice's public key can perform
 this operation.
 
@@ -129,8 +129,8 @@ When Alice wants to grant Bob access to open her encrypted messages,
 she creates *threshold split re-encryption keys*, or *"kfrags"*, 
 which are next sent to N proxies or *Ursulas*. 
 
-| Generate re-encryption key fragments with "`M` of `N`":
-| `M` - Minimum threshold of key fragments needed to activate a capsule.
+| Generate re-encryption key fragments with "`M`(threshold) of `N`":
+| `threshold` - Minimum threshold of key fragments needed to activate a capsule.
 | `N` - Total number of key fragments to generate.
 
 .. doctest::
@@ -154,8 +154,8 @@ S3, IPFS, Google Cloud, Sneakernet, etc.
 
 .. code-block:: python
 
-   # Bob receives the capsule through a side-channel
-   capsule = capsule
+   # Bob receives the capsule through a side-channel: IPFS, Sneakernet, etc.
+   capsule = <fetch the capsule through a side-channel>
 
 
 Bob fails to open the capsule
@@ -177,11 +177,11 @@ Ursulas perform re-encryption
 Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
 Each Ursula performs re-encryption on the capsule using the `kfrag` 
 provided by Alice, obtaining this way a "capsule fragment", or `cfrag`,
-Let's mock a network or transport layer by sampling `M` random `kfrags`,
+Let's mock a network or transport layer by sampling `threshold` random `kfrags`,
 one for each required Ursula.
 
 Bob collects the resulting `cfrags` from several Ursulas. 
-Bob must gather at least `M` `cfrags` in order to activate the capsule.
+Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
 
 .. doctest::
@@ -212,7 +212,7 @@ Bob must gather at least `M` `cfrags` in order to activate the capsule.
 
 Bob attaches cfrags to the capsule
 ----------------------------------
-Bob attaches at least `M` `cfrags` to the capsule;
+Bob attaches at least `threshold` `cfrags` to the capsule;
 Then it can become *activated*.
 
 .. doctest::

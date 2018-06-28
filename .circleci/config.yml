@@ -117,6 +117,6 @@ jobs:
           name: Run Mypy Static Type Checks
           command: |
               pipenv install --dev --skip-lock lxml
-              pipenv run mypy --xslt-html-report ./mypy_report ./umbral
+              pipenv run mypy --xslt-html-report ./mypy_report ./umbral --config-file=mypy.ini
       - store_artifacts:
           path: ./mypy_report

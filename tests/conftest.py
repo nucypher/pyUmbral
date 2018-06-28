@@ -1,13 +1,13 @@
 import pytest
 from collections import namedtuple
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import keys
+from umbral.curve import SECP256K1
 from umbral.curvebn import CurveBN
 from umbral.config import set_default_curve
 from umbral.point import Point
 
-set_default_curve(ec.SECP256K1)
+set_default_curve(SECP256K1())
 
 
 MockKeyPair = namedtuple('TestKeyPair', 'priv pub')

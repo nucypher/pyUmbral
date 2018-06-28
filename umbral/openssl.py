@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
+from umbral.curve import Curve
+
 
 def _get_new_BN(set_consttime_flag=True):
     """
@@ -55,6 +57,7 @@ def _get_ec_generator_by_curve_nid(curve_nid: int):
 
     return generator
 
+
 def _get_ec_group_degree(group):
     """
     Returns the number of bits needed to represent the order of the finite 
@@ -63,23 +66,21 @@ def _get_ec_group_degree(group):
     return backend._lib.EC_GROUP_get_degree(group) 
 
 
-def _bn_is_on_curve(check_bn, curve_nid: int):
+def _bn_is_on_curve(check_bn, curve: Curve):
     """
     Checks if a given OpenSSL BIGNUM is within the provided curve's order.
     Returns True if the provided BN is on the curve, or False if the BN is zero
     or not on the curve.
     """
-    ec_order = _get_ec_order_by_curve_nid(curve_nid)
-
     zero = backend._int_to_bn(0)
     zero = backend._ffi.gc(zero, backend._lib.BN_clear_free)
 
     check_sign = backend._lib.BN_cmp(check_bn, zero)
-    range_check = backend._lib.BN_cmp(check_bn, ec_order)
+    range_check = backend._lib.BN_cmp(check_bn, curve.order)
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve_nid: int=None, set_consttime_flag=True):
+def _int_to_bn(py_int: int, curve: Curve, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve_nid is
     provided, it will check if the Python integer is within the order of that
@@ -91,10 +92,9 @@ def _int_to_bn(py_int: int, curve_nid: int=None, set_consttime_flag=True):
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
     
-    if curve_nid:
-        on_curve = _bn_is_on_curve(conv_bn, curve_nid)
-        if not on_curve:
-            raise ValueError("The Python integer given is not on the provided curve.")
+    on_curve = _bn_is_on_curve(conv_bn, curve)
+    if not on_curve:
+        raise ValueError("The Python integer given is not on the provided curve.")
 
     if set_consttime_flag:
         backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)

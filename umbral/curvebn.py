@@ -1,12 +1,12 @@
 import os
 
 from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
 from umbral.config import default_curve, default_params
-from umbral.utils import get_curve_keysize_bytes
+from umbral.curve import Curve
+from umbral.utils import get_field_order_size_in_bytes
 from umbral.params import UmbralParameters
 
 
@@ -18,29 +18,25 @@ class CurveBN(object):
     constant time operations.
     """
 
-    def __init__(self, bignum, curve_nid, group, order):
-
-        if curve_nid:
-            on_curve = openssl._bn_is_on_curve(bignum, curve_nid)
-            if not on_curve:
-                raise ValueError("The provided BIGNUM is not on the provided curve.")
+    def __init__(self, bignum, curve: Curve):
+        on_curve = openssl._bn_is_on_curve(bignum, curve)
+        if not on_curve:
+            raise ValueError("The provided BIGNUM is not on the provided curve.")
 
         self.bignum = bignum
-        self.curve_nid = curve_nid
-        self.group = group
-        self.order = order
+        self.curve = curve
 
     @classmethod
-    def expected_bytes_length(cls, curve: ec.EllipticCurve=None):
+    def expected_bytes_length(cls, curve: Curve=None):
         """
         Returns the size (in bytes) of a CurveBN given the curve.
         If no curve is provided, it uses the default.
         """
         curve = curve if curve is not None else default_curve()
-        return get_curve_keysize_bytes(curve)
+        return get_field_order_size_in_bytes(curve)
 
     @classmethod
-    def gen_rand(cls, curve: ec.EllipticCurve=None):
+    def gen_rand(cls, curve: Curve=None):
         """
         Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
         based on the given curve.
@@ -48,45 +44,30 @@ class CurveBN(object):
         constant time operations.
         """
         curve = curve if curve is not None else default_curve()
-        curve_nid = backend._elliptic_curve_to_nid(curve)
-
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
 
         new_rand_bn = openssl._get_new_BN()
-        rand_res = backend._lib.BN_rand_range(new_rand_bn, order)
+        rand_res = backend._lib.BN_rand_range(new_rand_bn, curve.order)
         backend.openssl_assert(rand_res == 1)
 
-        if not openssl._bn_is_on_curve(new_rand_bn, curve_nid):
+        if not openssl._bn_is_on_curve(new_rand_bn, curve):
             new_rand_bn = cls.gen_rand(curve=curve)
             return new_rand_bn
 
-        return cls(new_rand_bn, curve_nid, group, order)
+        return cls(new_rand_bn, curve)
 
     @classmethod
-    def from_int(cls, num, curve: ec.EllipticCurve=None):
+    def from_int(cls, num, curve: Curve=None):
         """
         Returns a CurveBN object from a given integer on a curve.
         By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
         constant time operations.
         """
         curve = curve if curve is not None else default_curve()
-        try:
-            curve_nid = backend._elliptic_curve_to_nid(curve)
-        except AttributeError:
-            # Presume that the user passed in the curve_nid
-            curve_nid = curve
-
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
-
-        conv_bn = openssl._int_to_bn(num, curve_nid)
-
-        return cls(conv_bn, curve_nid, group, order)
+        conv_bn = openssl._int_to_bn(num, curve)
+        return cls(conv_bn, curve)
 
     @classmethod
     def hash(cls, *crypto_items, params: UmbralParameters):
-
         curve_nid = backend._elliptic_curve_to_nid(params.curve)
         order = openssl._get_ec_order_by_curve_nid(curve_nid)
         group = openssl._get_ec_group_by_curve_nid(curve_nid)
@@ -124,7 +105,7 @@ class CurveBN(object):
         return cls(bignum, curve_nid, group, order)
 
     @classmethod
-    def from_bytes(cls, data, curve: ec.EllipticCurve=None):
+    def from_bytes(cls, data, curve: Curve=None):
         """
         Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
@@ -133,15 +114,13 @@ class CurveBN(object):
         """
         curve = curve if curve is not None else default_curve()
         num = int.from_bytes(data, 'big')
-
         return cls.from_int(num, curve)
 
     def to_bytes(self):
         """
         Returns the CurveBN as bytes.
         """
-        size = backend._lib.BN_num_bytes(self.order)
-
+        size = backend._lib.BN_num_bytes(self.curve.order)
         return int.to_bytes(int(self), size, 'big')
 
     def __int__(self):
@@ -154,9 +133,10 @@ class CurveBN(object):
         """
         Compares the two BIGNUMS or int.
         """
+        # TODO: Should this stay in or not?
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = CurveBN(other, None, None, None)
+            other = CurveBN(other, self.curve)
 
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
@@ -167,18 +147,19 @@ class CurveBN(object):
 
         WARNING: Only in constant time if BN_FLG_CONSTTIME is set on the BN.
         """
+        # TODO: Should this stay in or not?
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = CurveBN(other, None, None, None)
+            other = CurveBN(other, self.curve)
 
         power = openssl._get_new_BN()
-        with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.order) as bn_mont_ctx:
+        with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.curve.order) as bn_mont_ctx:
             res = backend._lib.BN_mod_exp_mont(
-                power, self.bignum, other.bignum, self.order, bn_ctx, bn_mont_ctx
+                power, self.bignum, other.bignum, self.curve.order, bn_ctx, bn_mont_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(power, self.curve_nid, self.group, self.order)
+        return CurveBN(power, self.curve)
 
     def __mul__(self, other):
         """
@@ -190,11 +171,11 @@ class CurveBN(object):
         product = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_mul(
-                product, self.bignum, other.bignum, self.order, bn_ctx
+                product, self.bignum, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve)
 
     def __truediv__(self, other):
         """
@@ -205,16 +186,16 @@ class CurveBN(object):
         product = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             inv_other = backend._lib.BN_mod_inverse(
-                backend._ffi.NULL, other.bignum, self.order, bn_ctx
+                backend._ffi.NULL, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(inv_other != backend._ffi.NULL)
 
             res = backend._lib.BN_mod_mul(
-                product, self.bignum, inv_other, self.order, bn_ctx
+                product, self.bignum, inv_other, self.curve.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(product, self.curve_nid, self.group, self.order)
+        return CurveBN(product, self.curve)
 
     def __add__(self, other):
         """
@@ -223,11 +204,11 @@ class CurveBN(object):
         op_sum = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
-                op_sum, self.bignum, other.bignum, self.order, bn_ctx
+                op_sum, self.bignum, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(op_sum, self.curve_nid, self.group, self.order)
+        return CurveBN(op_sum, self.curve)
 
     def __sub__(self, other):
         """
@@ -236,11 +217,11 @@ class CurveBN(object):
         diff = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(
-                diff, self.bignum, other.bignum, self.order, bn_ctx
+                diff, self.bignum, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(diff, self.curve_nid, self.group, self.order)
+        return CurveBN(diff, self.curve)
 
     def __invert__(self):
         """
@@ -251,12 +232,12 @@ class CurveBN(object):
         """
         with backend._tmp_bn_ctx() as bn_ctx:
             inv = backend._lib.BN_mod_inverse(
-                backend._ffi.NULL, self.bignum, self.order, bn_ctx
+                backend._ffi.NULL, self.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(inv != backend._ffi.NULL)
             inv = backend._ffi.gc(inv, backend._lib.BN_clear_free)
 
-        return CurveBN(inv, self.curve_nid, self.group, self.order)
+        return CurveBN(inv, self.curve)
 
     def __mod__(self, other):
         """
@@ -273,4 +254,4 @@ class CurveBN(object):
             )
             backend.openssl_assert(res == 1)
 
-        return CurveBN(rem, self.curve_nid, self.group, self.order)
+        return CurveBN(rem, self.curve)

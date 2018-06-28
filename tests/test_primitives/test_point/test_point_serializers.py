@@ -1,27 +1,27 @@
 import pytest
 from cryptography.exceptions import InternalError
-from cryptography.hazmat.primitives.asymmetric import ec
 
+from umbral.curve import SECP256K1
 from umbral.point import Point
 
 
 def generate_test_points_bytes(quantity=2):
     points_bytes = [
-        (ec.SECP256K1, 714, b'\x02x{DR\x94\x8f\x17\xb8\xa2\x14t\x11\xdb\xb1VK\xdb\xc2\xa0T\x97iCK\x8cz~\xea\xa3\xb7AJ'),
+        (SECP256K1(), 714, b'\x02x{DR\x94\x8f\x17\xb8\xa2\x14t\x11\xdb\xb1VK\xdb\xc2\xa0T\x97iCK\x8cz~\xea\xa3\xb7AJ'),
     ]
     for _ in range(quantity):
-        args = (ec.SECP256K1, 714, Point.gen_rand(curve=ec.SECP256K1).to_bytes())
+        args = (SECP256K1(), 714, Point.gen_rand(curve=SECP256K1()).to_bytes())
         points_bytes.append(args)
     return points_bytes
 
 
 def generate_test_points_affine(quantity=2):
     points_affine = [
-        (ec.SECP256K1, 714, (54495335564072000415434275044935054036617226655045445809732056033758606213450,
-                             26274482902044210718566767736429706729731617411738990314884135712590488065008)),
+        (SECP256K1(), 714, (54495335564072000415434275044935054036617226655045445809732056033758606213450,
+                            26274482902044210718566767736429706729731617411738990314884135712590488065008)),
     ]
     for _ in range(quantity):
-        args = (ec.SECP256K1, 714, Point.gen_rand(curve=ec.SECP256K1).to_affine())
+        args = (SECP256K1(), 714, Point.gen_rand(curve=SECP256K1()).to_affine())
         points_affine.append(args)
     return points_affine
 

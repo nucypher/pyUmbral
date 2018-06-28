@@ -43,6 +43,7 @@ class Signature:
         """
         cryptography_pub_key = verifying_key.to_cryptography_pubkey()
 
+        # TODO: Raise error instead of returning boolean
         try:
             cryptography_pub_key.verify(
                 self._der_encoded_bytes(),

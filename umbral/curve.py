@@ -28,6 +28,7 @@ class Curve:
         self.curve_nid = curve_nid
         self.ec_group = openssl._get_ec_group_by_curve_nid(self.curve_nid)
         self.order = openssl._get_ec_order_by_curve_nid(self.curve_nid)
+        self.generator = openssl._get_ec_generator_by_curve_nid(self.curve_nid)
 
     @property
     def supported_curves(self):

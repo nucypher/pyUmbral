@@ -115,6 +115,8 @@ jobs:
           key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
       - run:
           name: Run Mypy Static Type Checks
-          command: pipenv run mypy --xslt-html-report ./mypy_report ./umbral
+          command: |
+              pipenv install --dev --skip-lock lxml
+              pipenv run mypy --xslt-html-report ./mypy_report ./umbral
       - store_artifacts:
           path: ./mypy_report

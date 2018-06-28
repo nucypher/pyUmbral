@@ -6,17 +6,18 @@ Using pyUmbral
 
 Import umbral modules
 
-.. testsetup::
+.. testsetup:: capsule_story
 
-        import sys
-        import os
+    import sys
+    import os
+    sys.path.append(os.path.abspath(os.getcwd()))
 
-        sys.path.append(os.path.abspath(os.getcwd()))
-        from umbral import pre, keys, config, signing
 
-.. code-block:: python
+.. testcleanup:: capsule_story
 
-    from umbral import pre, keys, config, signing
+    from umbral import config
+    config._CONFIG.___CONFIG__curve = None
+    config._CONFIG.___CONFIG__params = None
 
 
 Configuration
@@ -28,16 +29,12 @@ Setting the default curve
 
 The best way to start using pyUmbral is to decide on a elliptic curve to use and set it as your default.
 
-.. doctest::
-    >>> config._CONFIG.___CONFIG__curve = None
-    >>> config._CONFIG.___CONFIG__params = None
+
+.. doctest:: capsule_story
+
+    >>> from umbral import config
     >>> from cryptography.hazmat.primitives.asymmetric import ec
     >>> config.set_default_curve(ec.SECP256K1)
-
-.. code-block:: python
-
-    config.set_default_curve(ec.SECP256K1)
-
 
 For more information on curves, see :doc:`choosing_and_using_curves`.
 
@@ -51,7 +48,9 @@ Generate an Umbral key pair
 First, Let's generate two asymmetric key pairs for Alice:
 A delegating key pair and a Signing key pair.
 
-.. doctest::
+.. doctest:: capsule_story
+
+    >>> from umbral import keys, signing
 
     >>> alices_private_key = keys.UmbralPrivateKey.gen_key()
     >>> alices_public_key = alices_private_key.get_pubkey()
@@ -59,15 +58,6 @@ A delegating key pair and a Signing key pair.
     >>> alices_signing_key = keys.UmbralPrivateKey.gen_key()
     >>> alices_verifying_key = alices_signing_key.get_pubkey()
     >>> alices_signer = signing.Signer(private_key=alices_signing_key)
-
-.. code-block:: python
-
-    alices_private_key = keys.UmbralPrivateKey.gen_key()
-    alices_public_key = alices_private_key.get_pubkey()
-
-    alices_signing_key = keys.UmbralPrivateKey.gen_key()
-    alices_verifying_key = alices_signing_key.get_pubkey()
-    alices_signer = signing.Signer(private_key=alices_signing_key)
 
 
 Encrypt with a public key
@@ -78,15 +68,11 @@ and a `capsule`, Anyone with Alice's public key can perform
 this operation.
 
 
-.. doctest::
+.. doctest:: capsule_story
 
+    >>> from umbral import pre
     >>> plaintext = b'Proxy Re-encryption is cool!'
     >>> ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
-
-.. code-block:: python
-
-    plaintext = b'Proxy Re-encryption is cool!'
-    ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
 
 Decrypt with a private key
@@ -94,14 +80,9 @@ Decrypt with a private key
 Since data was encrypted with Alice's public key,
 Alice can open the capsule and decrypt the ciphertext with her private key.
 
-.. doctest::
+.. doctest:: capsule_story
 
     >>> cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=alices_private_key)
-
-.. code-block:: python
-
-    cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule,
-                            decrypting_key=alices_private_key)
 
 
 Threshold split-key re-encryption
@@ -110,17 +91,11 @@ Threshold split-key re-encryption
 Bob Exists
 -----------
 
-.. doctest::
+.. doctest:: capsule_story
 
+    >>> from umbral import keys
     >>> bobs_private_key = keys.UmbralPrivateKey.gen_key()
     >>> bobs_public_key = bobs_private_key.get_pubkey()
-
-
-.. code-block:: python
-
-    # Generate umbral keys for Bob.
-    bobs_private_key = keys.UmbralPrivateKey.gen_key()
-    bobs_public_key = bobs_private_key.get_pubkey()
 
 
 Alice grants access to Bob by generating kfrags 
@@ -133,18 +108,14 @@ which are next sent to N proxies or *Ursulas*.
 | `threshold` - Minimum threshold of key fragments needed to activate a capsule.
 | `N` - Total number of key fragments to generate.
 
-.. doctest::
+.. doctest:: capsule_story
 
-    >>> kfrags = pre.split_rekey(delegating_privkey=alices_private_key, signer=alices_signer, receiving_pubkey=bobs_public_key, threshold=10, N=20)
+    >>> kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
+    ...                          signer=alices_signer,
+    ...                          receiving_pubkey=bobs_public_key,
+    ...                          threshold=10,
+    ...                          N=20)
 
-
-.. code-block:: python
-
-   kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
-                            signer=alices_signer,
-                            receiving_pubkey=bobs_public_key,
-                            threshold=10,
-                            N=20)
 
 Bob receives a capsule
 -----------------------
@@ -163,20 +134,14 @@ Bob fails to open the capsule
 If Bob attempts to open a capsule that was not encrypted for his public key,
 or re-encrypted for him by Ursula, he will not be able to open it.
 
-.. doctest::
+.. doctest:: capsule_story
 
-    >>> fail = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=bobs_private_key)
+    >>> fail = pre.decrypt(ciphertext=ciphertext,
+    ...                    capsule=capsule,
+    ...                    decrypting_key=bobs_private_key)
     Traceback (most recent call last):
         ...
     cryptography.exceptions.InvalidTag
-
-
-.. code-block:: python
-
-  try:
-      fail = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=bobs_private_key)
-  except:
-      print("Decryption failed!")
 
 
 Ursulas perform re-encryption
@@ -191,30 +156,21 @@ Bob collects the resulting `cfrags` from several Ursulas.
 Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
 
-.. doctest::
+.. doctest:: capsule_story
 
     >>> import random
-    >>> kfrags = random.sample(kfrags, 10)
+    >>> kfrags = random.sample(kfrags,  # All kfrags from above
+    ...                        10)      # M - Threshold
 
-    >>> cfrags = list()
+    >>> cfrags = list()                 # Bob's cfrag collection
     >>> for kfrag in kfrags:
     ...     cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
-    ...     cfrags.append(cfrag)
+    ...     cfrags.append(cfrag)        # Bob collects a cfrag
+
+.. doctest:: capsule_story
+   :hide:
 
     >>> assert len(cfrags) == 10
-
-
-.. code-block:: python
-
-    import random
-
-    kfrags = random.sample(kfrags,    # All kfrags from above
-                           10)        # M - Threshold
-
-    cfrags = list()                   # Bob's cfrag collection
-    for kfrag in kfrags:
-      cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
-      cfrags.append(cfrag)            # Bob collects a cfrag
 
 
 Bob attaches cfrags to the capsule
@@ -222,18 +178,15 @@ Bob attaches cfrags to the capsule
 Bob attaches at least `threshold` `cfrags` to the capsule;
 Then it can become *activated*.
 
-.. doctest::
-    >>> capsule.set_correctness_keys(delegating=alices_public_key, receiving=bobs_public_key, verifying=alices_verifying_key)
+.. doctest:: capsule_story
+
+    >>> capsule.set_correctness_keys(delegating=alices_public_key,
+    ...                              receiving=bobs_public_key,
+    ...                              verifying=alices_verifying_key)
     (True, True, True)
+
     >>> for cfrag in cfrags:
     ...     capsule.attach_cfrag(cfrag)
-
-.. code-block:: python
-
-   capsule.set_correctness_keys(delegating=alices_public_key, receiving=bobs_public_key, verifying=alices_verifying_key)
-
-   for cfrag in cfrags:
-       capsule.attach_cfrag(cfrag)
 
 
 Bob activates and opens the capsule
@@ -241,18 +194,11 @@ Bob activates and opens the capsule
 Finally, Bob activates and opens the capsule,
 then decrypts the re-encrypted ciphertext.
 
-.. doctest::
+.. doctest:: capsule_story
 
-    >>> capsule.set_correctness_keys(delegating=alices_public_key, receiving=bobs_public_key, verifying=alices_verifying_key)
-    (True, True, True)
-    >>> for cfrag in cfrags:
-    ...     capsule.attach_cfrag(cfrag)
     >>> cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=bobs_private_key)
+
+.. doctest:: capsule_story
+   :hide:
+
     >>> assert cleartext == plaintext
-
-
-.. code-block:: python
-
-   cleartext = pre.decrypt(ciphertext=ciphertext,
-                           capsule=capsule,
-                           decrypting_key=bobs_private_key)

@@ -31,26 +31,21 @@ def _get_ec_group_by_curve_nid(curve_nid: int):
     return group
 
 
-def _get_ec_order_by_curve_nid(curve_nid: int):
+def _get_ec_order_by_group(ec_group):
     """
-    Returns the order of a given curve via its OpenSSL nid.
+    Returns the order of a given curve via its OpenSSL EC_GROUP.
     """
-    ec_group = _get_ec_group_by_curve_nid(curve_nid)
     ec_order = _get_new_BN()
-
     with backend._tmp_bn_ctx() as bn_ctx:
         res = backend._lib.EC_GROUP_get_order(ec_group, ec_order, bn_ctx)
         backend.openssl_assert(res == 1)
-
     return ec_order
 
 
-def _get_ec_generator_by_curve_nid(curve_nid: int):
+def _get_ec_generator_by_group(ec_group):
     """
-    Returns the generator point of a given curve via its OpenSSL nid.
+    Returns the generator point of a given curve via its OpenSSL EC_GROUP.
     """
-    ec_group = _get_ec_group_by_curve_nid(curve_nid)
-
     generator = backend._lib.EC_GROUP_get0_generator(ec_group)
     backend.openssl_assert(generator != backend._ffi.NULL)
     generator = backend._ffi.gc(generator, backend._lib.EC_POINT_clear_free)
@@ -58,12 +53,12 @@ def _get_ec_generator_by_curve_nid(curve_nid: int):
     return generator
 
 
-def _get_ec_group_degree(group):
+def _get_ec_group_degree(ec_group):
     """
     Returns the number of bits needed to represent the order of the finite 
-    field upon the curve is based
+    field upon the curve is based.
     """
-    return backend._lib.EC_GROUP_get_degree(group) 
+    return backend._lib.EC_GROUP_get_degree(ec_group) 
 
 
 def _bn_is_on_curve(check_bn, curve: Curve):
@@ -102,60 +97,42 @@ def _int_to_bn(py_int: int, curve: Curve=None, set_consttime_flag=True):
     return conv_bn
 
 
-def _get_new_EC_POINT(ec_group=None, curve_nid: int=None):
+def _get_new_EC_POINT(curve: Curve):
     """
     Returns a new and initialized OpenSSL EC_POINT given the group of a curve.
     If curve_nid is provided, it retrieves the group from the curve provided.
     """
-    if curve_nid:
-        ec_group = _get_ec_group_by_curve_nid(curve_nid)
-    elif not ec_group:
-        raise ValueError("No group provided.")
-
-    new_point = backend._lib.EC_POINT_new(ec_group)
+    new_point = backend._lib.EC_POINT_new(curve.ec_group)
     backend.openssl_assert(new_point != backend._ffi.NULL)
     new_point = backend._ffi.gc(new_point, backend._lib.EC_POINT_clear_free)
 
     return new_point
 
 
-def _get_EC_POINT_via_affine(affine_x, affine_y, ec_group=None, curve_nid: int=None):
+def _get_EC_POINT_via_affine(affine_x, affine_y, curve: Curve):
     """
     Returns an EC_POINT given the group of a curve and the affine coordinates
     provided.
-    If curve_nid is provided, it retrieves the group from the curve provided.
     """
-    if curve_nid:
-        ec_group = _get_ec_group_by_curve_nid(curve_nid)
-    elif not ec_group:
-        raise ValueError("No group provided.")
-
-    new_point = _get_new_EC_POINT(ec_group=ec_group)
-
+    new_point = _get_new_EC_POINT(curve)
     with backend._tmp_bn_ctx() as bn_ctx:
         res = backend._lib.EC_POINT_set_affine_coordinates_GFp(
-            ec_group, new_point, affine_x, affine_y, bn_ctx
+            curve.ec_group, new_point, affine_x, affine_y, bn_ctx
         )
         backend.openssl_assert(res == 1)
     return new_point
 
 
-def _get_affine_coords_via_EC_POINT(ec_point, ec_group=None, curve_nid: int=None):
+def _get_affine_coords_via_EC_POINT(ec_point, curve: Curve):
     """
     Returns the affine coordinates of a given point on the provided ec_group.
-    If curve_nid is provided, it retrieves the group from the curve provided.
     """
-    if curve_nid:
-        ec_group = _get_ec_group_by_curve_nid(curve_nid)
-    elif not ec_group:
-        raise ValueError("No group provided.")
-
     affine_x = _get_new_BN()
     affine_y = _get_new_BN()
 
     with backend._tmp_bn_ctx() as bn_ctx:
         res = backend._lib.EC_POINT_get_affine_coordinates_GFp(
-            ec_group, ec_point, affine_x, affine_y, bn_ctx
+            curve.ec_group, ec_point, affine_x, affine_y, bn_ctx
         )
         backend.openssl_assert(res == 1)
     return (affine_x, affine_y)

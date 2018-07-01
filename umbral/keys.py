@@ -144,7 +144,7 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(set_privkey_result == 1)
 
         # Get public key
-        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.curve.ec_group)
+        point = openssl._get_new_EC_POINT(self.params.curve)
         with backend._tmp_bn_ctx() as bn_ctx:
             mult_result = backend._lib.EC_POINT_mul(
                 self.bn_key.curve.ec_group, point, self.bn_key.bignum,

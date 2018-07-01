@@ -68,10 +68,6 @@ class CurveBN(object):
 
     @classmethod
     def hash(cls, *crypto_items, params: UmbralParameters):
-        curve_nid = backend._elliptic_curve_to_nid(params.curve)
-        order = openssl._get_ec_order_by_curve_nid(curve_nid)
-        group = openssl._get_ec_group_by_curve_nid(curve_nid)
-    
         # TODO: Clean this in an upcoming cleanup of pyUmbral
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         for item in crypto_items:
@@ -91,7 +87,7 @@ class CurveBN(object):
         _1 = backend._lib.BN_value_one()
         
         order_minus_1 = openssl._get_new_BN()
-        res = backend._lib.BN_sub(order_minus_1, order, _1)
+        res = backend._lib.BN_sub(order_minus_1, params.curve.order, _1)
         backend.openssl_assert(res == 1)
 
         bignum = openssl._get_new_BN()
@@ -102,7 +98,7 @@ class CurveBN(object):
         res = backend._lib.BN_add(bignum, bignum, _1)
         backend.openssl_assert(res == 1)
         
-        return cls(bignum, curve_nid, group, order)
+        return cls(bignum, params.curve)
 
     @classmethod
     def from_bytes(cls, data, curve: Curve=None):

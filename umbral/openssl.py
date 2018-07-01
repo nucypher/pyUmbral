@@ -80,9 +80,9 @@ def _bn_is_on_curve(check_bn, curve: Curve):
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve: Curve, set_consttime_flag=True):
+def _int_to_bn(py_int: int, curve: Curve=None, set_consttime_flag=True):
     """
-    Converts the given Python int to an OpenSSL BIGNUM. If a curve_nid is
+    Converts the given Python int to an OpenSSL BIGNUM. If a curve is
     provided, it will check if the Python integer is within the order of that
     curve. If it's not within the order, it will raise a ValueError.
 
@@ -92,9 +92,10 @@ def _int_to_bn(py_int: int, curve: Curve, set_consttime_flag=True):
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
     
-    on_curve = _bn_is_on_curve(conv_bn, curve)
-    if not on_curve:
-        raise ValueError("The Python integer given is not on the provided curve.")
+    if curve:
+        on_curve = _bn_is_on_curve(conv_bn, curve)
+        if not on_curve:
+            raise ValueError("The Python integer given is not on the provided curve.")
 
     if set_consttime_flag:
         backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)

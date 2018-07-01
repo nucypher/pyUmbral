@@ -19,8 +19,8 @@ class UmbralParameters(object):
 
     def __eq__(self, other):
 
-        self_curve_nid = backend._elliptic_curve_to_nid(self.curve)
-        other_curve_nid = backend._elliptic_curve_to_nid(other.curve)
+        self_curve_nid = self.curve.curve_nid
+        other_curve_nid = other.curve.curve_nid
 
         # TODO: This is not comparing the order, which currently is an OpenSSL pointer
         self_attributes = self_curve_nid, self.g, self.CURVE_KEY_SIZE_BYTES, self.u

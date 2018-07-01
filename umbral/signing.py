@@ -2,6 +2,7 @@ import hmac
 
 from cryptography.exceptions import InvalidSignature
 
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 from cryptography.hazmat.primitives import hashes
 
@@ -48,7 +49,7 @@ class Signature:
             cryptography_pub_key.verify(
                 self._der_encoded_bytes(),
                 message,
-                ec.ECDSA(_BLAKE2B)
+                ECDSA(_BLAKE2B)
             )
         except InvalidSignature:
             return False
@@ -104,5 +105,5 @@ class Signer:
          :param message: Message to hash and sign
          :return: signature
          """
-        signature_der_bytes = self.__cryptography_private_key.sign(message, ec.ECDSA(_BLAKE2B))
+        signature_der_bytes = self.__cryptography_private_key.sign(message, ECDSA(_BLAKE2B))
         return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self._curve)

@@ -126,7 +126,7 @@ class UmbralPrivateKey(object):
         """
         backend = default_backend()
 
-        backend.openssl_assert(self.bn_key.group != backend._ffi.NULL)
+        backend.openssl_assert(self.bn_key.curve.ec_group != backend._ffi.NULL)
         backend.openssl_assert(self.bn_key.bignum != backend._ffi.NULL)
 
         ec_key = backend._lib.EC_KEY_new()
@@ -134,7 +134,7 @@ class UmbralPrivateKey(object):
         ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
 
         set_group_result = backend._lib.EC_KEY_set_group(
-            ec_key, self.bn_key.group
+            ec_key, self.bn_key.curve.ec_group
         )
         backend.openssl_assert(set_group_result == 1)
 
@@ -144,11 +144,11 @@ class UmbralPrivateKey(object):
         backend.openssl_assert(set_privkey_result == 1)
 
         # Get public key
-        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.group)
+        point = openssl._get_new_EC_POINT(ec_group=self.bn_key.curve.ec_group)
         with backend._tmp_bn_ctx() as bn_ctx:
             mult_result = backend._lib.EC_POINT_mul(
-                self.bn_key.group, point, self.bn_key.bignum, backend._ffi.NULL,
-                backend._ffi.NULL, bn_ctx
+                self.bn_key.curve.ec_group, point, self.bn_key.bignum,
+                backend._ffi.NULL, backend._ffi.NULL, bn_ctx
             )
             backend.openssl_assert(mult_result == 1)
 
@@ -210,7 +210,7 @@ class UmbralPublicKey(object):
         """
         backend = default_backend()
 
-        backend.openssl_assert(self.point_key.group != backend._ffi.NULL)
+        backend.openssl_assert(self.point_key.curve.ec_group != backend._ffi.NULL)
         backend.openssl_assert(self.point_key.ec_point != backend._ffi.NULL)
 
         ec_key = backend._lib.EC_KEY_new()
@@ -218,7 +218,7 @@ class UmbralPublicKey(object):
         ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
 
         set_group_result = backend._lib.EC_KEY_set_group(
-            ec_key, self.point_key.group
+            ec_key, self.point_key.curve.ec_group
         )
         backend.openssl_assert(set_group_result == 1)
 

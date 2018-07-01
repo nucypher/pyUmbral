@@ -36,14 +36,8 @@ def test_generate_random_points():
 
 @pytest.mark.parametrize("curve, nid, point_bytes", generate_test_points_bytes())
 def test_bytes_serializers(point_bytes, nid, curve):
-
-    point_with_nid = Point.from_bytes(point_bytes, curve=nid)         # from nid
-    assert isinstance(point_with_nid, Point)
-
-    point_with_curve = Point.from_bytes(point_bytes, curve=curve)     # from curve
+    point_with_curve = Point.from_bytes(point_bytes, curve=curve) # from curve
     assert isinstance(point_with_curve, Point)
-
-    assert point_with_nid == point_with_curve
 
     the_same_point_bytes = point_with_curve.to_bytes()
     assert point_bytes == the_same_point_bytes
@@ -67,9 +61,7 @@ def test_bytes_serializers(point_bytes, nid, curve):
 
 @pytest.mark.parametrize("curve, nid, point_affine", generate_test_points_affine())
 def test_affine(point_affine, nid, curve):
-    point = Point.from_affine(point_affine, curve=nid)              # from nid
-    the_same_point = Point.from_affine(point_affine, curve=curve)   # from curve instance
-    assert point == the_same_point
+    point = Point.from_affine(point_affine, curve=curve)  # from curve
     assert isinstance(point, Point)
     point_affine2 = point.to_affine()
     assert point_affine == point_affine2

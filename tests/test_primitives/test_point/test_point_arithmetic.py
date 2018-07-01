@@ -30,8 +30,7 @@ def test_point_curve_multiplication_regression():
     # Make sure we have instantiated a new, unequal point in the same curve and group
     assert isinstance(product_with_star_operator, Point), "Point.__mul__ did not return a point instance"
     assert k256_point != product_with_star_operator
-    assert k256_point.curve_nid == product_with_star_operator.curve_nid
-    assert k256_point.group == product_with_star_operator.group
+    assert k256_point.curve == product_with_star_operator.curve
 
     product_bytes = b'\x03\xc9\xda\xa2\x88\xe2\xa0+\xb1N\xb6\xe6\x1c\xa5(\xe6\xe0p\xf6\xf4\xa9\xfc\xb1\xfaUV\xd3\xb3\x0e4\x94\xbe\x12'
     product_point = Point.from_bytes(product_bytes)

@@ -67,9 +67,9 @@ class Point(object):
 
         group = openssl._get_ec_group_by_curve_nid(curve.curve_nid)
         ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y,
-                                                    ec_group=self.curve.ec_group)
+                                                    ec_group=curve.ec_group)
 
-        return cls(ec_point, curve_nid, group)
+        return cls(ec_point, curve)
 
     def to_affine(self):
         """

@@ -241,7 +241,7 @@ class CurveBN(object):
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
-            other = CurveBN(other, None, None, None)
+            other = CurveBN(other, self.curve)
 
         rem = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:

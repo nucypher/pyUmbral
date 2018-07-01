@@ -4,22 +4,23 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import pre
 from umbral.fragments import KFrag, CapsuleFrag
+from umbral.curve import SECP384R1, SECP256R1
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from .conftest import parameters, wrong_parameters
 
+
 secp_curves = [
-    ec.SECP384R1,
-    ec.SECP192R1
+    SECP384R1(),
+    SECP256R1()
 ]
 
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api(N, M, curve=default_curve()):
     """Manually injects umbralparameters for multi-curve testing."""
-
     params = UmbralParameters(curve=curve)
 
     delegating_privkey = UmbralPrivateKey.gen_key(params=params)

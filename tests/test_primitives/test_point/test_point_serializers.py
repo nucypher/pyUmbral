@@ -53,15 +53,15 @@ def test_bytes_serializers(point_bytes, nid, curve):
 
     for point_representation in representations:
 
-        malformed_point_bytes = point_bytes + b'0x'
+        malformed_point_bytes = point_representation + b'0x'
         with pytest.raises(ValueError):
             _ = Point.from_bytes(malformed_point_bytes)
 
-        malformed_point_bytes = point_bytes[1:]
+        malformed_point_bytes = point_representation[1:]
         with pytest.raises(ValueError):
             _ = Point.from_bytes(malformed_point_bytes)
 
-        malformed_point_bytes = point_bytes[:-1]
+        malformed_point_bytes = point_representation[:-1]
         with pytest.raises(ValueError):
             _ = Point.from_bytes(malformed_point_bytes)
 
@@ -81,19 +81,15 @@ def test_invalid_points(random_ec_point2):
     point_bytes[-1] = point_bytes[-1] ^ 0x01        # Flips last bit
     point_bytes = bytes(point_bytes)
 
-    try:
-        _ = Point.from_bytes(point_bytes)
-    except InternalError as e:
-        # We want to catch specific InternalExceptions:
-        # - Point not in the curve (code 107)
-        # - Invalid compressed point (code 110)
-        # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
-        if e.err_code[0].reason in (107, 110):
-            pass
-        else:
-            assert False
-    else:
-        assert False
+    with pytest.raises(InternalError) as e:
+        _point = Point.from_bytes(point_bytes)
+
+    # We want to catch specific InternalExceptions:
+    # - Point not in the curve (code 107)
+    # - Invalid compressed point (code 110)
+    # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
+    assert e.value.err_code[0].reason in (107, 110)
+
 
 
 def test_generator_point():

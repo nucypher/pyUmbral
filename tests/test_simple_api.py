@@ -8,7 +8,7 @@ from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from .conftest import parameters
+from .conftest import parameters, wrong_parameters
 
 secp_curves = [
     ec.SECP384R1,
@@ -179,3 +179,8 @@ def test_public_key_encryption(alices_keys):
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
+
+@pytest.mark.parametrize("N, M", wrong_parameters)
+def test_wrong_N_M_in_split_rekey(N, M):
+    with pytest.raises(ValueError):
+        test_simple_api(N, M)

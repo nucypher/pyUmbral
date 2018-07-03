@@ -22,9 +22,11 @@ cffi = ">=1.7"
 
 [dev-packages]
 pytest = "*"
-coverage = "*"
-pytest-cov = "*"
+pytest-mypy = "*"
 pytest-mock = "*"
+pytest-cov = "*"
+mypy = "*"
+coverage = "*"
 codecov = "*"
 sphinx = "*"
 sphinx-autobuild = "*"

@@ -196,12 +196,12 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
+            - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
             - v2-benchmarks-py36
       - run:
           name: Benchmark Key Splitting and Reencryption
           command: |
-              pipenv install -e . --skip-lock
+              pipenv install -e . --dev --skip-lock
               pipenv run pytest -v ./tests/metrics/reencryption_benchmark.py --junitxml=./reports/pytest/python36-results.xml --benchmark-verbose --benchmark-autosave --benchmark-histogram=./histograms/histogram
       - save_cache:
           paths:

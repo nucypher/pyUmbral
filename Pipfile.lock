@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1f5ca274bfe92cea6c731c032aad1316ff08e66262708bc9cfac4af933b50e51"
+            "sha256": "caef661d3f3ec467182064819c8b5d8df84749b5417c1a8996008a7f07109c35"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -82,7 +82,7 @@
             "path": "./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl"
         },
         "cryptography37-linux": {
-            "markers": "python_version >= '3.7' and python_version < '3.8' and platform_system == 'Linux'",
+            "markers": "python_version >= '3.7' and platform_system == 'Linux'",
             "path": "./wheelhouse/cryptography-2.3.dev1-cp37-cp37m-linux_x86_64.whl"
         },
         "idna": {

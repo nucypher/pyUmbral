@@ -46,3 +46,7 @@ def firehose() -> None:
     failure_message = "A Reencryption failed. {} of {} succeeded".format(successful_rencryptions, REENCRYPTIONS)
     assert successful_rencryptions == REENCRYPTIONS, failure_message
     print("Successfully performed {} reencryptions".format(successful_rencryptions), end='\n')
+
+
+if __name__ == "__main__":
+    firehose()  # do

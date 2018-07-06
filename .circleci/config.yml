@@ -6,22 +6,25 @@ workflows:
     jobs:
       - bundle_dependencies-36
       - bundle_dependencies-35
-      - mypy_type_check-36:
-          requires:
-            - bundle_dependencies-35
-            - bundle_dependencies-36
       - run_tests-36:
           requires:
             - bundle_dependencies-36
       - run_tests-35:
           requires:
             - bundle_dependencies-35
+      - mypy_type_check-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+      - doctests-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
       - reencryption_memory_profile-36:
           requires:
             - run_tests-35
             - run_tests-36
-
-      - doctests-36:
+      - reencryption_benchmark-36:
           requires:
             - run_tests-35
             - run_tests-36
@@ -93,25 +96,6 @@ jobs:
       - store_artifacts:
           path: ./htmlcov
 
-  reencryption_memory_profile-36:
-    <<: *python_36_base
-    steps:
-      - checkout
-      - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
-      - run:
-          name: Install Profiling Tools
-          command: |
-              sudo apt-get update
-              sudo apt install -y valgrind
-              sudo apt install -y massif-visualizer
-      - run:
-          name: Profile Re-Encryption Memory Usage
-          command: |
-              pipenv run valgrind --tool=massif --massif-out-file=./reencryption_memory_profile.massif.out python3 ./tests/metrics/reencryption_firehose.py
-      - store_artifacts:
-          path: ./reencryption_memory_profile.massif.out
-
   mypy_type_check-36:
     <<: *python_36_base
     steps:
@@ -143,10 +127,27 @@ jobs:
       - store_artifacts:
           path: ./docs/build/doctest/output.txt
 
+  reencryption_memory_profile-36:
+    <<: *python_36_base
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
+      - run:
+          name: Install Profiling Tools
+          command: |
+              sudo apt-get update
+              sudo apt install -y valgrind
+              sudo apt install -y massif-visualizer
+      - run:
+          name: Profile Re-Encryption Memory Usage
+          command: |
+              pipenv run valgrind --tool=massif --massif-out-file=./reencryption_memory_profile.massif.out python3 ./tests/metrics/reencryption_firehose.py
+      - store_artifacts:
+          path: ./reencryption_memory_profile.massif.out
+
   reencryption_benchmark-36:
-    working_directory: ~/pyUmbral-36/
-    docker:
-      - image: circleci/python:3.6
+    <<: *python_36_base
     steps:
       - checkout
       - restore_cache:
@@ -154,19 +155,13 @@ jobs:
             - v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
             - v1-benchmarks-py36
       - run:
-          name: Run Documentation Tests
+          name: Benchmark Key Splitting and Reencryption
           command: |
-              cd test/metrics
               pipenv install -e . --skip-lock
-              pipenv run pytest -v tests/metrics/reencryption_benchmark.py \
-              --benchmark-verbose \
-              --benchmark-compare \
-              --benchmark-histogram=./histograms/histogram \
-              --benchmark-autosave \
-              --junitxml=./reports/pytest/python36-results.xml \
+              pipenv run pytest -v ./tests/metrics/reencryption_benchmark.py --junitxml=./reports/pytest/python36-results.xml --benchmark-verbose --benchmark-autosave --benchmark-histogram=./histograms/histogram
       - save_cache:
           paths:
-            - "./tests/metrics/.benchmarks"
+            - "./.benchmarks"
           key: v1-benchmarks-py36
       - store_artifacts:
           path: ./tests/metrics/histograms

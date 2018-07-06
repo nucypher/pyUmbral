@@ -111,9 +111,7 @@ jobs:
           path: ./mypy_report
 
   doctests-36:
-    working_directory: ~/pyUmbral-36/
-    docker:
-      - image: circleci/python:3.6
+    <<: *python_36_base
     steps:
       - checkout
       - restore_cache:
@@ -162,8 +160,8 @@ jobs:
       - save_cache:
           paths:
             - "./.benchmarks"
-          key: v1-benchmarks-py36
+          key: v1-benchmarks-py36-{{ checksum "benchmarks" }}
       - store_artifacts:
-          path: ./tests/metrics/histograms
+          path: ./histograms
       - store_test_results:
-          path: /reports/pytest
+          path: ./reports/pytest

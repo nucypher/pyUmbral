@@ -1,8 +1,11 @@
 import os
 import sys
+from typing import Tuple, List
 
 sys.path.append(os.path.abspath(os.getcwd()))
 
+from umbral.fragments import KFrag
+from umbral.pre import Capsule
 from umbral import keys, pre
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
@@ -13,9 +16,10 @@ PARAMS = UmbralParameters(curve=CURVE)
 REENCRYPTIONS = 1000
 
 
-def __produce_kfrags(M, N) -> list:
+def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[KFrag], Capsule]:
 
     delegating_privkey = keys.UmbralPrivateKey.gen_key(params=PARAMS)
+    delegating_pubkey = delegating_privkey.get_pubkey()
 
     signing_privkey = keys.UmbralPrivateKey.gen_key(params=PARAMS)
     signer = Signer(signing_privkey)
@@ -23,14 +27,18 @@ def __produce_kfrags(M, N) -> list:
     receiving_privkey = keys.UmbralPrivateKey.gen_key(params=PARAMS)
     receiving_pubkey = receiving_privkey.get_pubkey()
 
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-    return kfrags
+    plain_data = os.urandom(32)
+    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
+
+    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, m, n)
+
+    return kfrags, capsule
 
 
-def firehose() -> None:
+def firehose(m: int=6, n: int=10) -> None:
 
     print("Making kfrags...")
-    kfrags, capsule = __produce_kfrags(M=6, N=10)
+    kfrags, capsule = __produce_kfrags_and_capsule(m=m, n=n)
     one_kfrag, *remaining_kfrags = kfrags
 
     print('Re-encrypting...')

@@ -58,14 +58,12 @@ jobs:
     <<: *python_35_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
-      - run:
-          name: Check PEP 508 Requirements
-          command: pipenv check
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv sync --three --dev
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"
@@ -75,14 +73,12 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
-      - run:
-          name: Check PEP 508 Requirements
-          command: pipenv check
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv sync --three --dev
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"
@@ -92,14 +88,12 @@ jobs:
     <<: *python_37_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
-      - run:
-          name: Check PEP 508 Requirements
-          command: pipenv check
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv sync --three --dev
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"

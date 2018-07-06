@@ -8,12 +8,9 @@ name = "pypi"
 cryptography35_linux = { path="./wheelhouse/cryptography-2.3.dev1-cp35-cp35m-linux_x86_64.whl", markers="python_version >= '3.5' and python_version < '3.6' and platform_system == 'Linux'"}
 cryptography36_linux = { path="./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl", markers="python_version >= '3.6' and python_version < '3.7' and platform_system == 'Linux'"}
 cryptography36_darwin = { path="./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-macosx_10_13_x86_64.whl", markers="python_version >= '3.6' and python_version < '3.7' and platform_system == 'Darwin'"}
-
 # Use bytestringSplitter from github until we release it on PyPi.
 bytestringSplitter = {git = "https://github.com/nucypher/bytestringSplitter.git", ref = "nucypher-depend"}
-
 pynacl = "*"
-
 # Since wheel-specified dependencies aren't locked...
 idna = ">=2.1"
 asn1crypto = ">=0.21.0"
@@ -21,12 +18,20 @@ six = ">=1.4.1"
 cffi = ">=1.7"
 
 [dev-packages]
+# Pytest Plugins
 pytest = "*"
 pytest-mypy = "*"
 pytest-mock = "*"
 pytest-cov = "*"
+pytest-benchmark = {version = "*", extras = ["histogram"]}
+# Pytest Plugin Subdeps
+mock = "*"
 mypy = "*"
 coverage = "*"
 codecov = "*"
+# Docs
 sphinx = "*"
 sphinx-autobuild = "*"
+
+[pipenv]
+allow_prereleases = true

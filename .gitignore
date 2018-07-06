@@ -245,3 +245,13 @@ pip-selfcheck.json
 
 .idea
 /mypy_report/
+/tests/metrics/.benchmarks/
+.circleci/execute_build.sh
+pytest.ini
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0001_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_012048_uncommited-changes.json
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0002_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_012504_uncommited-changes.json
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0003_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_012940_uncommited-changes.json
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0004_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_013515_uncommited-changes.json
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0005_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_013954_uncommited-changes.json
+tests/metrics/.benchmarks/Linux-CPython-3.6-64bit/0006_060d9fd1f397bc6a55992b0d95dd8ed31c4f3f3c_20180706_014433_uncommited-changes.json
+tests/metrics/histograms/

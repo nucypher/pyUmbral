@@ -4,30 +4,39 @@ workflows:
   version: 2
   test:
     jobs:
-      - bundle_dependencies-36
       - bundle_dependencies-35
-      - run_tests-36:
-          requires:
-            - bundle_dependencies-36
+      - bundle_dependencies-36
+      - bundle_dependencies-37
       - run_tests-35:
           requires:
             - bundle_dependencies-35
+      - run_tests-36:
+          requires:
+            - bundle_dependencies-36
+      - run_tests-37:
+          requires:
+            - bundle_dependencies-37
       - mypy_type_check-36:
           requires:
             - run_tests-35
             - run_tests-36
+            - run_tests-37
       - doctests-36:
           requires:
             - run_tests-35
             - run_tests-36
+            - run_tests-37
       - reencryption_memory_profile-36:
           requires:
             - run_tests-35
             - run_tests-36
+            - run_tests-37
       - reencryption_benchmark-36:
           requires:
             - run_tests-35
             - run_tests-36
+            - run_tests-37
+
 
 python_35_base: &python_35_base
     working_directory: ~/pyUmbral-35
@@ -38,42 +47,84 @@ python_36_base: &python_36_base
     working_directory: ~/pyUmbral-36
     docker:
       - image: circleci/python:3.6
+      
+python_37_base: &python_37_base
+    working_directory: ~/pyUmbral-37
+    docker:
+      - image: circleci/python:3.7
 
 jobs:
-  bundle_dependencies-36:
-    <<: *python_36_base
-    steps:
-      - checkout
-      - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
-      - run:
-          name: Install Python dependencies with Pipenv
-          command: pipenv install --three --dev
-      - save_cache:
-          paths:
-            - "~/.local/share/virtualenvs/"
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
-
   bundle_dependencies-35:
     <<: *python_35_base
     steps:
       - checkout
       - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py35
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --three --dev
       - save_cache:
           paths:
             - "~/.local/share/virtualenvs/"
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py35
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+          
+  bundle_dependencies-36:
+    <<: *python_36_base
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
+      - run:
+          name: Install Python dependencies with Pipenv
+          command: pipenv install --three --dev
+      - save_cache:
+          paths:
+            - "~/.local/share/virtualenvs/"
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+
+  bundle_dependencies-37:
+    <<: *python_37_base
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
+      - run:
+          name: Check PEP 508 Requirements
+          command: pipenv check
+      - run:
+          name: Install Python dependencies with Pipenv
+          command: pipenv install --three --dev
+      - save_cache:
+          paths:
+            - "~/.local/share/virtualenvs/"
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
+  
+  run_tests-35:
+    <<: *python_35_base
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+      - run:
+          name: pyUmbral Tests (Python 3.5)
+          command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
+      - store_test_results:
+          path: /reports/pytest
+      - store_artifacts:
+          path: ./htmlcov
 
   run_tests-36:
     <<: *python_36_base
     steps:
       - checkout
       - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: pyUmbral Tests (Python 3.6)
           command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python36-results.xml
@@ -82,15 +133,15 @@ jobs:
       - store_artifacts:
           path: ./htmlcov
 
-  run_tests-35:
-    <<: *python_35_base
+  run_tests-37:
+    <<: *python_37_base
     steps:
       - checkout
       - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py35
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
       - run:
-          name: pyUmbral Tests (Python 3.5)
-          command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
+          name: pyUmbral Tests (Python 3.7)
+          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python37-results.xml
       - store_test_results:
           path: /reports/pytest
       - store_artifacts:
@@ -101,7 +152,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Run Mypy Static Type Checks
           command: |
@@ -115,7 +166,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile" }}-py36
+          key: v1-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Run Documentation Tests
           command: |

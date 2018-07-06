@@ -1,6 +1,8 @@
+from typing import Optional, Type, Union
 from warnings import warn
 
 from umbral.curve import Curve, SECP256K1
+from umbral.params import UmbralParameters
 
 
 class _CONFIG:
@@ -18,19 +20,19 @@ class _CONFIG:
         cls.set_curve(cls.__CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER)
 
     @classmethod
-    def params(cls):
+    def params(cls) -> UmbralParameters:
         if not cls.__params:
             cls.__set_curve_by_default()
         return cls.__params
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> Union[Type[SECP256R1], Type[SECP256K1]]:
         if not cls.__curve:
             cls.__set_curve_by_default()
         return cls.__curve
 
     @classmethod
-    def set_curve(cls, curve: Curve=None):
+    def set_curve(cls, curve: Optional[Curve] = None) -> None:
         if cls.__curve:
             raise cls.UmbralConfigurationError(
                 "You can only set the default curve once.  Do it once and then leave it alone.")
@@ -42,13 +44,13 @@ class _CONFIG:
             cls.__params = UmbralParameters(curve)
 
 
-def set_default_curve(curve: Curve=None):
+def set_default_curve(curve: Optional[Curve] = None) -> None:
     return _CONFIG.set_curve(curve)
 
 
-def default_curve():
+def default_curve() -> Union[Type[SECP256R1], Type[SECP256K1]]:
     return _CONFIG.curve()
 
 
-def default_params():
+def default_params() -> UmbralParameters:
     return _CONFIG.params()

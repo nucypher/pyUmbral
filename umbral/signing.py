@@ -1,16 +1,18 @@
 import hmac
+from typing import Optional
 
 from cryptography.exceptions import InvalidSignature
-
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+from cryptography.hazmat.primitives.asymmetric.ec import Curve
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 
 from umbral.config import default_curve
 from umbral.curve import Curve
-from umbral.keys import UmbralPublicKey, UmbralPrivateKey
 from umbral.curvebn import CurveBN
+from umbral.keys import UmbralPublicKey, UmbralPrivateKey
 from umbral.utils import get_field_order_size_in_bytes
+
 
 _BLAKE2B = hashes.BLAKE2b(64)
 
@@ -21,7 +23,7 @@ class Signature:
     between (r, s) and DER formatting.
     """
 
-    def __init__(self, r: CurveBN, s: CurveBN):
+    def __init__(self, r: CurveBN, s: CurveBN) -> None:
         self.r = r
         self.s = s
 
@@ -29,7 +31,7 @@ class Signature:
         return "ECDSA Signature: {}".format(bytes(self).hex()[:15])
 
     @classmethod
-    def expected_bytes_length(cls, curve: Curve = None):
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         curve = curve if curve is not None else default_curve()
         return get_field_order_size_in_bytes(curve) * 2
 
@@ -56,7 +58,7 @@ class Signature:
         return True
 
     @classmethod
-    def from_bytes(cls, signature_as_bytes, der_encoded=False, curve: Curve = None):
+    def from_bytes(cls, signature_as_bytes: bytes, der_encoded: bool = False, curve: Optional[Curve] = None) -> 'Signature':
         curve = curve if curve is not None else default_curve()
         if der_encoded:
             r, s = decode_dss_signature(signature_as_bytes)
@@ -71,10 +73,10 @@ class Signature:
         
         return cls(CurveBN.from_int(r, curve), CurveBN.from_int(s, curve))
 
-    def _der_encoded_bytes(self):
+    def _der_encoded_bytes(self) -> bytes:
         return encode_dss_signature(int(self.r), int(self.s))
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return self.r.to_bytes() + self.s.to_bytes()
 
     def __len__(self):
@@ -83,10 +85,10 @@ class Signature:
     def __add__(self, other):
         return bytes(self) + other
 
-    def __radd__(self, other):
+    def __radd__(self, other: bytes) -> bytes:
         return other + bytes(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Signature') -> bool:
         simple_bytes_match = hmac.compare_digest(bytes(self), bytes(other))
         der_encoded_match = hmac.compare_digest(self._der_encoded_bytes(), bytes(other))
         return simple_bytes_match or der_encoded_match
@@ -94,11 +96,11 @@ class Signature:
 
 class Signer:
 
-    def __init__(self, private_key: UmbralPrivateKey):
+    def __init__(self, private_key: UmbralPrivateKey) -> None:
         self.__cryptography_private_key = private_key.to_cryptography_privkey()
         self._curve = private_key.params.curve
 
-    def __call__(self, message):
+    def __call__(self, message: bytes) -> Signature:
         """
          Signs the message with this instance's private key.
 

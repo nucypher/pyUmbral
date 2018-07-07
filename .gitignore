@@ -245,3 +245,7 @@ pip-selfcheck.json
 
 .idea
 /mypy_report/
+pytest.ini
+/tests/metrics/.benchmarks/
+tests/metrics/histograms/
+.circleci/execute_build.sh

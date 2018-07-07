@@ -6,7 +6,7 @@ from umbral.curve import Curve, SECP256K1
 class _CONFIG:
     __curve = None
     __params = None
-    __CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER = SECP256K1()
+    __CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER = SECP256K1
     __WARNING_IF_NO_DEFAULT_SET = "No default curve has been set.  Using SECP256K1.  A slight performance penalty has been incurred for only this call.  Set a default curve with umbral.config.set_default_curve()."
 
     class UmbralConfigurationError(RuntimeError):

@@ -1,8 +1,6 @@
 from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
-from umbral.curve import Curve
-
 
 def _get_new_BN(set_consttime_flag=True):
     """
@@ -61,7 +59,7 @@ def _get_ec_group_degree(ec_group):
     return backend._lib.EC_GROUP_get_degree(ec_group) 
 
 
-def _bn_is_on_curve(check_bn, curve: Curve):
+def _bn_is_on_curve(check_bn, curve: 'Curve'):
     """
     Checks if a given OpenSSL BIGNUM is within the provided curve's order.
     Returns True if the provided BN is on the curve, or False if the BN is zero
@@ -75,7 +73,7 @@ def _bn_is_on_curve(check_bn, curve: Curve):
     return check_sign == 1 and range_check == -1
 
 
-def _int_to_bn(py_int: int, curve: Curve=None, set_consttime_flag=True):
+def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve is
     provided, it will check if the Python integer is within the order of that
@@ -97,7 +95,7 @@ def _int_to_bn(py_int: int, curve: Curve=None, set_consttime_flag=True):
     return conv_bn
 
 
-def _get_new_EC_POINT(curve: Curve):
+def _get_new_EC_POINT(curve: 'Curve'):
     """
     Returns a new and initialized OpenSSL EC_POINT given the group of a curve.
     If curve_nid is provided, it retrieves the group from the curve provided.
@@ -109,7 +107,7 @@ def _get_new_EC_POINT(curve: Curve):
     return new_point
 
 
-def _get_EC_POINT_via_affine(affine_x, affine_y, curve: Curve):
+def _get_EC_POINT_via_affine(affine_x, affine_y, curve: 'Curve'):
     """
     Returns an EC_POINT given the group of a curve and the affine coordinates
     provided.
@@ -123,7 +121,7 @@ def _get_EC_POINT_via_affine(affine_x, affine_y, curve: Curve):
     return new_point
 
 
-def _get_affine_coords_via_EC_POINT(ec_point, curve: Curve):
+def _get_affine_coords_via_EC_POINT(ec_point, curve: 'Curve'):
     """
     Returns the affine coordinates of a given point on the provided ec_group.
     """

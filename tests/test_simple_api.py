@@ -13,8 +13,8 @@ from .conftest import parameters, wrong_parameters
 
 
 secp_curves = [
-    SECP384R1(),
-    SECP256R1()
+    SECP384R1,
+    SECP256R1
 ]
 
 

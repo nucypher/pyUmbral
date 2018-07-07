@@ -34,7 +34,7 @@ def test_try_to_use_curve_with_no_default_curve():
         assert caught_warnings[0].category == RuntimeWarning
 
     # Now, a default curve has been set.
-    assert config._CONFIG._CONFIG__curve == SECP256K1()
+    assert config._CONFIG._CONFIG__curve == SECP256K1
 
 
 def test_try_to_use_default_params_with_no_default_curve():
@@ -52,18 +52,18 @@ def test_try_to_use_default_params_with_no_default_curve():
         assert caught_warnings[0].category == RuntimeWarning
 
     # Now, a default curve has been set.
-    assert config._CONFIG._CONFIG__curve == SECP256K1()
+    assert config._CONFIG._CONFIG__curve == SECP256K1
 
 
 def test_cannot_set_default_curve_twice():
     config = _copy_config_for_testing()
 
     # pyumbral even supports NIST curves!
-    config.set_default_curve(SECP256R1())
+    config.set_default_curve(SECP256R1)
 
     # Our default curve has been set...
-    assert config.default_curve() == SECP256R1()
+    assert config.default_curve() == SECP256R1
 
     # ...but once set, you can't set the default curve again, even if you've found a better one.
     with pytest.raises(config._CONFIG.UmbralConfigurationError):
-        config.set_default_curve(SECP256K1())
+        config.set_default_curve(SECP256K1)

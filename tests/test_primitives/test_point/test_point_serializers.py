@@ -7,21 +7,21 @@ from umbral.point import Point
 
 def generate_test_points_bytes(quantity=2):
     points_bytes = [
-        (SECP256K1(), 714, b'\x02x{DR\x94\x8f\x17\xb8\xa2\x14t\x11\xdb\xb1VK\xdb\xc2\xa0T\x97iCK\x8cz~\xea\xa3\xb7AJ'),
+        (SECP256K1, 714, b'\x02x{DR\x94\x8f\x17\xb8\xa2\x14t\x11\xdb\xb1VK\xdb\xc2\xa0T\x97iCK\x8cz~\xea\xa3\xb7AJ'),
     ]
     for _ in range(quantity):
-        args = (SECP256K1(), 714, Point.gen_rand(curve=SECP256K1()).to_bytes())
+        args = (SECP256K1, 714, Point.gen_rand(curve=SECP256K1).to_bytes())
         points_bytes.append(args)
     return points_bytes
 
 
 def generate_test_points_affine(quantity=2):
     points_affine = [
-        (SECP256K1(), 714, (54495335564072000415434275044935054036617226655045445809732056033758606213450,
+        (SECP256K1, 714, (54495335564072000415434275044935054036617226655045445809732056033758606213450,
                             26274482902044210718566767736429706729731617411738990314884135712590488065008)),
     ]
     for _ in range(quantity):
-        args = (SECP256K1(), 714, Point.gen_rand(curve=SECP256K1()).to_affine())
+        args = (SECP256K1, 714, Point.gen_rand(curve=SECP256K1).to_affine())
         points_affine.append(args)
     return points_affine
 
@@ -113,8 +113,8 @@ def test_point_not_on_curve():
     https://www.openssl.org/docs/man1.1.0/crypto/EC_GFp_simple_method.html
     """
     point_on_koblitz256_but_not_P256 = Point.from_bytes(b'\x03%\x98Dk\x88\xe2\x97\xab?\xabZ\xef\xd4' \
-    b'\x9e\xaa\xc6\xb3\xa4\xa3\x89\xb2\xd7b.\x8f\x16Ci_&\xe0\x7f', curve=SECP256K1())
+    b'\x9e\xaa\xc6\xb3\xa4\xa3\x89\xb2\xd7b.\x8f\x16Ci_&\xe0\x7f', curve=SECP256K1)
 
     from cryptography.exceptions import InternalError
     with pytest.raises(InternalError):
-        Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=SECP256R1())
+        Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=SECP256R1)

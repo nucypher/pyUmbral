@@ -1,7 +1,9 @@
+import typing
 from contextlib import contextmanager
 from cryptography.hazmat.backends.openssl import backend
 
 
+@typing.no_type_check
 def _get_new_BN(set_consttime_flag=True):
     """
     Returns a new and initialized OpenSSL BIGNUM.
@@ -18,6 +20,7 @@ def _get_new_BN(set_consttime_flag=True):
     return new_bn
 
 
+@typing.no_type_check
 def _get_ec_group_by_curve_nid(curve_nid: int):
     """
     Returns the group of a given curve via its OpenSSL nid. This must be freed
@@ -29,6 +32,7 @@ def _get_ec_group_by_curve_nid(curve_nid: int):
     return group
 
 
+@typing.no_type_check
 def _get_ec_order_by_group(ec_group):
     """
     Returns the order of a given curve via its OpenSSL EC_GROUP.
@@ -40,6 +44,7 @@ def _get_ec_order_by_group(ec_group):
     return ec_order
 
 
+@typing.no_type_check
 def _get_ec_generator_by_group(ec_group):
     """
     Returns the generator point of a given curve via its OpenSSL EC_GROUP.
@@ -51,6 +56,7 @@ def _get_ec_generator_by_group(ec_group):
     return generator
 
 
+@typing.no_type_check
 def _get_ec_group_degree(ec_group):
     """
     Returns the number of bits needed to represent the order of the finite 
@@ -59,6 +65,7 @@ def _get_ec_group_degree(ec_group):
     return backend._lib.EC_GROUP_get_degree(ec_group) 
 
 
+@typing.no_type_check
 def _bn_is_on_curve(check_bn, curve: 'Curve'):
     """
     Checks if a given OpenSSL BIGNUM is within the provided curve's order.
@@ -73,6 +80,7 @@ def _bn_is_on_curve(check_bn, curve: 'Curve'):
     return check_sign == 1 and range_check == -1
 
 
+@typing.no_type_check
 def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If a curve is
@@ -95,6 +103,7 @@ def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
     return conv_bn
 
 
+@typing.no_type_check
 def _get_new_EC_POINT(curve: 'Curve'):
     """
     Returns a new and initialized OpenSSL EC_POINT given the group of a curve.
@@ -107,6 +116,7 @@ def _get_new_EC_POINT(curve: 'Curve'):
     return new_point
 
 
+@typing.no_type_check
 def _get_EC_POINT_via_affine(affine_x, affine_y, curve: 'Curve'):
     """
     Returns an EC_POINT given the group of a curve and the affine coordinates
@@ -121,6 +131,7 @@ def _get_EC_POINT_via_affine(affine_x, affine_y, curve: 'Curve'):
     return new_point
 
 
+@typing.no_type_check
 def _get_affine_coords_via_EC_POINT(ec_point, curve: 'Curve'):
     """
     Returns the affine coordinates of a given point on the provided ec_group.
@@ -136,6 +147,7 @@ def _get_affine_coords_via_EC_POINT(ec_point, curve: 'Curve'):
     return (affine_x, affine_y)
 
 
+@typing.no_type_check
 @contextmanager
 def _tmp_bn_mont_ctx(modulus):
     """

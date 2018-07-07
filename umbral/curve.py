@@ -37,6 +37,9 @@ class Curve:
     def __eq__(self, other):
         return self.curve_nid == other.curve_nid
 
+    def __repr__(self):
+        return "<OpenSSL Curve w/ NID {}>".format(self.curve_nid)
+
 
 SECP256R1 = Curve(_AVAIL_CURVES['secp256r1'])
 SECP256K1 = Curve(_AVAIL_CURVES['secp256k1'])

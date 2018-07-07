@@ -33,8 +33,8 @@ The best way to start using pyUmbral is to decide on a elliptic curve to use and
 .. doctest:: capsule_story
 
     >>> from umbral import config
-    >>> from cryptography.hazmat.primitives.asymmetric import ec
-    >>> config.set_default_curve(ec.SECP256K1)
+    >>> from umbral.curve import SECP256K1
+    >>> config.set_default_curve(SECP256K1)
 
 For more information on curves, see :doc:`choosing_and_using_curves`.
 

@@ -24,9 +24,9 @@ copyright = '2018, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacif
 author = 'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
 
 # The short X.Y version
-version = ''
+version = '0.1'
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.1.0-alpha.1'
 
 
 # -- General configuration ---------------------------------------------------

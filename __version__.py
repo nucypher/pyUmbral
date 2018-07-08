@@ -10,5 +10,5 @@ def set_version(version: str):
 
 
 if __name__ == "__main__":
-    version = "0.1.0-alpha"
+    version = "0.1.0-alpha.0"
     set_version(version)

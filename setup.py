@@ -34,7 +34,7 @@ TESTS_REQUIRE = [
 ]
 
 setup(name='umbral',
-      version='0.1.0-alpha',
+      version='0.1.0-alpha.0',
       description='Umbral PRE implementation for NuCypher',
       extras_require={'testing': TESTS_REQUIRE},
       install_requires=INSTALL_REQUIRES,

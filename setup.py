@@ -17,11 +17,15 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import os
 from distutils.core import setup
 
-from cffi.setuptools_ext import execfile
+base_dir = os.path.dirname(__file__)
+src_dir = os.path.join(base_dir, "src")
 
-execfile(filename='./__version__.py', glob="__version__")
+about = {}
+with open(os.path.join(src_dir, "umbral", "__about__.py")) as f:
+    exec(f.read(), about)
 
 INSTALL_REQUIRES = ['msgpack-python', 'pynacl']
 
@@ -33,9 +37,19 @@ TESTS_REQUIRE = [
     'ipython'
 ]
 
-setup(name='umbral',
-      version='0.1.0-alpha.0',
-      description='Umbral PRE implementation for NuCypher',
+
+setup(name=about['__title__'],
+      version=about['__version__'],
+      author=about['__author'],
+      description=about["__summary__"],
+      long_description_markdown_filename='README.md',
       extras_require={'testing': TESTS_REQUIRE},
       install_requires=INSTALL_REQUIRES,
-      packages=['umbral'])
+      packages=['umbral'],
+      classifiers=[
+          "Natural Language :: English",
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+        ]
+      )

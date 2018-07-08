@@ -4,11 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+
 cryptography = ">=2.3"
 pynacl="*"
 bytestringSplitter = {git = "https://github.com/nucypher/bytestringSplitter.git", ref = "nucypher-depend"}
 
 [dev-packages]
+bumpversion = "*"
 # Pytest Plugins
 pytest = "*"
 pytest-mypy = "*"
@@ -18,6 +20,7 @@ pytest-benchmark = {version = "*", extras = ["histogram"]}
 # Pytest Plugin Subdeps
 mock = "*"
 mypy = "*"
+monkeytype = "*"
 coverage = "*"
 codecov = "*"
 # Docs
@@ -25,6 +28,7 @@ sphinx = "*"
 sphinx-autobuild = "*"
 # Testing libraries
 hypothesis = "*"
+
 
 [pipenv]
 allow_prereleases = true

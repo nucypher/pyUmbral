@@ -4,7 +4,6 @@ from typing import Optional
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-from cryptography.hazmat.primitives.asymmetric.ec import Curve
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 
 from umbral.config import default_curve

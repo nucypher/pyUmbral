@@ -1,4 +1,4 @@
-from typing import Optional, Type, Union
+from typing import Optional, Type
 from warnings import warn
 
 from umbral.curve import Curve, SECP256K1
@@ -26,7 +26,7 @@ class _CONFIG:
         return cls.__params
 
     @classmethod
-    def curve(cls) -> Union[Type[SECP256R1], Type[SECP256K1]]:
+    def curve(cls) -> Type[Curve]:
         if not cls.__curve:
             cls.__set_curve_by_default()
         return cls.__curve
@@ -48,7 +48,7 @@ def set_default_curve(curve: Optional[Curve] = None) -> None:
     return _CONFIG.set_curve(curve)
 
 
-def default_curve() -> Union[Type[SECP256R1], Type[SECP256K1]]:
+def default_curve() -> Type[Curve]:
     return _CONFIG.curve()
 
 

@@ -1,4 +1,5 @@
 import os
+import typing
 from typing import Dict, List, Optional, Tuple, Union
 
 from cryptography.hazmat.backends.openssl import backend
@@ -67,7 +68,7 @@ class Capsule(object):
         self._point_v_prime = point_v_prime
         self._point_noninteractive = point_noninteractive
 
-        self._attached_cfrags = list()
+        self._attached_cfrags = list()    # type: list
 
     @classmethod
     def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None, activated: bool = False) -> int:
@@ -149,15 +150,16 @@ class Capsule(object):
     def set_correctness_keys(self,
                              delegating: Optional[UmbralPublicKey] = None,
                              receiving: Optional[UmbralPublicKey] = None,
-                             verifying: Optional[UmbralPublicKey] = None
+                             verifying: Optional[UmbralPublicKey] = None,
                              ) -> Tuple[bool, bool, bool]:
 
-        delegating_key_details = self._set_cfrag_correctness_key("delegating", delegating)
-        receiving_key_details = self._set_cfrag_correctness_key("receiving", receiving)
-        verifying_key_details = self._set_cfrag_correctness_key("verifying", verifying)
+        delegating_key_details = self._set_cfrag_correctness_key(key_type="delegating", key=delegating)
+        receiving_key_details = self._set_cfrag_correctness_key(key_type="receiving", key=receiving)
+        verifying_key_details = self._set_cfrag_correctness_key(key_type="verifying", key=verifying)
 
         return delegating_key_details, receiving_key_details, verifying_key_details
 
+    @typing.no_type_check
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
 
@@ -178,7 +180,8 @@ class Capsule(object):
         s = self._bn_sig
         h = CurveBN.hash(e, v, params=self._umbral_params)
 
-        return s * g == v + (h * e)
+        result = s * g == v + (h * e)      # type: bool
+        return result
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
         if cfrag.verify_correctness(self):
@@ -261,6 +264,7 @@ class Capsule(object):
             # Again, it's hard to imagine why.
             return False
 
+    @typing.no_type_check
     def __hash__(self) -> int:
         # We only ever want to store in a hash table based on original components;
         # A Capsule that is part of a dict needs to continue to be lookup-able even
@@ -342,9 +346,13 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
             bytes(material) for material in (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord))
         signature = signer(kfrag_validity_message)
 
-        kfrag = KFrag(id=id, bn_key=rk,
-                      point_noninteractive=ni, point_commitment=u1,
-                      point_xcoord=xcoord, signature=signature)
+        kfrag = KFrag(id=id,
+                      bn_key=rk,
+                      point_noninteractive=ni,
+                      point_commitment=u1,
+                      point_xcoord=xcoord,
+                      signature=signature)
+
         kfrags.append(kfrag)
 
     return kfrags
@@ -355,7 +363,6 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
 
     if not capsule.verify():
         raise capsule.NotValid
-
 
     rk = kfrag._bn_key
     e1 = rk * capsule._point_e

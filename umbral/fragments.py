@@ -154,7 +154,8 @@ class CapsuleFrag(object):
                  point_v1: Point,
                  kfrag_id: bytes,
                  point_noninteractive: Point,
-                 point_xcoord: Point, proof: Optional[CorrectnessProof] = None) -> None:
+                 point_xcoord: Point,
+                 proof: Optional[CorrectnessProof] = None) -> None:
 
         self._point_e1 = point_e1
         self._point_v1 = point_v1
@@ -203,7 +204,7 @@ class CapsuleFrag(object):
 
         proof = components.pop(-1) or None
         proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
-        return cls(*components, proof)
+        return cls(*components, proof=proof)
 
     def to_bytes(self) -> bytes:
         """

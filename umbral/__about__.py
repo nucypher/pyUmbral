@@ -13,3 +13,5 @@ __version__ = "0.1.0-alpha.0"
 __author__ = "NuCypher"
 
 __license__ = "GNU General Public License, Version 3"
+
+# __copyright__ = '2018, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'

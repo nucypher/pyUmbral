@@ -20,7 +20,7 @@ pytest-benchmark = {version = "*", extras = ["histogram"]}
 # Pytest Plugin Subdeps
 mock = "*"
 mypy = "*"
-monkeytype = "*"
+monkeytype = "==18.2.0"
 coverage = "*"
 codecov = "*"
 # Docs

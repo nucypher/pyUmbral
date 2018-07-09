@@ -1,4 +1,6 @@
 import os
+from typing import Optional
+
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 
 
@@ -7,7 +9,7 @@ DEM_NONCE_SIZE = 12
 
 
 class UmbralDEM(object):
-    def __init__(self, symm_key: bytes):
+    def __init__(self, symm_key: bytes) -> None:
         """
         Initializes an UmbralDEM object. Requires a key to perform
         ChaCha20-Poly1305.
@@ -19,7 +21,7 @@ class UmbralDEM(object):
 
         self.cipher = ChaCha20Poly1305(symm_key)
 
-    def encrypt(self, data: bytes, authenticated_data: bytes=None):
+    def encrypt(self, data: bytes, authenticated_data: Optional[bytes] = None) -> bytes:
         """
         Encrypts data using ChaCha20-Poly1305 with optional authenticated data.
         """
@@ -28,7 +30,7 @@ class UmbralDEM(object):
         # Ciphertext will be a 12 byte nonce, the ciphertext, and a 16 byte tag.
         return nonce + enc_data
 
-    def decrypt(self, ciphertext: bytes, authenticated_data: bytes=None):
+    def decrypt(self, ciphertext: bytes, authenticated_data: Optional[bytes] = None) -> bytes:
         """
         Decrypts data using ChaCha20-Poly1305 and validates the provided
         authenticated data.

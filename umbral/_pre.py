@@ -1,20 +1,21 @@
+from typing import Optional
+
 from umbral.curvebn import CurveBN
-from umbral.config import default_params
 from umbral.keys import UmbralPublicKey
-from umbral.params import UmbralParameters
 
 
-def prove_cfrag_correctness(cfrag: "CapsuleFrag",
-                            kfrag: "KFrag",
-                            capsule: "Capsule",
-                            metadata: bytes = None
-                            ) -> "CorrectnessProof":
+def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
+                            kfrag: 'KFrag',
+                            capsule: 'Capsule',
+                            metadata: Optional[bytes] = None
+                            ) -> 'CorrectnessProof':
+
     params = capsule._umbral_params
 
     rk = kfrag._bn_key
     t = CurveBN.gen_rand(params.curve)
     ####
-    ## Here are the formulaic constituents shared with `assess_cfrag_correctness`.
+    # Here are the formulaic constituents shared with `assess_cfrag_correctness`.
     ####
     e = capsule._point_e
     v = capsule._point_v
@@ -45,7 +46,7 @@ def prove_cfrag_correctness(cfrag: "CapsuleFrag",
         raise capsule.NotValid("Capsule verification failed.")
 
 
-def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
+def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
 
     correctness_keys = capsule.get_correctness_keys()
 
@@ -62,7 +63,7 @@ def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
     params = capsule._umbral_params
 
     ####
-    ## Here are the formulaic constituents shared with `prove_cfrag_correctness`.
+    # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
     ####
     e = capsule._point_e
     v = capsule._point_v
@@ -110,11 +111,11 @@ def assess_cfrag_correctness(cfrag, capsule: "Capsule"):
            & correct_rk_commitment
 
 
-def verify_kfrag(kfrag,
+def verify_kfrag(kfrag: 'KFrag',
                  delegating_pubkey: UmbralPublicKey,
-                 signing_pubkey,
+                 signing_pubkey: UmbralPublicKey,
                  receiving_pubkey: UmbralPublicKey
-                 ):
+                 ) -> bool:
 
 
     params = delegating_pubkey.params

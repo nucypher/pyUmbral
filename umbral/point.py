@@ -1,13 +1,15 @@
-from umbral.curvebn import CurveBN 
+from typing import Optional, Tuple
+
+from cryptography.exceptions import InternalError
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
-from cryptography.exceptions import InternalError
 
 from umbral import openssl
 from umbral.config import default_curve
 from umbral.curve import Curve
-from umbral.utils import get_field_order_size_in_bytes
+from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
+from umbral.utils import get_field_order_size_in_bytes
 
 
 class Point(object):
@@ -15,12 +17,12 @@ class Point(object):
     Represents an OpenSSL EC_POINT except more Pythonic
     """
 
-    def __init__(self, ec_point, curve: Curve):
+    def __init__(self, ec_point, curve: Curve) -> None:
         self.ec_point = ec_point
         self.curve = curve
 
     @classmethod
-    def expected_bytes_length(cls, curve: Curve=None):
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a compressed Point given a curve.
         If no curve is provided, it uses the default curve.
@@ -29,7 +31,7 @@ class Point(object):
         return get_field_order_size_in_bytes(curve) + 1
 
     @classmethod
-    def gen_rand(cls, curve: Curve=None):
+    def gen_rand(cls, curve: Optional[Curve] = None) -> 'Point':
         """
         Returns a Point object with a cryptographically secure EC_POINT based
         on the provided curve.
@@ -49,7 +51,7 @@ class Point(object):
         return cls(rand_point, curve)
 
     @classmethod
-    def from_affine(cls, coords, curve: Curve=None):
+    def from_affine(cls, coords: Tuple[int, int], curve: Optional[Curve] = None) -> 'Point':
         """
         Returns a Point object from the given affine coordinates in a tuple in
         the format of (x, y) and a given curve.
@@ -76,7 +78,7 @@ class Point(object):
         return (backend._bn_to_int(affine_x), backend._bn_to_int(affine_y))
 
     @classmethod
-    def from_bytes(cls, data, curve: Curve=None):
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'Point':
         """
         Returns a Point object from the given byte data on the curve provided.
         """
@@ -113,7 +115,7 @@ class Point(object):
         else:
             raise ValueError("Invalid point serialization.")
 
-    def to_bytes(self, is_compressed=True):
+    def to_bytes(self, is_compressed: bool=True) -> bytes:
         """
         Returns the Point serialized as bytes. It will return a compressed form
         if is_compressed is set to True.
@@ -133,7 +135,7 @@ class Point(object):
         return data
 
     @classmethod
-    def get_generator_from_curve(cls, curve: Curve=None):
+    def get_generator_from_curve(cls, curve: Optional[Curve] = None) -> 'Point':
         """
         Returns the generator Point from the given curve as a Point object.
         """
@@ -153,7 +155,7 @@ class Point(object):
         # 1 is not-equal, 0 is equal, -1 is error
         return not bool(is_equal)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> 'Point':
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """
@@ -170,7 +172,7 @@ class Point(object):
 
     __rmul__ = __mul__
 
-    def __add__(self, other):
+    def __add__(self, other) -> 'Point':
         """
         Performs an EC_POINT_add on two EC_POINTS.
         """
@@ -188,7 +190,7 @@ class Point(object):
         """
         return (self + (~other))
 
-    def __invert__(self):
+    def __invert__(self) -> 'Point':
         """
         Performs an EC_POINT_invert on itself.
         """
@@ -203,11 +205,11 @@ class Point(object):
             backend.openssl_assert(res == 1)
         return Point(inv, self.curve)
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return self.to_bytes()
 
 
-def unsafe_hash_to_point(data, params : UmbralParameters, label=None):
+def unsafe_hash_to_point(data, params: UmbralParameters, label=None) -> 'Point':
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
@@ -234,8 +236,7 @@ def unsafe_hash_to_point(data, params : UmbralParameters, label=None):
         compressed02 = b"\x02" + hash_digest
 
         try:
-            h = Point.from_bytes(compressed02, params.curve)
-            return h
+            return Point.from_bytes(compressed02, params.curve)
         except InternalError as e:
             # We want to catch specific InternalExceptions:
             # - Point not in the curve (code 107)

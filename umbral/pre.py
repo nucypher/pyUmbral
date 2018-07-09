@@ -1,13 +1,15 @@
-from typing import Tuple, Union, List
+import os
+import typing
+from typing import Dict, List, Optional, Tuple, Union
+
+from cryptography.hazmat.backends.openssl import backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
 from bytestring_splitter import BytestringSplitter
-from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import hashes
-
-from umbral._pre import prove_cfrag_correctness, assess_cfrag_correctness
+from umbral._pre import prove_cfrag_correctness
+from umbral.config import default_curve
 from umbral.curvebn import CurveBN
-from umbral.config import default_params, default_curve
 from umbral.dem import UmbralDEM, DEM_KEYSIZE
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
@@ -15,7 +17,6 @@ from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.signing import Signer
 from umbral.utils import poly_eval, lambda_coeff, kdf
-import os
 
 
 class GenericUmbralError(Exception):
@@ -23,7 +24,7 @@ class GenericUmbralError(Exception):
 
 
 class UmbralCorrectnessError(GenericUmbralError):
-    def __init__(self, message, offending_cfrags):
+    def __init__(self, message: str, offending_cfrags: List[CapsuleFrag]) -> None:
         super().__init__(message)
         self.offending_cfrags = offending_cfrags
 
@@ -31,15 +32,16 @@ class UmbralCorrectnessError(GenericUmbralError):
 class Capsule(object):
     def __init__(self,
                  params: UmbralParameters,
-                 point_e=None,
-                 point_v=None,
-                 bn_sig=None,
-                 point_e_prime=None,
-                 point_v_prime=None,
-                 point_noninteractive=None,
-                 delegating_pubkey: UmbralPublicKey = None,
-                 receiving_pubkey: UmbralPublicKey = None,
-                 verifying_pubkey=None):
+                 point_e: Optional[Point] = None,
+                 point_v: Optional[Union[int, Point]] = None,
+                 bn_sig: Optional[Union[int, CurveBN]] = None,
+                 point_e_prime: Optional[Point] = None,
+                 point_v_prime: Optional[Union[int, Point]] = None,
+                 point_noninteractive: Optional[Union[int, Point]] = None,
+                 delegating_pubkey: Optional[UmbralPublicKey] = None,
+                 receiving_pubkey: Optional[UmbralPublicKey] = None,
+                 verifying_pubkey: None = None
+                 ) -> None:
 
         self._umbral_params = params
 
@@ -66,10 +68,10 @@ class Capsule(object):
         self._point_v_prime = point_v_prime
         self._point_noninteractive = point_noninteractive
 
-        self._attached_cfrags = list()
+        self._attached_cfrags = list()    # type: list
 
     @classmethod
-    def expected_bytes_length(cls, curve: ec.EllipticCurve = None, activated=False):
+    def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None, activated: bool = False) -> int:
         """
         Returns the size (in bytes) of a Capsule given the curve.
         If no curve is provided, it will use the default curve.
@@ -89,7 +91,7 @@ class Capsule(object):
         """
 
     @classmethod
-    def from_bytes(cls, capsule_bytes: bytes, params: UmbralParameters):
+    def from_bytes(cls, capsule_bytes: bytes, params: UmbralParameters) -> 'Capsule':
         """
         Instantiates a Capsule object from the serialized data.
         """
@@ -123,7 +125,7 @@ class Capsule(object):
         components = splitter(capsule_bytes)
         return cls(params, *components)
 
-    def _set_cfrag_correctness_key(self, key_type, key: UmbralPublicKey):
+    def _set_cfrag_correctness_key(self, key_type: str, key: UmbralPublicKey) -> bool:
         if key_type not in ("delegating", "receiving", "verifying"): 
             raise ValueError("You can only set 'delegating', 'receiving' or 'verifying' keys.") 
 
@@ -142,21 +144,22 @@ class Capsule(object):
         else:
             raise ValueError("The {} key is already set; you can't set it again.".format(key_type))
 
-
-    def get_correctness_keys(self):
+    def get_correctness_keys(self) -> Dict[str, Union[UmbralPublicKey, None]]:
         return dict(self._cfrag_correctness_keys)
 
     def set_correctness_keys(self,
-                 delegating: UmbralPublicKey = None,
-                 receiving: UmbralPublicKey = None,
-                 verifying=None
-                 ):
-        delegating_key_details = self._set_cfrag_correctness_key("delegating", delegating)
-        receiving_key_details = self._set_cfrag_correctness_key("receiving", receiving)
-        verifying_key_details = self._set_cfrag_correctness_key("verifying", verifying)
+                             delegating: Optional[UmbralPublicKey] = None,
+                             receiving: Optional[UmbralPublicKey] = None,
+                             verifying: Optional[UmbralPublicKey] = None,
+                             ) -> Tuple[bool, bool, bool]:
+
+        delegating_key_details = self._set_cfrag_correctness_key(key_type="delegating", key=delegating)
+        receiving_key_details = self._set_cfrag_correctness_key(key_type="receiving", key=receiving)
+        verifying_key_details = self._set_cfrag_correctness_key(key_type="verifying", key=verifying)
 
         return delegating_key_details, receiving_key_details, verifying_key_details
 
+    @typing.no_type_check
     def _original_to_bytes(self) -> bytes:
         return bytes().join(c.to_bytes() for c in self.original_components())
 
@@ -177,7 +180,8 @@ class Capsule(object):
         s = self._bn_sig
         h = CurveBN.hash(e, v, params=self._umbral_params)
 
-        return s * g == v + (h * e)
+        result = s * g == v + (h * e)      # type: bool
+        return result
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
         if cfrag.verify_correctness(self):
@@ -236,10 +240,10 @@ class Capsule(object):
         self._point_v_prime = v
         self._point_noninteractive = ni
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return self.to_bytes()
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Capsule') -> bool:
         """
         If both Capsules are activated, we compare only the activated components.
         Otherwise, we compare only original components.
@@ -260,7 +264,8 @@ class Capsule(object):
             # Again, it's hard to imagine why.
             return False
 
-    def __hash__(self):
+    @typing.no_type_check
+    def __hash__(self) -> int:
         # We only ever want to store in a hash table based on original components;
         # A Capsule that is part of a dict needs to continue to be lookup-able even
         # after activation.
@@ -268,7 +273,7 @@ class Capsule(object):
         component_bytes = tuple(component.to_bytes() for component in self.original_components())
         return hash(component_bytes)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._attached_cfrags)
 
 
@@ -341,20 +346,23 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
             bytes(material) for material in (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord))
         signature = signer(kfrag_validity_message)
 
-        kfrag = KFrag(id=id, bn_key=rk,
-                      point_noninteractive=ni, point_commitment=u1,
-                      point_xcoord=xcoord, signature=signature)
+        kfrag = KFrag(id=id,
+                      bn_key=rk,
+                      point_noninteractive=ni,
+                      point_commitment=u1,
+                      point_xcoord=xcoord,
+                      signature=signature)
+
         kfrags.append(kfrag)
 
     return kfrags
 
 
-def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof = True, 
-              metadata: bytes = None) -> CapsuleFrag:
+def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True, 
+              metadata: Optional[bytes] = None) -> CapsuleFrag:
 
     if not capsule.verify():
         raise capsule.NotValid
-
 
     rk = kfrag._bn_key
     e1 = rk * capsule._point_e
@@ -371,7 +379,7 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof = True,
 
 
 def _encapsulate(alice_pubkey: UmbralPublicKey, 
-                 key_length=DEM_KEYSIZE) -> Tuple[bytes, Capsule]:
+                 key_length: int = DEM_KEYSIZE) -> Tuple[bytes, Capsule]:
     """Generates a symmetric key and its associated KEM ciphertext"""
 
     params = alice_pubkey.params
@@ -395,7 +403,7 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
 
 
 def _decapsulate_original(priv_key: UmbralPrivateKey, capsule: Capsule, 
-                          key_length=DEM_KEYSIZE) -> bytes:
+                          key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
 
     priv_key = priv_key.bn_key
@@ -412,7 +420,7 @@ def _decapsulate_original(priv_key: UmbralPrivateKey, capsule: Capsule,
 
 
 def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsule,
-                             key_length=DEM_KEYSIZE) -> bytes:
+                             key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
     params = capsule._umbral_params
 
@@ -459,7 +467,7 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
 
 
 def _open_capsule(capsule: Capsule, receiving_privkey: UmbralPrivateKey,
-                  check_proof=True) -> bytes:
+                  check_proof: bool = True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
     opens the Capsule and returns what is inside.
@@ -486,7 +494,7 @@ def _open_capsule(capsule: Capsule, receiving_privkey: UmbralPrivateKey,
 
 
 def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKey,
-            check_proof=True) -> bytes:
+            check_proof: bool = True) -> bytes:
     """
     Opens the capsule and gets what's inside.
 

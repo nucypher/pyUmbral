@@ -1,13 +1,11 @@
-import os
-
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
-from umbral.config import default_curve, default_params
+from umbral.config import default_curve
 from umbral.curve import Curve
-from umbral.utils import get_field_order_size_in_bytes
 from umbral.params import UmbralParameters
+from umbral.utils import get_field_order_size_in_bytes
 
 
 class CurveBN(object):
@@ -27,7 +25,7 @@ class CurveBN(object):
         self.curve = curve
 
     @classmethod
-    def expected_bytes_length(cls, curve: Curve=None):
+    def expected_bytes_length(cls, curve: Curve=None) -> int:
         """
         Returns the size (in bytes) of a CurveBN given the curve.
         If no curve is provided, it uses the default.
@@ -36,7 +34,7 @@ class CurveBN(object):
         return get_field_order_size_in_bytes(curve)
 
     @classmethod
-    def gen_rand(cls, curve: Curve=None):
+    def gen_rand(cls, curve: Curve=None) -> 'CurveBN':
         """
         Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
         based on the given curve.
@@ -56,7 +54,7 @@ class CurveBN(object):
         return cls(new_rand_bn, curve)
 
     @classmethod
-    def from_int(cls, num, curve: Curve=None):
+    def from_int(cls, num: int, curve: Curve=None) -> 'CurveBN':
         """
         Returns a CurveBN object from a given integer on a curve.
         By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
@@ -67,7 +65,7 @@ class CurveBN(object):
         return cls(conv_bn, curve)
 
     @classmethod
-    def hash(cls, *crypto_items, params: UmbralParameters):
+    def hash(cls, *crypto_items, params: UmbralParameters) -> 'CurveBN':
         # TODO: Clean this in an upcoming cleanup of pyUmbral
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         for item in crypto_items:
@@ -101,7 +99,7 @@ class CurveBN(object):
         return cls(bignum, params.curve)
 
     @classmethod
-    def from_bytes(cls, data, curve: Curve=None):
+    def from_bytes(cls, data: bytes, curve: Curve=None) -> 'CurveBN':
         """
         Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
@@ -112,20 +110,20 @@ class CurveBN(object):
         num = int.from_bytes(data, 'big')
         return cls.from_int(num, curve)
 
-    def to_bytes(self):
+    def to_bytes(self) -> bytes:
         """
         Returns the CurveBN as bytes.
         """
         size = backend._lib.BN_num_bytes(self.curve.order)
         return int.to_bytes(int(self), size, 'big')
 
-    def __int__(self):
+    def __int__(self) -> int:
         """
         Converts the CurveBN to a Python int.
         """
         return backend._bn_to_int(self.bignum)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """
         Compares the two BIGNUMS or int.
         """
@@ -137,7 +135,7 @@ class CurveBN(object):
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
 
-    def __pow__(self, other):
+    def __pow__(self, other) -> 'CurveBN':
         """
         Performs a BN_mod_exp on two BIGNUMS.
 
@@ -157,7 +155,7 @@ class CurveBN(object):
 
         return CurveBN(power, self.curve)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> 'CurveBN':
         """
         Performs a BN_mod_mul between two BIGNUMS.
         """
@@ -173,7 +171,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> 'CurveBN':
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
 
@@ -193,7 +191,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __add__(self, other):
+    def __add__(self, other) -> 'CurveBN':
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
@@ -206,7 +204,7 @@ class CurveBN(object):
 
         return CurveBN(op_sum, self.curve)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> 'CurveBN':
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
@@ -219,7 +217,7 @@ class CurveBN(object):
 
         return CurveBN(diff, self.curve)
 
-    def __invert__(self):
+    def __invert__(self) -> 'CurveBN':
         """
         Performs a BN_mod_inverse.
 
@@ -235,7 +233,7 @@ class CurveBN(object):
 
         return CurveBN(inv, self.curve)
 
-    def __mod__(self, other):
+    def __mod__(self, other) -> 'CurveBN':
         """
         Performs a BN_nnmod on two BIGNUMS.
         """

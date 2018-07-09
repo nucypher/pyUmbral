@@ -1,13 +1,14 @@
-import math
+from typing import List 
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.asymmetric import ec
+
 from umbral import openssl
+from umbral.curve import Curve
 
 
-def lambda_coeff(id_i, selected_ids):
+def lambda_coeff(id_i: 'CurveBN', selected_ids: List['CurveBN']) -> 'CurveBN':
     ids = [x for x in selected_ids if x != id_i]
 
     if not ids:
@@ -22,7 +23,7 @@ def lambda_coeff(id_i, selected_ids):
     return result
 
 
-def poly_eval(coeff, x):
+def poly_eval(coeff: List['CurveBN'], x: 'CurveBN') -> 'CurveBN':
     result = coeff[-1]
     for i in range(-2, -len(coeff) - 1, -1):
         result = ((result * x) + coeff[i])
@@ -30,7 +31,7 @@ def poly_eval(coeff, x):
     return result
 
 
-def kdf(ecpoint, key_length):
+def kdf(ecpoint: 'Point', key_length: int) -> bytes:
     data = ecpoint.to_bytes(is_compressed=True)
 
     return HKDF(
@@ -42,7 +43,7 @@ def kdf(ecpoint, key_length):
     ).derive(data)
 
 
-def get_field_order_size_in_bytes(curve):
+def get_field_order_size_in_bytes(curve: Curve) -> int:
     backend = default_backend()
     size_in_bits = openssl._get_ec_group_degree(curve.ec_group)
     return (size_in_bits + 7) // 8

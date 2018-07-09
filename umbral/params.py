@@ -1,10 +1,11 @@
 from cryptography.hazmat.backends.openssl import backend
+
 from umbral import openssl
 from umbral.curve import Curve
 
 
 class UmbralParameters(object):
-    def __init__(self, curve: Curve):
+    def __init__(self, curve: Curve) -> None:
         from umbral.point import Point, unsafe_hash_to_point
         from umbral.utils import get_field_order_size_in_bytes
 
@@ -17,7 +18,7 @@ class UmbralParameters(object):
         parameters_seed = b'NuCypherKMS/UmbralParameters/'
         self.u = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'u')
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'UmbralParameters') -> bool:
 
         self_curve_nid = self.curve.curve_nid
         other_curve_nid = other.curve.curve_nid

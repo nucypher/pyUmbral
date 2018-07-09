@@ -1,26 +1,22 @@
 import os
-import base64
-from typing import Callable
+from typing import Callable, Optional, Union
 
-
-from nacl.secret import SecretBox
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.openssl.ec import (
-    _EllipticCurvePublicKey, _EllipticCurvePrivateKey
-)
+from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from nacl.secret import SecretBox
 
 from umbral import openssl
 from umbral.config import default_params
-from umbral.point import Point
-from umbral.curvebn import CurveBN 
+from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
+from umbral.point import Point
 
-    
+
 class UmbralPrivateKey(object):
-    def __init__(self, bn_key: CurveBN, params: UmbralParameters):
+    def __init__(self, bn_key: CurveBN, params: UmbralParameters) -> None:
         """
         Initializes an Umbral private key.
         """
@@ -29,7 +25,7 @@ class UmbralPrivateKey(object):
         self.pubkey = UmbralPublicKey(self.bn_key * params.g, params=params)
 
     @classmethod
-    def gen_key(cls, params: UmbralParameters = None):
+    def gen_key(cls, params: Optional[UmbralParameters] = None) -> 'UmbralPrivateKey':
         """
         Generates a private key and returns it.
         """
@@ -40,9 +36,12 @@ class UmbralPrivateKey(object):
         return cls(bn_key, params)
 
     @classmethod
-    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters = None,
-                   password: bytes = None, _scrypt_cost: int = 20,
-                   decoder: Callable = None):
+    def from_bytes(cls,
+                   key_bytes: bytes,
+                   params: Optional[UmbralParameters] = None,
+                   password: Optional[bytes] = None,
+                   _scrypt_cost: int = 20,
+                   decoder: Optional[Callable] = None) -> 'UmbralPrivateKey':
         """
         Loads an Umbral private key from bytes.
         Optionally, allows a decoder function to be passed as a param to decode
@@ -79,8 +78,10 @@ class UmbralPrivateKey(object):
         bn_key = CurveBN.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
 
-    def to_bytes(self, password: bytes = None, _scrypt_cost: int = 20,
-                 encoder: Callable = None):
+    def to_bytes(self,
+                 password: Optional[bytes] = None,
+                 _scrypt_cost: int = 20,
+                 encoder: Optional[Callable] = None) -> bytes:
         """
         Returns an Umbral private key as bytes optional symmetric encryption
         via nacl's Salsa20-Poly1305 and Scrypt key derivation. If a password
@@ -114,13 +115,13 @@ class UmbralPrivateKey(object):
 
         return umbral_privkey
 
-    def get_pubkey(self):
+    def get_pubkey(self) -> 'UmbralPublicKey':
         """
         Calculates and returns the public key of the private key.
         """
         return self.pubkey
 
-    def to_cryptography_privkey(self):
+    def to_cryptography_privkey(self) -> _EllipticCurvePrivateKey:
         """
         Returns a cryptography.io EllipticCurvePrivateKey from the Umbral key.
         """
@@ -160,7 +161,7 @@ class UmbralPrivateKey(object):
 
 
 class UmbralPublicKey(object):
-    def __init__(self, point_key, params: UmbralParameters):
+    def __init__(self, point_key: Point, params: UmbralParameters) -> None:
         """
         Initializes an Umbral public key.
         """
@@ -172,8 +173,10 @@ class UmbralPublicKey(object):
         self.point_key = point_key
 
     @classmethod
-    def from_bytes(cls, key_bytes: bytes, params: UmbralParameters = None,
-                   decoder: Callable = None):
+    def from_bytes(cls,
+                   key_bytes: bytes,
+                   params: Optional[UmbralParameters] = None,
+                   decoder: Optional[Callable] = None) -> 'UmbralPublicKey':
         """
         Loads an Umbral public key from bytes.
         Optionally, if an decoder function is provided it will be used to decode
@@ -188,7 +191,7 @@ class UmbralPublicKey(object):
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
-    def to_bytes(self, encoder: Callable = None):
+    def to_bytes(self, encoder: Optional[Callable] = None) -> bytes:
         """
         Returns an Umbral public key as bytes.
         Optionally, if an encoder function is provided it will be used to encode
@@ -204,7 +207,7 @@ class UmbralPublicKey(object):
     def get_pubkey(self):
         raise NotImplementedError
 
-    def to_cryptography_pubkey(self):
+    def to_cryptography_pubkey(self) -> _EllipticCurvePublicKey:
         """
         Returns a cryptography.io EllipticCurvePublicKey from the Umbral key.
         """
@@ -230,7 +233,7 @@ class UmbralPublicKey(object):
         evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
         return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         """
         Returns an Umbral Public key as a bytestring.
         """
@@ -239,7 +242,7 @@ class UmbralPublicKey(object):
     def __repr__(self):
         return "{}:{}".format(self.__class__, self.point_key.to_bytes().hex()[:15])
 
-    def __eq__(self, other):
+    def __eq__(self, other: Optional[Union[bytes, 'UmbralPublicKey', int]]) -> bool:
         if type(other) == bytes:
             is_eq = bytes(other) == bytes(self)
         elif hasattr(other, "point_key"):
@@ -248,7 +251,7 @@ class UmbralPublicKey(object):
             is_eq = False
         return is_eq
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return int.from_bytes(self, byteorder="big")
 
 
@@ -260,7 +263,7 @@ class UmbralKeyingMaterial(object):
     
     """
 
-    def __init__(self, keying_material: bytes = None):
+    def __init__(self, keying_material: Optional[bytes] = None) -> None:
         """
         Initializes an UmbralKeyingMaterial.
         """
@@ -271,8 +274,10 @@ class UmbralKeyingMaterial(object):
         else:
             self.keying_material = os.urandom(64)
 
-    def derive_privkey_by_label(self, label: bytes, salt: bytes = None, 
-                                params: UmbralParameters = None):
+    def derive_privkey_by_label(self,
+                                label: bytes,
+                                salt: Optional[bytes] = None,
+                                params: Optional[UmbralParameters] = None) -> UmbralPrivateKey:
         """
         Derives an UmbralPrivateKey using a KDF from this instance of 
         UmbralKeyingMaterial, a label, and an optional salt.
@@ -291,7 +296,10 @@ class UmbralKeyingMaterial(object):
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod
-    def from_bytes(cls, key_bytes: bytes, password: bytes=None, _scrypt_cost: int=20):
+    def from_bytes(cls,
+                   key_bytes: bytes,
+                   password: Optional[bytes] = None,
+                   _scrypt_cost: int = 20) -> 'UmbralKeyingMaterial':
         """
         Loads an UmbralKeyingMaterial from a urlsafe base64 encoded string.
         Optionally, if a password is provided it will decrypt the key using
@@ -320,7 +328,7 @@ class UmbralKeyingMaterial(object):
 
         return cls(key_bytes)
 
-    def to_bytes(self, password: bytes = None, _scrypt_cost: int = 20):
+    def to_bytes(self, password: Optional[bytes] = None, _scrypt_cost: int = 20) -> bytes:
         """
         Returns an UmbralKeyingMaterial as a urlsafe base64 encoded string with
         optional symmetric encryption via nacl's Salsa20-Poly1305 and Scrypt

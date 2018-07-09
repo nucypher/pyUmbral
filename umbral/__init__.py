@@ -16,3 +16,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
+
+from umbral.__about__ import (
+    __author__,  __license__, __summary__, __title__, __version__
+)
+
+
+__all__ = [
+    "__title__", "__summary__", "__version__", "__author__", "__license__",
+]

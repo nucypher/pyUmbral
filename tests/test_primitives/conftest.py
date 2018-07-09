@@ -48,7 +48,7 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_curvebn1: CurveBN, r
             check_point_ctypes(ec_point, other_point)
             assert 'BN_CTX' in str(context)
             assert 'EC_GROUP' in str(group)
-            assert random_ec_point1.group == group
+            assert random_ec_point1.curve.ec_group == group
             assert not bool(actual_backend['EC_POINT_cmp'](group, random_ec_point1.ec_point, ec_point, context))
             result = actual_backend['EC_POINT_cmp'](group, random_ec_point1.ec_point, other_point, context)
             assert not bool(result)

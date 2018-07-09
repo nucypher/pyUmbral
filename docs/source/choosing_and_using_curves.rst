@@ -22,8 +22,8 @@ Before you perform any ECC operations, you can set a default curve.
 
 .. code-block:: python
 
-    >>> from cryptography.hazmat.primitives.asymmetric import ec
-    >>> config.set_default_curve(ec.SECP256K1)
+    >>> from umbral.curve import SECP256K1
+    >>> config.set_default_curve(SECP256K1)
 
 If you don't set a default curve, then SECP256K1 will be set for you when you perform the first ECC
 operation.  This causes a small one-time performance penalty.

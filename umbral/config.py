@@ -1,12 +1,12 @@
 from warnings import warn
 
-from cryptography.hazmat.primitives.asymmetric import ec
+from umbral.curve import Curve, SECP256K1
 
 
 class _CONFIG:
     __curve = None
     __params = None
-    __CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER = ec.SECP256K1
+    __CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER = SECP256K1
     __WARNING_IF_NO_DEFAULT_SET = "No default curve has been set.  Using SECP256K1.  A slight performance penalty has been incurred for only this call.  Set a default curve with umbral.config.set_default_curve()."
 
     class UmbralConfigurationError(RuntimeError):
@@ -30,7 +30,7 @@ class _CONFIG:
         return cls.__curve
 
     @classmethod
-    def set_curve(cls, curve: ec.EllipticCurve=None):
+    def set_curve(cls, curve: Curve=None):
         if cls.__curve:
             raise cls.UmbralConfigurationError(
                 "You can only set the default curve once.  Do it once and then leave it alone.")
@@ -42,7 +42,7 @@ class _CONFIG:
             cls.__params = UmbralParameters(curve)
 
 
-def set_default_curve(curve: ec.EllipticCurve=None):
+def set_default_curve(curve: Curve=None):
     return _CONFIG.set_curve(curve)
 
 

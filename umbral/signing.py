@@ -2,14 +2,15 @@ import hmac
 
 from cryptography.exceptions import InvalidSignature
 
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
 from umbral.config import default_curve
+from umbral.curve import Curve
 from umbral.keys import UmbralPublicKey, UmbralPrivateKey
 from umbral.curvebn import CurveBN
-from umbral.utils import get_curve_keysize_bytes
+from umbral.utils import get_field_order_size_in_bytes
 
 _BLAKE2B = hashes.BLAKE2b(64)
 
@@ -28,9 +29,9 @@ class Signature:
         return "ECDSA Signature: {}".format(bytes(self).hex()[:15])
 
     @classmethod
-    def expected_bytes_length(cls, curve: ec.EllipticCurve = None):
+    def expected_bytes_length(cls, curve: Curve = None):
         curve = curve if curve is not None else default_curve()
-        return get_curve_keysize_bytes(curve) * 2
+        return get_field_order_size_in_bytes(curve) * 2
 
     def verify(self, message: bytes, verifying_key: UmbralPublicKey) -> bool:
         """
@@ -43,18 +44,19 @@ class Signature:
         """
         cryptography_pub_key = verifying_key.to_cryptography_pubkey()
 
+        # TODO: Raise error instead of returning boolean
         try:
             cryptography_pub_key.verify(
                 self._der_encoded_bytes(),
                 message,
-                ec.ECDSA(_BLAKE2B)
+                ECDSA(_BLAKE2B)
             )
         except InvalidSignature:
             return False
         return True
 
     @classmethod
-    def from_bytes(cls, signature_as_bytes, der_encoded=False, curve: ec.EllipticCurve = None):
+    def from_bytes(cls, signature_as_bytes, der_encoded=False, curve: Curve = None):
         curve = curve if curve is not None else default_curve()
         if der_encoded:
             r, s = decode_dss_signature(signature_as_bytes)
@@ -103,5 +105,5 @@ class Signer:
          :param message: Message to hash and sign
          :return: signature
          """
-        signature_der_bytes = self.__cryptography_private_key.sign(message, ec.ECDSA(_BLAKE2B))
+        signature_der_bytes = self.__cryptography_private_key.sign(message, ECDSA(_BLAKE2B))
         return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self._curve)

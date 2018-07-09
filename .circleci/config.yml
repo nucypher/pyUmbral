@@ -163,7 +163,7 @@ jobs:
           name: Install dependencies
           command: pipenv sync --three --dev
       - run:
-          name: Run Mypy Static Type Checks
+          name: Run Mypy Static Type Checks (Always Succeed)
           command: |
               pipenv install --dev --skip-lock lxml
               pipenv run mypy --xslt-html-report ./mypy_report ./umbral --config-file=mypy.ini || true

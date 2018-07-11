@@ -196,6 +196,10 @@ class CurveBN(object):
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
+        if type(other) == int:
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, self.curve)
+            
         op_sum = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
@@ -209,6 +213,10 @@ class CurveBN(object):
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
+        if type(other) == int:
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, self.curve)
+
         diff = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(

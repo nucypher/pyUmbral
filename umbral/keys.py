@@ -288,7 +288,7 @@ class UmbralKeyingMaterial(object):
             algorithm=hashes.BLAKE2b(64),
             length=64,
             salt=salt,
-            info=b"NuCypherKMS/KeyDerivation/"+label,
+            info=b"NuCypher/KeyDerivation/"+label,
             backend=default_backend()
         ).derive(self.keying_material)
 

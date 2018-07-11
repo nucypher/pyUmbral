@@ -4,8 +4,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+from umbral.curvebn import CurveBN
 
-def lambda_coeff(id_i: 'CurveBN', selected_ids: List['CurveBN']) -> 'CurveBN':
+
+def lambda_coeff(id_i: CurveBN, selected_ids: List[CurveBN]) -> CurveBN:
     ids = [x for x in selected_ids if x != id_i]
 
     if not ids:
@@ -20,7 +22,7 @@ def lambda_coeff(id_i: 'CurveBN', selected_ids: List['CurveBN']) -> 'CurveBN':
     return result
 
 
-def poly_eval(coeff: List['CurveBN'], x: 'CurveBN') -> 'CurveBN':
+def poly_eval(coeff: List[CurveBN], x: CurveBN) -> CurveBN:
     result = coeff[-1]
     for i in range(-2, -len(coeff) - 1, -1):
         result = ((result * x) + coeff[i])

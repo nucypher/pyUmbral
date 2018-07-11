@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
@@ -24,7 +26,7 @@ class CurveBN(object):
         self.curve = curve
 
     @classmethod
-    def expected_bytes_length(cls, curve: Curve=None) -> int:
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a CurveBN given the curve.
         If no curve is provided, it uses the default.
@@ -33,7 +35,7 @@ class CurveBN(object):
         return curve.get_field_order_size_in_bytes()
 
     @classmethod
-    def gen_rand(cls, curve: Curve=None) -> 'CurveBN':
+    def gen_rand(cls, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
         based on the given curve.
@@ -53,7 +55,7 @@ class CurveBN(object):
         return cls(new_rand_bn, curve)
 
     @classmethod
-    def from_int(cls, num: int, curve: Curve=None) -> 'CurveBN':
+    def from_int(cls, num: int, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object from a given integer on a curve.
         By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
@@ -98,7 +100,7 @@ class CurveBN(object):
         return cls(bignum, params.curve)
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: Curve=None) -> 'CurveBN':
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
@@ -122,7 +124,7 @@ class CurveBN(object):
         """
         return backend._bn_to_int(self.bignum)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other : Union[int, 'CurveBN']) -> bool:
         """
         Compares the two BIGNUMS or int.
         """
@@ -134,7 +136,7 @@ class CurveBN(object):
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
 
-    def __pow__(self, other) -> 'CurveBN':
+    def __pow__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_exp on two BIGNUMS.
 
@@ -170,7 +172,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __truediv__(self, other) -> 'CurveBN':
+    def __truediv__(self, other : 'CurveBN') -> 'CurveBN':
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
 
@@ -192,7 +194,7 @@ class CurveBN(object):
         return CurveBN(product, self.curve)
 
 
-    def __add__(self, other) -> 'CurveBN':
+    def __add__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
@@ -209,7 +211,7 @@ class CurveBN(object):
 
         return CurveBN(op_sum, self.curve)
 
-    def __sub__(self, other) -> 'CurveBN':
+    def __sub__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
@@ -259,7 +261,7 @@ class CurveBN(object):
 
         return CurveBN(the_opposite, self.curve)
 
-    def __mod__(self, other) -> 'CurveBN':
+    def __mod__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_nnmod on two BIGNUMS.
         """

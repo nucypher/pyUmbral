@@ -190,6 +190,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
+
     def __add__(self, other) -> 'CurveBN':
         """
         Performs a BN_mod_add on two BIGNUMs.
@@ -231,6 +232,23 @@ class CurveBN(object):
             inv = backend._ffi.gc(inv, backend._lib.BN_clear_free)
 
         return CurveBN(inv, self.curve)
+
+    def __neg__(self) -> 'CurveBN':
+        """
+        Computes the modular opposite (i.e., additive inverse) of a BIGNUM
+
+        """
+        zero = backend._int_to_bn(0)
+        zero = backend._ffi.gc(zero, backend._lib.BN_clear_free)
+
+        the_opposite = openssl._get_new_BN()
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_sub(
+                the_opposite, zero, self.bignum, self.curve.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return CurveBN(the_opposite, self.curve)
 
     def __mod__(self, other) -> 'CurveBN':
         """

@@ -10,7 +10,6 @@ from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey, UmbralPrivateKey
-from umbral.utils import get_field_order_size_in_bytes
 
 
 _BLAKE2B = hashes.BLAKE2b(64)
@@ -32,7 +31,7 @@ class Signature:
     @classmethod
     def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         curve = curve if curve is not None else default_curve()
-        return get_field_order_size_in_bytes(curve) * 2
+        return 2 * curve.get_field_order_size_in_bytes()
 
     def verify(self, message: bytes, verifying_key: UmbralPublicKey) -> bool:
         """

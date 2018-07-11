@@ -4,9 +4,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from umbral import openssl
-from umbral.curve import Curve
-
 
 def lambda_coeff(id_i: 'CurveBN', selected_ids: List['CurveBN']) -> 'CurveBN':
     ids = [x for x in selected_ids if x != id_i]
@@ -41,9 +38,3 @@ def kdf(ecpoint: 'Point', key_length: int) -> bytes:
         info=None,
         backend=default_backend()
     ).derive(data)
-
-
-def get_field_order_size_in_bytes(curve: Curve) -> int:
-    backend = default_backend()
-    size_in_bits = openssl._get_ec_group_degree(curve.ec_group)
-    return (size_in_bits + 7) // 8

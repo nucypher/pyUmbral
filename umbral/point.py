@@ -9,7 +9,6 @@ from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
-from umbral.utils import get_field_order_size_in_bytes
 
 
 class Point(object):
@@ -29,12 +28,13 @@ class Point(object):
         If no curve is provided, it uses the default curve.
         """
         curve = curve if curve is not None else default_curve()
-        base_size = get_field_order_size_in_bytes(curve)
 
-        if not is_compressed:
-            base_size += get_field_order_size_in_bytes(curve)
+        coord_size = curve.get_field_order_size_in_bytes()
 
-        return base_size + 1
+        if is_compressed:
+            return 1 + coord_size
+        else:
+            return 1 + 2 * coord_size
 
     @classmethod
     def gen_rand(cls, curve: Optional[Curve] = None) -> 'Point':
@@ -127,7 +127,7 @@ class Point(object):
         if is_compressed is set to True.
         """
         affine_x, affine_y = self.to_affine()
-        key_size = get_field_order_size_in_bytes(self.curve)
+        key_size = self.curve.get_field_order_size_in_bytes()
 
         if is_compressed:
             y_bit = (affine_y & 1) + 2

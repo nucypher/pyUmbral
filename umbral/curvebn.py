@@ -5,7 +5,6 @@ from umbral import openssl
 from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.params import UmbralParameters
-from umbral.utils import get_field_order_size_in_bytes
 
 
 class CurveBN(object):
@@ -31,7 +30,7 @@ class CurveBN(object):
         If no curve is provided, it uses the default.
         """
         curve = curve if curve is not None else default_curve()
-        return get_field_order_size_in_bytes(curve)
+        return curve.get_field_order_size_in_bytes()
 
     @classmethod
     def gen_rand(cls, curve: Curve=None) -> 'CurveBN':

@@ -182,6 +182,7 @@ class CurveBN(object):
                 backend._ffi.NULL, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(inv_other != backend._ffi.NULL)
+            inv_other = backend._ffi.gc(inv_other, backend._lib.BN_clear_free)
 
             res = backend._lib.BN_mod_mul(
                 product, self.bignum, inv_other, self.curve.order, bn_ctx

@@ -13,11 +13,9 @@ def lambda_coeff(id_i: CurveBN, selected_ids: List[CurveBN]) -> CurveBN:
     if not ids:
         return None
 
-    div_0 = ~(ids[0] - id_i)
-    result = ids[0] * div_0
+    result = ids[0] / (ids[0] - id_i)
     for id_j in ids[1:]:
-        div_j = ~(id_j - id_i)
-        result = result * (id_j * div_j)
+        result = result * id_j / (id_j - id_i)
 
     return result
 
@@ -25,7 +23,7 @@ def lambda_coeff(id_i: CurveBN, selected_ids: List[CurveBN]) -> CurveBN:
 def poly_eval(coeff: List[CurveBN], x: CurveBN) -> CurveBN:
     result = coeff[-1]
     for i in range(-2, -len(coeff) - 1, -1):
-        result = ((result * x) + coeff[i])
+        result = (result * x) + coeff[i]
 
     return result
 

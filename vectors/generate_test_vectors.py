@@ -212,10 +212,8 @@ vectors = list()
 for kfrag in kfrags:
     cfrag = pre.reencrypt(kfrag, capsule)
     assert cfrag.verify_correctness(capsule)
-    
     json_input = { 'kfrag' : hexlify(kfrag), 'cfrag' : hexlify(cfrag) }
-
-vectors.append(json_input)
+    vectors.append(json_input)
 
 vector_suite = {
     'name' : 'Test vectors for Re-Encryption and CFrags',

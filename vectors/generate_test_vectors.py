@@ -184,10 +184,10 @@ for kfrag in kfrags:
 
 vector_suite = {
     'name' : 'Test vectors for KFrags',
-    'description' : 'This is a collection of KFrags generated under the \
-                     enclosed delegating, verifying and receiving keys. \
-                     Each of them must deserialize correctly and the \
-                     call to verify() must succeed.',
+    'description' : ('This is a collection of KFrags generated under the ' 
+                     'enclosed delegating, verifying and receiving keys. '
+                     'Each of them must deserialize correctly and the '
+                     'call to verify() must succeed.'),
     'params' : 'default',
     'verifying_key' : hexlify(verifying_key), 
     'delegating_key' : hexlify(delegating_key), 
@@ -217,10 +217,10 @@ for kfrag in kfrags:
 
 vector_suite = {
     'name' : 'Test vectors for Re-Encryption and CFrags',
-    'description' : 'This is a collection of CFrags, originated from the \
-                     enclosed Capsule, under the enclosed delegating, \
-                     verifying and receiving keys. Each CFrag must deserialize \
-                     correctly and the call to verify_correctness() must succeed.',
+    'description' : ('This is a collection of CFrags, originated from the '
+                     'enclosed Capsule, under the enclosed delegating, '
+                     'verifying and receiving keys. Each CFrag must deserialize '
+                     'correctly and the call to verify_correctness() must succeed.'),
     'params' : 'default',
     'capsule' : hexlify(capsule),
     'verifying_key' : hexlify(verifying_key), 

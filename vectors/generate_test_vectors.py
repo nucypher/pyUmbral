@@ -210,17 +210,17 @@ capsule.set_correctness_keys(delegating=delegating_key,
 vectors = list()
 
 for kfrag in kfrags:
-    cfrag = pre.reencrypt(kfrag, capsule)
-    assert cfrag.verify_correctness(capsule)
+    cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
     json_input = { 'kfrag' : hexlify(kfrag), 'cfrag' : hexlify(cfrag) }
     vectors.append(json_input)
 
 vector_suite = {
-    'name' : 'Test vectors for Re-Encryption and CFrags',
+    'name' : 'Test vectors for CFrags',
     'description' : ('This is a collection of CFrags, originated from the '
                      'enclosed Capsule, under the enclosed delegating, '
                      'verifying and receiving keys. Each CFrag must deserialize '
-                     'correctly and the call to verify_correctness() must succeed.'),
+                     'correctly and can be replicated with a call to '
+                     '`pre.reencrypt(kfrag, capsule, provide_proof=False)`'),
     'params' : 'default',
     'capsule' : hexlify(capsule),
     'verifying_key' : hexlify(verifying_key), 

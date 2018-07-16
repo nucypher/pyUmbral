@@ -118,3 +118,16 @@ def test_point_not_on_curve():
     from cryptography.exceptions import InternalError
     with pytest.raises(InternalError):
         Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=SECP256R1)
+
+
+def test_serialize_point_at_infinity():
+
+    p = Point.gen_rand()
+    point_at_infinity = p - p
+    
+    with pytest.raises(InternalError) as e:
+        _bytes_point_at_infinity = point_at_infinity.to_bytes()
+
+    # We want to catch specific InternalExceptions:
+    # - Point at infinity (code 107)
+    assert e.value.err_code[0].reason == 106

@@ -196,11 +196,12 @@ class Point(object):
         """
         Performs subtraction by adding the inverse of the `other` to the point.
         """
-        return (self + (~other))
+        return (self + (-other))
 
-    def __invert__(self) -> 'Point':
+    def __neg__(self) -> 'Point':
         """
-        Performs an EC_POINT_invert on itself.
+        Computes the additive inverse of a Point, by performing an 
+        EC_POINT_invert on itself.
         """
         inv = backend._lib.EC_POINT_dup(self.ec_point, self.curve.ec_group)
         backend.openssl_assert(inv != backend._ffi.NULL)

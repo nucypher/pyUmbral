@@ -66,10 +66,10 @@ class Point(object):
 
         affine_x, affine_y = coords
         if type(affine_x) == int:
-            affine_x = openssl._int_to_bn(affine_x, curve=curve)
+            affine_x = openssl._int_to_bn(affine_x, curve=None)
 
         if type(affine_y) == int:
-            affine_y = openssl._int_to_bn(affine_y, curve=curve)
+            affine_y = openssl._int_to_bn(affine_y, curve=None)
 
         ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, curve)
         return cls(ec_point, curve)
@@ -96,13 +96,15 @@ class Point(object):
             if len(data) != compressed_size:
                 raise ValueError("X coordinate too large for curve.")
 
-            affine_x = CurveBN.from_bytes(data[1:], curve)
+            affine_x = int.from_bytes(data[1:], 'big')
+            affine_x = openssl._int_to_bn(affine_x, curve=None)
+
             type_y = data[0] - 2
 
             ec_point = openssl._get_new_EC_POINT(curve)
             with backend._tmp_bn_ctx() as bn_ctx:
                 res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
-                    curve.ec_group, ec_point, affine_x.bignum, type_y, bn_ctx
+                    curve.ec_group, ec_point, affine_x, type_y, bn_ctx
                 )
                 backend.openssl_assert(res == 1)
             return cls(ec_point, curve)

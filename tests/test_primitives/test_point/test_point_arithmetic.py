@@ -5,10 +5,10 @@ from umbral.point import Point
 def test_mocked_openssl_point_arithmetic(mock_openssl, random_ec_point1, random_ec_point2, random_ec_curvebn1):
 
     operations_that_construct = (
-        random_ec_point1 * random_ec_curvebn1,  # __mul__
+        random_ec_point1 * random_ec_curvebn1, # __mul__
         random_ec_point1 + random_ec_point2,   # __add__
         random_ec_point1 - random_ec_point2,   # __sub__
-        -random_ec_point1                      # __invert__
+        -random_ec_point1                      # __neg__
     )
 
     with mock_openssl():

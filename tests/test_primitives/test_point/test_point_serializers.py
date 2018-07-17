@@ -118,3 +118,33 @@ def test_point_not_on_curve():
     from cryptography.exceptions import InternalError
     with pytest.raises(InternalError):
         Point.from_bytes(point_on_koblitz256_but_not_P256.to_bytes(), curve=SECP256R1)
+
+
+def test_serialize_point_at_infinity():
+
+    p = Point.gen_rand()
+    point_at_infinity = p - p
+    
+    with pytest.raises(InternalError) as e:
+        _bytes_point_at_infinity = point_at_infinity.to_bytes()
+
+    # We want to catch specific InternalExceptions:
+    # - Point at infinity (code 106)
+    assert e.value.err_code[0].reason == 106
+
+
+def test_coords_with_special_characteristics():
+
+    # Testing that a point with the x coordinate greater than the curve order is still valid
+    compressed = 0x02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c
+    compressed = compressed.to_bytes(32+1, byteorder='big')
+
+    last_point = Point.from_bytes(compressed)
+
+    # The same point, but obtained through the from_affine method
+    coords = (115792089237316195423570985008687907853269984665640564039457584007908834671660, 
+        109188863561374057667848968960504138135859662956057034999983532397866404169138)
+
+    assert last_point == Point.from_affine(coords)
+
+    # TODO: add point with x == 0 or y == 0, if existing

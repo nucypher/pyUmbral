@@ -1,5 +1,5 @@
+from cryptography.hazmat.backends import default_backend
 from umbral import openssl
-
 
 _AVAIL_CURVES = {
     'secp256r1': 415,
@@ -39,6 +39,12 @@ class Curve:
 
     def __repr__(self):
         return "<OpenSSL Curve w/ NID {}>".format(self.curve_nid)
+
+    def get_field_order_size_in_bytes(self) -> int:
+        backend = default_backend()
+        size_in_bits = openssl._get_ec_group_degree(self.ec_group)
+        return (size_in_bits + 7) // 8
+
 
 
 SECP256R1 = Curve(_AVAIL_CURVES['secp256r1'])

@@ -7,15 +7,14 @@ from umbral.curve import Curve
 class UmbralParameters(object):
     def __init__(self, curve: Curve) -> None:
         from umbral.point import Point, unsafe_hash_to_point
-        from umbral.utils import get_field_order_size_in_bytes
 
         self.curve = curve
-        self.CURVE_KEY_SIZE_BYTES = get_field_order_size_in_bytes(self.curve)
+        self.CURVE_KEY_SIZE_BYTES = self.curve.get_field_order_size_in_bytes()
 
         self.g = Point.get_generator_from_curve(curve=curve)
         g_bytes = self.g.to_bytes()
 
-        parameters_seed = b'NuCypherKMS/UmbralParameters/'
+        parameters_seed = b'NuCypher/UmbralParameters/'
         self.u = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'u')
 
     def __eq__(self, other: 'UmbralParameters') -> bool:

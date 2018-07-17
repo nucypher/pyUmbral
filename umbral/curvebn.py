@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
@@ -5,7 +7,6 @@ from umbral import openssl
 from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.params import UmbralParameters
-from umbral.utils import get_field_order_size_in_bytes
 
 
 class CurveBN(object):
@@ -25,16 +26,16 @@ class CurveBN(object):
         self.curve = curve
 
     @classmethod
-    def expected_bytes_length(cls, curve: Curve=None) -> int:
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a CurveBN given the curve.
         If no curve is provided, it uses the default.
         """
         curve = curve if curve is not None else default_curve()
-        return get_field_order_size_in_bytes(curve)
+        return curve.get_field_order_size_in_bytes()
 
     @classmethod
-    def gen_rand(cls, curve: Curve=None) -> 'CurveBN':
+    def gen_rand(cls, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object with a cryptographically secure OpenSSL BIGNUM
         based on the given curve.
@@ -54,7 +55,7 @@ class CurveBN(object):
         return cls(new_rand_bn, curve)
 
     @classmethod
-    def from_int(cls, num: int, curve: Curve=None) -> 'CurveBN':
+    def from_int(cls, num: int, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object from a given integer on a curve.
         By default, the underlying OpenSSL BIGNUM has BN_FLG_CONSTTIME set for
@@ -99,7 +100,7 @@ class CurveBN(object):
         return cls(bignum, params.curve)
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: Curve=None) -> 'CurveBN':
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CurveBN':
         """
         Returns a CurveBN object from the given byte data that's within the size
         of the provided curve's order.
@@ -123,7 +124,7 @@ class CurveBN(object):
         """
         return backend._bn_to_int(self.bignum)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other : Union[int, 'CurveBN']) -> bool:
         """
         Compares the two BIGNUMS or int.
         """
@@ -135,7 +136,7 @@ class CurveBN(object):
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
 
-    def __pow__(self, other) -> 'CurveBN':
+    def __pow__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_exp on two BIGNUMS.
 
@@ -171,7 +172,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __truediv__(self, other) -> 'CurveBN':
+    def __truediv__(self, other : 'CurveBN') -> 'CurveBN':
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
 
@@ -183,6 +184,7 @@ class CurveBN(object):
                 backend._ffi.NULL, other.bignum, self.curve.order, bn_ctx
             )
             backend.openssl_assert(inv_other != backend._ffi.NULL)
+            inv_other = backend._ffi.gc(inv_other, backend._lib.BN_clear_free)
 
             res = backend._lib.BN_mod_mul(
                 product, self.bignum, inv_other, self.curve.order, bn_ctx
@@ -191,10 +193,15 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __add__(self, other) -> 'CurveBN':
+
+    def __add__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_add on two BIGNUMs.
         """
+        if type(other) == int:
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, self.curve)
+            
         op_sum = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_add(
@@ -204,10 +211,14 @@ class CurveBN(object):
 
         return CurveBN(op_sum, self.curve)
 
-    def __sub__(self, other) -> 'CurveBN':
+    def __sub__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_sub on two BIGNUMS.
         """
+        if type(other) == int:
+            other = openssl._int_to_bn(other)
+            other = CurveBN(other, self.curve)
+
         diff = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod_sub(
@@ -233,7 +244,24 @@ class CurveBN(object):
 
         return CurveBN(inv, self.curve)
 
-    def __mod__(self, other) -> 'CurveBN':
+    def __neg__(self) -> 'CurveBN':
+        """
+        Computes the modular opposite (i.e., additive inverse) of a BIGNUM
+
+        """
+        zero = backend._int_to_bn(0)
+        zero = backend._ffi.gc(zero, backend._lib.BN_clear_free)
+
+        the_opposite = openssl._get_new_BN()
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.BN_mod_sub(
+                the_opposite, zero, self.bignum, self.curve.order, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+
+        return CurveBN(the_opposite, self.curve)
+
+    def __mod__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_nnmod on two BIGNUMS.
         """

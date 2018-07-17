@@ -1,4 +1,5 @@
 import json
+import os
 
 from umbral import pre
 from umbral.keys import UmbralPrivateKey
@@ -6,6 +7,7 @@ from umbral.signing import Signer
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.config import set_default_curve, default_params
+
 
 #######################
 # Auxiliary functions #
@@ -19,8 +21,10 @@ def hexlify(data):
     except AttributeError:
         return bytes(data).hex()
 
-def create_test_vector_file(vector, path, regenerate=False):
-    mode = 'w' if regenerate else 'x'
+def create_test_vector_file(vector, filename, generate_again=False):
+    path = os.path.join(os.path.dirname(__file__), filename)
+
+    mode = 'w' if generate_again else 'x'
     try:
         with open(path, mode) as f:
             json.dump(vector, f, indent=2)
@@ -29,7 +33,7 @@ def create_test_vector_file(vector, path, regenerate=False):
 
 
 # If True, this will overwrite existing test vector files with new randomly generated instances
-regenerate = True
+generate_again = True
 
 #########
 # SETUP #
@@ -98,7 +102,7 @@ vector_suite = {
 
 json_file = 'vectors_curvebn_operations.json'
 
-create_test_vector_file(vector_suite, json_file, regenerate=regenerate)
+create_test_vector_file(vector_suite, json_file, generate_again=generate_again)
 
 
 
@@ -133,7 +137,7 @@ vector_suite = {
     'vectors' : vectors
 }
 
-create_test_vector_file(vector_suite, 'vectors_curvebn_hash.json', regenerate=regenerate)
+create_test_vector_file(vector_suite, 'vectors_curvebn_hash.json', generate_again=generate_again)
 #print(json.dumps(vector_suite, indent=2))
 
 
@@ -167,7 +171,7 @@ vector_suite = {
 
 json_file = 'vectors_point_operations.json'
 
-create_test_vector_file(vector_suite, json_file, regenerate=regenerate)
+create_test_vector_file(vector_suite, json_file, generate_again=generate_again)
 
 
 ##########
@@ -196,7 +200,7 @@ vector_suite = {
 }
 
 #print(json.dumps(vector_suite, indent=2))
-create_test_vector_file(vector_suite, 'vectors_kfrags.json', regenerate=regenerate)
+create_test_vector_file(vector_suite, 'vectors_kfrags.json', generate_again=generate_again)
 
 
 ##########
@@ -230,7 +234,7 @@ vector_suite = {
 }
 
 #print(json.dumps(vector_suite, indent=2))
-create_test_vector_file(vector_suite, 'vectors_cfrags.json', regenerate=regenerate) 
+create_test_vector_file(vector_suite, 'vectors_cfrags.json', generate_again=generate_again) 
 
 
 

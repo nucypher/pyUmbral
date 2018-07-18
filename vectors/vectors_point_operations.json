@@ -1,33 +1,33 @@
 {
   "name": "Test vectors for Point operations",
   "params": "default",
-  "first Point operand": "0226e0220d8d032a20709a1df30f29cce34bef7e93eea3a765117a62072eabdf3a",
-  "second Point operand": "03ac5e5fd1ad7e4cd4287a2d976c39b5debb3d367899eb06d43c7d3200fbba5882",
-  "CurveBN operand": "fefa97823cbf63461ae11dafbeed5145a7e04d6e3fed73581f52189863d8a1dd",
+  "first Point operand": "036c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0",
+  "second Point operand": "03d8bb1cac8b0f62236f5d3be9832075dc3690c6ff51183df3ecfe9f838563d5e2",
+  "CurveBN operand": "4c3cc961763f3aa2647cbc3e804879e30ea31a3b2230746e1cac932487de9b4b",
   "vectors": [
     {
       "operation": "Addition",
-      "result": "027227bc5ddb309312d31f99b423d98c3f6d37b15e4df902937a8d6a2d594688d1"
+      "result": "030f8408ee10803131d0457227ea2e925e770ef32f493b35f5628948d010c16fe8"
     },
     {
       "operation": "Subtraction",
-      "result": "022404a8eaf41ebe7b105e3955b49521c76170b4b37e96002a689ff9ed9e0fd8bf"
+      "result": "03b7441fa69599309cb04c3a323be10247a733f8bd71eb7d2c09b108ea7e77f369"
     },
     {
       "operation": "Multiplication",
-      "result": "02cae0eda7037a641d7c8e191ee069fab0959f2b47e31a9ae27d0ab406e74e7080"
+      "result": "027d1967adb9054098fd2847380a4070c658039a54b22672adb3d7c78b51116a05"
     },
     {
       "operation": "Inversion",
-      "result": "0326e0220d8d032a20709a1df30f29cce34bef7e93eea3a765117a62072eabdf3a"
+      "result": "026c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0"
     },
     {
       "operation": "To_affine.X",
-      "result": "26e0220d8d032a20709a1df30f29cce34bef7e93eea3a765117a62072eabdf3a"
+      "result": "6c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0"
     },
     {
       "operation": "To_affine.Y",
-      "result": "cb316261090d3a066e6efd7b8ff29a0a133aceab1bf0887121d9e10a78d7270e"
+      "result": "afb057a603272551a3a031a1e6fae5b77d8ec4faef17855697f075e5c55de5c1"
     }
   ]
 }

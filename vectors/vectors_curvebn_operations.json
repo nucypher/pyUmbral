@@ -1,36 +1,40 @@
 {
   "name": "Test vectors for CurveBN operations",
   "params": "default",
-  "first operand": "fefa97823cbf63461ae11dafbeed5145a7e04d6e3fed73581f52189863d8a1dd",
-  "second operand": "7dadf98ced79c330dcae0800f138d21601527d43a52eed20ecdfa1a39a3b0df2",
+  "first operand": "4c3cc961763f3aa2647cbc3e804879e30ea31a3b2230746e1cac932487de9b4b",
+  "second operand": "b55d7e7f79e8000f1275dfdc3a0e6d9b7abf646fbe5b485d718205c7e74b9b6c",
   "vectors": [
     {
       "operation": "Addition",
-      "result": "7ca8910f2a392676f78f25b0b026235cee83edcb35d3c03d4c5f5baf2ddd6e8e"
+      "result": "019a47e0f0273ab176f29c1aba56e77fceb3a1c431431c8fce5c3a5f9ef3f576"
     },
     {
       "operation": "Subtraction",
-      "result": "814c9df54f45a0153e3315aecdb47f2fa68dd02a9abe8637327276f4c99d93eb"
+      "result": "96df4ae1fc573a935206dc62463a0c464e9292b2131dcc4c6afcebe970c94120"
     },
     {
       "operation": "Multiplication",
-      "result": "5c1b00ec26d54b5172d8596a00f878979b7f7d51d44cf0b93e8dff18beef99de"
+      "result": "b541671b45728398dd4ecf05d024a90d161759ec6c7fc5c9077af181ca412adc"
     },
     {
       "operation": "Division",
-      "result": "9d50e501a30f37630104e22f2b538322538936ab6a0f11fac522ac82ae050627"
+      "result": "e01db8da60c4eb7503eac23683dfd862edd2b5db32aadc163584b31db5efbcf5"
     },
     {
       "operation": "Pow",
-      "result": "98895419b5e6b71faa5fa7bed7f7a06ca1d2f2b4229d84eb60a27405f992e579"
+      "result": "7970bbd8fa8edd226709f8512079240c30af73f9366e591aed21cee239edf5e7"
     },
     {
       "operation": "Mod",
-      "result": "039ea46861cbdce461850daddc7bad19a53b52e6f58f99164592d5512f6285f9"
+      "result": "4c3cc961763f3aa2647cbc3e804879e30ea31a3b2230746e1cac932487de9b4b"
     },
     {
       "operation": "Inverse",
-      "result": "4723bfdb86bfe2e694f584bb0af93810445986840225eedbef96ea49784630c2"
+      "result": "fca07e17b9043d1c4e11ec1f050cdad93ed2b4b2e84fecbb65c9ac63b7ea6a03"
+    },
+    {
+      "operation": "Neg",
+      "result": "b3c3369e89c0c55d9b8343c17fb7861bac0bc2ab8d182bcda325cb684857a5f6"
     }
   ]
 }

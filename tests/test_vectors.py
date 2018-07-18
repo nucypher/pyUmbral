@@ -29,6 +29,7 @@ def test_curvebn_operations():
               ('Pow', bn1 ** bn2),
               ('Mod', bn1 % bn2),
               ('Inverse', ~bn1),    
+              ('Neg', -bn1),
             ]
 
     for (operation, result) in test:
@@ -71,7 +72,7 @@ def test_point_operations():
     test = [  ('Addition', point1 + point2),
               ('Subtraction', point1 - point2),
               ('Multiplication', bn1 * point1),
-              ('Inversion', ~point1), 
+              ('Inversion', -point1), 
            ]
 
     for (operation, result) in test:

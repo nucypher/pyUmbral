@@ -86,7 +86,7 @@ expected = [  ('Addition', bn1 + bn2),
               ('Pow', bn1 ** bn2),
               ('Mod', bn1 % bn2),
               ('Inverse', ~bn1),
-              #('Neg', -bn1),  # TODO: Wait until merge of #192
+              ('Neg', -bn1),
              ]
 
 expected = [ {'operation' : op, 'result' : hexlify(result) } for (op, result) in expected ]
@@ -152,7 +152,7 @@ point2 = Point.gen_rand(curve)
 expected = [  ('Addition', point1 + point2),
               ('Subtraction', point1 - point2),
               ('Multiplication', bn1 * point1),
-              ('Inversion', ~point1), 
+              ('Inversion', -point1), 
               ('To_affine.X', point1.to_affine()[0]),
               ('To_affine.Y', point1.to_affine()[1]),
            ]

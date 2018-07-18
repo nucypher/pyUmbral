@@ -1,0 +1,96 @@
+{
+  "name": "Test vectors for umbral.curvebn.CurveBN.hash()",
+  "params": "default",
+  "vectors": [
+    {
+      "input": [
+        {
+          "class": "bytes",
+          "bytes": ""
+        }
+      ],
+      "output": "416db24f4850e2215f446435d02e89c012847bf13f7c59d26cc6f17826eac64f"
+    },
+    {
+      "input": [
+        {
+          "class": "bytes",
+          "bytes": "616263"
+        }
+      ],
+      "output": "63b4973dd623699fe9b344da6ddd77fa5dd60413a21f6ad810186602d05dd1a4"
+    },
+    {
+      "input": [
+        {
+          "class": "Point",
+          "bytes": "02aede93b31264cae0de88be439ad6a8647cff44518cfcf442aebd5ab53e791df9"
+        }
+      ],
+      "output": "92bc115d8495160bead8539b546a74f9d5c596ac6e2a1f9974a33cb2ab6bad68"
+    },
+    {
+      "input": [
+        {
+          "class": "CurveBN",
+          "bytes": "cd79e1d262d11b719159eafd7545e9214f8b6c84e82ccf872ff77ea9766cdf60"
+        }
+      ],
+      "output": "54a1e833e0ae9a5fa77514b3d2794ca0da34b78370a979b56586450775248183"
+    },
+    {
+      "input": [
+        {
+          "class": "Point",
+          "bytes": "02aede93b31264cae0de88be439ad6a8647cff44518cfcf442aebd5ab53e791df9"
+        },
+        {
+          "class": "CurveBN",
+          "bytes": "cd79e1d262d11b719159eafd7545e9214f8b6c84e82ccf872ff77ea9766cdf60"
+        }
+      ],
+      "output": "0d210a81aa6f96e371913c35773a6e6b6746b5b46593df22c98aba4e7f2b6e06"
+    },
+    {
+      "input": [
+        {
+          "class": "Point",
+          "bytes": "02aede93b31264cae0de88be439ad6a8647cff44518cfcf442aebd5ab53e791df9"
+        },
+        {
+          "class": "Point",
+          "bytes": "03e7cff16ab190f2a46011f087e6a3a15c4cb9232c9ff63bd1958fd0ce59f16327"
+        },
+        {
+          "class": "Point",
+          "bytes": "027b10989d89b6b9ffe645f0ba60bae0c9665ded874d44489804aedeba0a093d0b"
+        },
+        {
+          "class": "Point",
+          "bytes": "0309507c64de8e332814f11e5b63dd25eb72ce31deb9b1222b3473a7edf483ecd5"
+        },
+        {
+          "class": "Point",
+          "bytes": "02b8f83fa73029c576f89c7d670b0e51296ad3f72bcd8fa85b2a3b2cdeec5cbe8a"
+        },
+        {
+          "class": "Point",
+          "bytes": "028a05a95ad71a3e8a8f373040b70018772bc42d7c3389707ef194f8c8ea67803b"
+        },
+        {
+          "class": "Point",
+          "bytes": "02f2a09f73e56722d7383f18132b08b9bdb57fbec938fdf887645723bcb5679a1a"
+        },
+        {
+          "class": "Point",
+          "bytes": "032d3594512a5f8afebef528a050f41f0e3b70ddd01331bc09ecb25c397eee66cf"
+        },
+        {
+          "class": "Point",
+          "bytes": "039bf3f05cb3dfa1f0cc8da9a137dc2398221c89afab370ae96ae96617a1800c6d"
+        }
+      ],
+      "output": "372e4aa325a03f1b032eec8dcecdac8c20741bf912a107b3e1e4c66f8d1e3a30"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
@@ -218,7 +218,9 @@ class Point(object):
         return self.to_bytes()
 
 
-def unsafe_hash_to_point(data, params: UmbralParameters, label=None) -> 'Point':
+def unsafe_hash_to_point(data : bytes = b'', 
+                         params: UmbralParameters = None, 
+                         label : bytes = b'') -> 'Point':
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
@@ -231,8 +233,8 @@ def unsafe_hash_to_point(data, params: UmbralParameters, label=None) -> 'Point':
     TODO: Check how to uniformly generate ycoords. Currently, it only outputs points
     where ycoord is even (i.e., starting with 0x02 in compressed notation)
     """
-    if label is None:
-        label = []
+
+    params = params if params is not None else default_params()
 
     # We use a 32-bit counter as additional input
     i = 1

@@ -3,7 +3,10 @@ import os
 
 from umbral.curvebn import CurveBN
 from umbral.point import Point
+from umbral.keys import UmbralPublicKey
 from umbral.config import default_params
+from umbral.fragments import KFrag, CapsuleFrag
+from umbral import pre
 
 def test_curvebn_operations():
 
@@ -85,3 +88,65 @@ def test_point_operations():
     for (operation, result) in test:
         assert result == int.from_bytes(expected[operation], 'big'), 'Error in {}'.format(operation)
 
+
+def test_kfrags():
+
+    vector_file = os.path.join('vectors', 'vectors_kfrags.json')
+    try:
+        with open(vector_file) as f:
+            vector_suite = json.load(f)
+    except OSError:
+        raise 
+
+
+    verifying_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['verifying_key']))
+    delegating_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['delegating_key']))
+    receiving_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['receiving_key']))
+
+    kfrags = [ KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag']))
+                    for json_kfrag in vector_suite['vectors']]
+
+
+    for kfrag in kfrags:
+        assert kfrag.verify(signing_pubkey=verifying_key,
+                            delegating_pubkey=delegating_key,
+                            receiving_pubkey=receiving_key), \
+            'Invalid KFrag {}'.format(kfrag.to_bytes().hex())
+
+
+def test_cfrags():
+
+    vector_file = os.path.join('vectors', 'vectors_cfrags.json')
+    try:
+        with open(vector_file) as f:
+            vector_suite = json.load(f)
+    except OSError:
+        raise 
+
+    params = default_params()
+
+    capsule = pre.Capsule.from_bytes(bytes.fromhex(vector_suite['capsule']),
+                                     params=params)
+
+    verifying_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['verifying_key']))
+    delegating_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['delegating_key']))
+    receiving_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['receiving_key']))
+
+    kfrags_n_cfrags = [ ( KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag'])),
+                          CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
+                            for json_kfrag in vector_suite['vectors']]
+
+    for kfrag, cfrag in kfrags_n_cfrags:
+        assert kfrag.verify(signing_pubkey=verifying_key,
+                            delegating_pubkey=delegating_key,
+                            receiving_pubkey=receiving_key), \
+            'Invalid KFrag {}'.format(kfrag.to_bytes().hex())
+
+        new_cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        assert new_cfrag._point_e1 == cfrag._point_e1
+        assert new_cfrag._point_v1 == cfrag._point_v1
+        assert new_cfrag._kfrag_id == cfrag._kfrag_id
+        assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
+        assert new_cfrag._point_xcoord == cfrag._point_xcoord
+        assert new_cfrag.proof is None
+        assert cfrag.to_bytes() == new_cfrag.to_bytes()

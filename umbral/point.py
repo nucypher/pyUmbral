@@ -229,9 +229,6 @@ def unsafe_hash_to_point(data : bytes = b'',
 
     WARNING: Do not use when the input data is secret, as this implementation is not
     in constant time, and hence, it is not safe with respect to timing attacks.
-
-    TODO: Check how to uniformly generate ycoords. Currently, it only outputs points
-    where ycoord is even (i.e., starting with 0x02 in compressed notation)
     """
 
     params = params if params is not None else default_params()
@@ -242,12 +239,13 @@ def unsafe_hash_to_point(data : bytes = b'',
         ibytes = i.to_bytes(4, byteorder='big')
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
         blake2b.update(label + ibytes + data)
-        hash_digest = blake2b.finalize()[:params.CURVE_KEY_SIZE_BYTES]
+        hash_digest = blake2b.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
 
-        compressed02 = b"\x02" + hash_digest
+        sign = b'\x02' if hash_digest[0] & 1 == 0 else b'\x03' 
+        compressed_point = sign + hash_digest[1:]
 
         try:
-            return Point.from_bytes(compressed02, params.curve)
+            return Point.from_bytes(compressed_point, params.curve)
         except InternalError as e:
             # We want to catch specific InternalExceptions:
             # - Point not in the curve (code 107)

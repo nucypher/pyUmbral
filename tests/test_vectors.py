@@ -2,7 +2,7 @@ import json
 import os
 
 from umbral.curvebn import CurveBN
-from umbral.point import Point
+from umbral.point import Point, unsafe_hash_to_point
 from umbral.keys import UmbralPublicKey
 from umbral.config import default_params
 from umbral.fragments import KFrag, CapsuleFrag
@@ -87,6 +87,24 @@ def test_point_operations():
 
     for (operation, result) in test:
         assert result == int.from_bytes(expected[operation], 'big'), 'Error in {}'.format(operation)
+
+
+def test_unsafe_hash_to_point():
+
+    vector_file = os.path.join('vectors', 'vectors_unsafe_hash_to_point.json')
+    try:
+        with open(vector_file) as f:
+            vector_suite = json.load(f)
+    except OSError:
+        raise 
+
+    params = default_params()
+
+    for item in vector_suite['vectors']:
+        data = bytes.fromhex(item['data'])
+        label = bytes.fromhex(item['label'])
+        expected = Point.from_bytes(bytes.fromhex(item['point']))
+        assert expected == unsafe_hash_to_point(label=label, data=data, params=params)
 
 
 def test_kfrags():

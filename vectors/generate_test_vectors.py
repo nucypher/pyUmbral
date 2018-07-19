@@ -5,7 +5,7 @@ from umbral import pre
 from umbral.keys import UmbralPrivateKey
 from umbral.signing import Signer
 from umbral.curvebn import CurveBN
-from umbral.point import Point
+from umbral.point import Point, unsafe_hash_to_point
 from umbral.config import set_default_curve, default_params
 
 
@@ -172,6 +172,37 @@ vector_suite = {
 json_file = 'vectors_point_operations.json'
 
 create_test_vector_file(vector_suite, json_file, generate_again=generate_again)
+
+
+########################
+# unsafe_hash_to_point #
+########################
+
+inputs = (  b'',
+            b'abc',
+            b'NuCypher', 
+            b'Nucypher', 
+         )
+
+vectors = list()
+for data in inputs:
+    for label in inputs:
+        point = unsafe_hash_to_point(label=label, data=data, params=params)
+        json_input = { 'data' : hexlify(data),
+                        'label' : hexlify(label),
+                        'point' : hexlify(point),
+                     } 
+
+        vectors.append(json_input)
+
+vector_suite = {
+    'name' : 'Test vectors for umbral.point.Point.unsafe_hash_to_point',
+    'params' : 'default',
+    'vectors' : vectors
+}
+
+create_test_vector_file(vector_suite, 'vectors_unsafe_hash_to_point.json', generate_again=generate_again)
+#print(json.dumps(vector_suite, indent=2))
 
 
 ##########

@@ -33,7 +33,7 @@ def create_test_vector_file(vector, filename, generate_again=False):
 
 
 # If True, this will overwrite existing test vector files with new randomly generated instances
-generate_again = True
+generate_again = False
 
 #########
 # SETUP #

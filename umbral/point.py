@@ -233,12 +233,17 @@ def unsafe_hash_to_point(data : bytes = b'',
 
     params = params if params is not None else default_params()
 
-    # We use a 32-bit counter as additional input
-    i = 1
+    len_data = len(data).to_bytes(4, byteorder='big')
+    len_label = len(label).to_bytes(4, byteorder='big')
+
+    label_data = len_label + label + len_data + data
+
+    # We use an internal 32-bit counter as additional input
+    i = 0
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        blake2b.update(label + ibytes + data)
+        blake2b.update(label_data + ibytes)
         hash_digest = blake2b.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
 
         sign = b'\x02' if hash_digest[0] & 1 == 0 else b'\x03' 

@@ -5,15 +5,8 @@ name = "pypi"
 
 [packages]
 cryptography = ">=2.3"
-
-# Use bytestringSplitter from github until we release it on PyPi.
+pynacl="*"
 bytestringSplitter = {git = "https://github.com/nucypher/bytestringSplitter.git", ref = "nucypher-depend"}
-pynacl = "*"
-# Since wheel-specified dependencies aren't locked...
-idna = ">=2.1"
-asn1crypto = ">=0.21.0"
-six = ">=1.4.1"
-cffi = ">=1.7"
 
 [dev-packages]
 # Pytest Plugins

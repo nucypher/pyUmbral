@@ -1,16 +1,16 @@
 import pytest
-from umbral.curve import Curve, SECP256R1, SECP256K1, SECP384R1, _AVAIL_CURVES
+from umbral.curve import Curve, CURVES, SECP256R1, SECP256K1, SECP384R1
 
 
 def test_curve_whitelist():
     # Test the AVAIL_CURVES dict to have only these three curves:
-    assert len(_AVAIL_CURVES) == 3
-    assert _AVAIL_CURVES['secp256r1'] == 415
-    assert _AVAIL_CURVES['secp256k1'] == 714
-    assert _AVAIL_CURVES['secp384r1'] == 715
+    assert len(CURVES) == 3
+    assert Curve._supported_curves['secp256r1'] == 415
+    assert Curve._supported_curves['secp256k1'] == 714
+    assert Curve._supported_curves['secp384r1'] == 715
 
     # Test that we can't instantiate other curves:
-    with pytest.raises(ValueError):
+    with pytest.raises(NotImplementedError):
         Curve(711)
 
     # Test the hardcoded curves are what they're supposed to be:
@@ -23,7 +23,6 @@ def test_curve_whitelist():
     assert test_p384.curve_nid == 715
 
     # Test the supported curves property
-    assert test_p256.supported_curves == _AVAIL_CURVES
-    assert test_secp256k1.supported_curves == _AVAIL_CURVES
-    assert test_p384.supported_curves == _AVAIL_CURVES
-
+    assert test_p256._supported_curves == Curve._supported_curves
+    assert test_secp256k1._supported_curves == Curve._supported_curves
+    assert test_p384._supported_curves == Curve._supported_curves

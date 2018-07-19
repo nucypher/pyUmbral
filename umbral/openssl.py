@@ -107,7 +107,7 @@ def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
 def _get_new_EC_POINT(curve: 'Curve'):
     """
     Returns a new and initialized OpenSSL EC_POINT given the group of a curve.
-    If curve_nid is provided, it retrieves the group from the curve provided.
+    If __curve_nid is provided, it retrieves the group from the curve provided.
     """
     new_point = backend._lib.EC_POINT_new(curve.ec_group)
     backend.openssl_assert(new_point != backend._ffi.NULL)

@@ -1,44 +1,61 @@
 from cryptography.hazmat.backends import default_backend
-from umbral import openssl
 
-_AVAIL_CURVES = {
-    'secp256r1': 415,
-    'secp256k1': 714,
-    'secp384r1': 715,
-}
+from umbral import openssl
 
 
 class Curve:
     """
     Acts as a container to store constant variables such as the OpenSSL
-    curve_nid, the EC_GROUP struct, and the order of the curve. This also acts
+    __curve_nid, the EC_GROUP struct, and the order of the curve. This also acts
     as a convenient whitelist to limit the curves used in pyUmbral.
     """
 
-    def __init__(self, curve_nid: int):
+    _supported_curves = {
+        'secp256r1': 415,
+        'secp256k1': 714,
+        'secp384r1': 715,
+    }
+
+    def __init__(self, nid: int):
         """
-        Instantiates an OpenSSL curve with the provided curve_nid and derives
+        Instantiates an OpenSSL curve with the provided __curve_nid and derives
         the proper EC_GROUP struct and order. You can _only_ instantiate curves
         with supported nids (see `Curve.supported_curves`).
         """
-        if curve_nid not in _AVAIL_CURVES.values():
-            raise ValueError(
-                "Curve NID passed ({}) is not supported.".format(curve_nid))
+        if nid not in self._supported_curves.values():
+            raise NotImplementedError("Curve NID {} is not supported.".format(nid))
 
-        self.curve_nid = curve_nid
-        self.ec_group = openssl._get_ec_group_by_curve_nid(self.curve_nid)
-        self.order = openssl._get_ec_order_by_group(self.ec_group)
-        self.generator = openssl._get_ec_generator_by_group(self.ec_group)
+        # set only once
+        self.__curve_nid = nid
+        self.__ec_group = openssl._get_ec_group_by_curve_nid(self.__curve_nid)
+        self.__order = openssl._get_ec_order_by_group(self.ec_group)
+        self.__generator = openssl._get_ec_generator_by_group(self.ec_group)
 
     @property
-    def supported_curves(self):
-        return _AVAIL_CURVES
+    def curve_nid(self):
+        return self.__curve_nid
+
+    @property
+    def ec_group(self):
+        return self.__ec_group
+
+    @property
+    def order(self):
+        return self.__order
+
+    @property
+    def generator(self):
+        return self.__generator
+
+    @classmethod
+    def from_name(cls, name: str):
+        return cls(nid=cls._supported_curves[name])
 
     def __eq__(self, other):
-        return self.curve_nid == other.curve_nid
+        return self.__curve_nid == other.curve_nid
 
     def __repr__(self):
-        return "<OpenSSL Curve w/ NID {}>".format(self.curve_nid)
+        return "<OpenSSL Curve(nid={})>".format(self.__curve_nid)
 
     def get_field_order_size_in_bytes(self) -> int:
         backend = default_backend()
@@ -46,7 +63,7 @@ class Curve:
         return (size_in_bits + 7) // 8
 
 
-
-SECP256R1 = Curve(_AVAIL_CURVES['secp256r1'])
-SECP256K1 = Curve(_AVAIL_CURVES['secp256k1'])
-SECP384R1 = Curve(_AVAIL_CURVES['secp384r1'])
+SECP256R1 = Curve.from_name('secp256r1')
+SECP256K1 = Curve.from_name('secp256k1')
+SECP384R1 = Curve.from_name('secp384r1')
+CURVES = (SECP256K1, SECP256R1, SECP384R1)

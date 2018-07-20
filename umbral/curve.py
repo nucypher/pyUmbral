@@ -61,7 +61,7 @@ class Curve:
         return self.__curve_nid == other.curve_nid
 
     def __repr__(self):
-        return "<OpenSSL Curve(nid={})>".format(self.__curve_nid)
+        return "<OpenSSL Curve(nid={}, name={})>".format(self.__curve_nid, self.__curve_name)
 
     #
     # Immutable Curve Data

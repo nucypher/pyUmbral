@@ -121,6 +121,25 @@ def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
         backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
+@typing.no_type_check
+def _bytes_to_bn(bytes_seq: bytes, curve: 'Curve'=None, set_consttime_flag=True):
+    """
+    If set_consttime_flag is set to True, OpenSSL will use constant time
+    operations when using this CurveBN.
+    """
+
+    bn = _get_new_BN(set_consttime_flag)
+    backend._lib.BN_bin2bn(bytes_seq, len(bytes_seq), bn)
+    backend.openssl_assert(bn != backend._ffi.NULL)
+    # bn = backend._ffi.gc(bn, backend._lib.BN_clear_free)
+    
+    if curve:
+        on_curve = _bn_is_on_curve(bn, curve)
+        if not on_curve:
+            raise ValueError("The resulting BIGNUM is not within the provided curve's order.")
+
+    return bn
+
 
 @typing.no_type_check
 def _get_new_EC_POINT(curve: 'Curve'):

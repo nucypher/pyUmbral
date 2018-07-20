@@ -6,23 +6,28 @@ from umbral import openssl
 class Curve:
     """
     Acts as a container to store constant variables such as the OpenSSL
-    __curve_nid, the EC_GROUP struct, and the order of the curve. This also acts
-    as a convenient whitelist to limit the curves used in pyUmbral.
+    __curve_nid, the EC_GROUP struct, and the order of the curve.
+
+    Contains a whitelist of supported elliptic curves used in pyUmbral.
+
     """
 
     _supported_curves = {
-        'secp256r1': 415,
-        'secp256k1': 714,
-        'secp384r1': 715,
+        415: 'secp256r1',
+        714: 'secp256k1',
+        715: 'secp384r1'
     }
 
-    def __init__(self, nid: int):
+    def __init__(self, nid: int) -> None:
         """
         Instantiates an OpenSSL curve with the provided __curve_nid and derives
         the proper EC_GROUP struct and order. You can _only_ instantiate curves
         with supported nids (see `Curve.supported_curves`).
         """
-        if nid not in self._supported_curves.values():
+
+        try:
+            self.__curve_name = self._supported_curves[nid]
+        except KeyError:
             raise NotImplementedError("Curve NID {} is not supported.".format(nid))
 
         # set only once

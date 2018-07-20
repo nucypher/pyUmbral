@@ -19,11 +19,8 @@ class UmbralParameters(object):
 
     def __eq__(self, other: 'UmbralParameters') -> bool:
 
-        self_curve_nid = self.curve.curve_nid
-        other_curve_nid = other.curve.curve_nid
-
         # TODO: This is not comparing the order, which currently is an OpenSSL pointer
-        self_attributes = self_curve_nid, self.g, self.CURVE_KEY_SIZE_BYTES, self.u
-        others_attributes = other_curve_nid, other.g, other.CURVE_KEY_SIZE_BYTES, other.u
+        self_attributes = self.curve, self.g, self.CURVE_KEY_SIZE_BYTES, self.u
+        others_attributes = other.curve, other.g, other.CURVE_KEY_SIZE_BYTES, other.u
 
         return self_attributes == others_attributes

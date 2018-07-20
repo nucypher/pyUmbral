@@ -5,7 +5,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
@@ -218,7 +218,9 @@ class Point(object):
         return self.to_bytes()
 
 
-def unsafe_hash_to_point(data, params: UmbralParameters, label=None) -> 'Point':
+def unsafe_hash_to_point(data : bytes = b'', 
+                         params: UmbralParameters = None, 
+                         label : bytes = b'') -> 'Point':
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
@@ -227,25 +229,28 @@ def unsafe_hash_to_point(data, params: UmbralParameters, label=None) -> 'Point':
 
     WARNING: Do not use when the input data is secret, as this implementation is not
     in constant time, and hence, it is not safe with respect to timing attacks.
-
-    TODO: Check how to uniformly generate ycoords. Currently, it only outputs points
-    where ycoord is even (i.e., starting with 0x02 in compressed notation)
     """
-    if label is None:
-        label = []
 
-    # We use a 32-bit counter as additional input
-    i = 1
+    params = params if params is not None else default_params()
+
+    len_data = len(data).to_bytes(4, byteorder='big')
+    len_label = len(label).to_bytes(4, byteorder='big')
+
+    label_data = len_label + label + len_data + data
+
+    # We use an internal 32-bit counter as additional input
+    i = 0
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
         blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        blake2b.update(label + ibytes + data)
-        hash_digest = blake2b.finalize()[:params.CURVE_KEY_SIZE_BYTES]
+        blake2b.update(label_data + ibytes)
+        hash_digest = blake2b.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
 
-        compressed02 = b"\x02" + hash_digest
+        sign = b'\x02' if hash_digest[0] & 1 == 0 else b'\x03' 
+        compressed_point = sign + hash_digest[1:]
 
         try:
-            return Point.from_bytes(compressed02, params.curve)
+            return Point.from_bytes(compressed_point, params.curve)
         except InternalError as e:
             # We want to catch specific InternalExceptions:
             # - Point not in the curve (code 107)

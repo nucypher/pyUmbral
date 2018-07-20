@@ -113,10 +113,11 @@ class Point(object):
         # Check if compressed
         if data[0] in [2, 3]:
             if len(data) != compressed_size:
-                raise ValueError("X coordinate too large for curve.")
+                raise ValueError(
+                    "Expected {} B for compressed points".format(compressed_size)
+                    )
 
-            affine_x = int.from_bytes(data[1:], 'big')
-            affine_x = openssl._int_to_bn(affine_x, curve=None)
+            affine_x = openssl._bytes_to_bn(data[1:])
 
             type_y = data[0] - 2
 
@@ -134,11 +135,15 @@ class Point(object):
             coord_size = compressed_size - 1
             uncompressed_size = 1 + (2 * coord_size)
             if len(data) != uncompressed_size:
-                raise ValueError("Uncompressed point does not have right size.")
-            affine_x = int.from_bytes(data[1:coord_size+1], 'big')
-            affine_y = int.from_bytes(data[1+coord_size:], 'big')
+                raise ValueError(
+                    "Expected {} B for uncompressed points".format(uncompressed_size)
+                    )
 
-            return cls.from_affine((affine_x, affine_y), curve)
+            affine_x = openssl._bytes_to_bn(data[1:coord_size+1])
+            affine_y = openssl._bytes_to_bn(data[coord_size+1:])
+
+            ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, curve)
+            return cls(ec_point, curve)
         else:
             raise ValueError("Invalid point serialization.")
 

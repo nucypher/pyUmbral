@@ -98,9 +98,7 @@ class CurveBN(object):
                     raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
             blake2b.update(item_bytes)
 
-        hash_digest = blake2b.finalize()
-        hash_digest = int.from_bytes(hash_digest, byteorder='big', signed=False)
-        hash_digest = openssl._int_to_bn(hash_digest)
+        hash_digest = openssl._bytes_to_bn(blake2b.finalize())
 
         _1 = backend._lib.BN_value_one()
         
@@ -127,8 +125,12 @@ class CurveBN(object):
         constant time operations.
         """
         curve = curve if curve is not None else default_curve()
-        num = int.from_bytes(data, 'big')
-        return cls.from_int(num, curve)
+
+        size = backend._lib.BN_num_bytes(curve.order)
+        if len(data) != size:
+            raise ValueError("Expected {} B for CurveBNs".format(size))
+        bignum = openssl._bytes_to_bn(data)
+        return cls(bignum, curve)
 
     def to_bytes(self) -> bytes:
         """

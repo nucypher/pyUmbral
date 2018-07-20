@@ -36,25 +36,26 @@ class Curve:
         self.__order = openssl._get_ec_order_by_group(self.ec_group)
         self.__generator = openssl._get_ec_generator_by_group(self.ec_group)
 
-    @property
-    def curve_nid(self):
-        return self.__curve_nid
-
-    @property
-    def ec_group(self):
-        return self.__ec_group
-
-    @property
-    def order(self):
-        return self.__order
-
-    @property
-    def generator(self):
-        return self.__generator
-
     @classmethod
-    def from_name(cls, name: str):
-        return cls(nid=cls._supported_curves[name])
+    def from_name(cls, name: str) -> 'Curve':
+        """
+        Alternate constructor to generate a curve instance by it's name.
+        Raises NotImplementedError if the name cannot be mapped to a known
+        supported curve NID.
+
+        """
+
+        name = name.casefold()  # normalize
+
+        for supported_nid, supported_name in cls._supported_curves.items():
+            if name == supported_name:
+                instance = cls(nid=supported_nid)
+                break
+        else:
+            message = "{} is not supported curve name.".format(name)
+            raise NotImplementedError(message)
+
+        return instance
 
     def __eq__(self, other):
         return self.__curve_nid == other.curve_nid
@@ -62,13 +63,43 @@ class Curve:
     def __repr__(self):
         return "<OpenSSL Curve(nid={})>".format(self.__curve_nid)
 
+    #
+    # Immutable Curve Data
+    #
+
+    @property
     def get_field_order_size_in_bytes(self) -> int:
         backend = default_backend()
-        size_in_bits = openssl._get_ec_group_degree(self.ec_group)
+        size_in_bits = openssl._get_ec_group_degree(self.__ec_group)
         return (size_in_bits + 7) // 8
 
+    @property
+    def curve_nid(self) -> int:
+        return self.__curve_nid
+
+    @property
+    def name(self) -> str:
+        return self.__curve_name
+
+    @property
+    def ec_group(self) -> int:
+        return self.__ec_group
+
+    @property
+    def order(self) -> int:
+        return self.__order
+
+    @property
+    def generator(self) -> int:
+        return self.__generator
+
+
+#
+# Global Curve Instances
+#
 
 SECP256R1 = Curve.from_name('secp256r1')
 SECP256K1 = Curve.from_name('secp256k1')
 SECP384R1 = Curve.from_name('secp384r1')
+
 CURVES = (SECP256K1, SECP256R1, SECP384R1)

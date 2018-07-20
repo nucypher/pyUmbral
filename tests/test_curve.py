@@ -5,9 +5,9 @@ from umbral.curve import Curve, CURVES, SECP256R1, SECP256K1, SECP384R1
 def test_curve_whitelist():
     # Test the AVAIL_CURVES dict to have only these three curves:
     assert len(CURVES) == 3
-    assert Curve._supported_curves['secp256r1'] == 415
-    assert Curve._supported_curves['secp256k1'] == 714
-    assert Curve._supported_curves['secp384r1'] == 715
+    assert Curve._supported_curves[415] == 'secp256r1'
+    assert Curve._supported_curves[714] == 'secp256k1'
+    assert Curve._supported_curves[715] == 'secp384r1'
 
     # Test that we can't instantiate other curves:
     with pytest.raises(NotImplementedError):

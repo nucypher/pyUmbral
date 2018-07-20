@@ -122,32 +122,15 @@ def _int_to_bn(py_int: int, curve: 'Curve'=None, set_consttime_flag=True):
     return conv_bn
 
 @typing.no_type_check
-def _bytes_to_bn(bytes_seq: bytes, curve: 'Curve'=None, set_consttime_flag=True):
+def _bytes_to_bn(bytes_seq: bytes, set_consttime_flag=True):
     """
-    Converts the given byte sequence to an OpenSSL BIGNUM. If a curve is
-    provided, it will check if the byte sequence is of the right size. 
-    If it's not within the order, it will raise a ValueError.
-
+    Converts the given byte sequence to an OpenSSL BIGNUM. 
     If set_consttime_flag is set to True, OpenSSL will use constant time
-    operations when using this CurveBN.
+    operations when using this BIGNUM.
     """
-    if curve:
-        # The line above implies that the bignum is going to represent
-        # a field element; alternatively, we could use the curve order. 
-        # In theory these could be different sizes; in practice, for our
-        # whitelisted curves, they are the same.
-        # TODO: Figure out a way to do this better
-        expected_len = curve.get_field_order_size_in_bytes()
-        if len(bytes_seq) is not expected_len:
-            raise ValueError("The input must be {} bytes long.".format(expected_len))
-
     bn = _get_new_BN(set_consttime_flag)
     backend._lib.BN_bin2bn(bytes_seq, len(bytes_seq), bn)
-    backend.openssl_assert(bn != backend._ffi.NULL)
-    
-    if curve and not _bn_is_on_curve(bn, curve):
-        raise ValueError("The resulting BIGNUM is not within the curve's order.")
-
+    backend.openssl_assert(bn != backend._ffi.NULL)    
     return bn
 
 

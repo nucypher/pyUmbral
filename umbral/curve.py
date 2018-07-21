@@ -36,6 +36,9 @@ class Curve:
         self.__order = openssl._get_ec_order_by_group(self.ec_group)
         self.__generator = openssl._get_ec_generator_by_group(self.ec_group)
 
+        # Init cache
+        self.__field_order_size_in_bytes = None
+
     @classmethod
     def from_name(cls, name: str) -> 'Curve':
         """
@@ -68,10 +71,12 @@ class Curve:
     #
 
     @property
-    def get_field_order_size_in_bytes(self) -> int:
-        backend = default_backend()
-        size_in_bits = openssl._get_ec_group_degree(self.__ec_group)
-        return (size_in_bits + 7) // 8
+    def field_order_size_in_bytes(self) -> int:
+        if self.__field_order_size_in_bytes is None:
+            backend = default_backend()
+            size_in_bits = openssl._get_ec_group_degree(self.__ec_group)
+            self.__field_order_size_in_bytes = (size_in_bits + 7) // 8
+        return self.__field_order_size_in_bytes
 
     @property
     def curve_nid(self) -> int:

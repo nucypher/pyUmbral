@@ -9,7 +9,7 @@ class UmbralParameters(object):
         from umbral.point import Point, unsafe_hash_to_point
 
         self.curve = curve
-        self.CURVE_KEY_SIZE_BYTES = self.curve.get_field_order_size_in_bytes
+        self.CURVE_KEY_SIZE_BYTES = self.curve.field_order_size_in_bytes
 
         self.g = Point.get_generator_from_curve(curve=curve)
         g_bytes = self.g.to_bytes()

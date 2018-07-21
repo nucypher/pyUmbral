@@ -6,7 +6,7 @@ from umbral import openssl
 class Curve:
     """
     Acts as a container to store constant variables such as the OpenSSL
-    __curve_nid, the EC_GROUP struct, and the order of the curve.
+    curve_nid, the EC_GROUP struct, and the order of the curve.
 
     Contains a whitelist of supported elliptic curves used in pyUmbral.
 
@@ -20,7 +20,7 @@ class Curve:
 
     def __init__(self, nid: int) -> None:
         """
-        Instantiates an OpenSSL curve with the provided __curve_nid and derives
+        Instantiates an OpenSSL curve with the provided curve_nid and derives
         the proper EC_GROUP struct and order. You can _only_ instantiate curves
         with supported nids (see `Curve.supported_curves`).
         """
@@ -42,7 +42,8 @@ class Curve:
     @classmethod
     def from_name(cls, name: str) -> 'Curve':
         """
-        Alternate constructor to generate a curve instance by it's name.
+        Alternate constructor to generate a curve instance by its name.
+
         Raises NotImplementedError if the name cannot be mapped to a known
         supported curve NID.
 

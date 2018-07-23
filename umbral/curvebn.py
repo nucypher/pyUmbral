@@ -32,7 +32,7 @@ class CurveBN(object):
         If no curve is provided, it uses the default.
         """
         curve = curve if curve is not None else default_curve()
-        return curve.get_field_order_size_in_bytes()
+        return curve.field_order_size_in_bytes
 
     @classmethod
     def gen_rand(cls, curve: Optional[Curve] = None) -> 'CurveBN':

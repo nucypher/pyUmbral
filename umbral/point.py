@@ -29,7 +29,7 @@ class Point(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        coord_size = curve.get_field_order_size_in_bytes()
+        coord_size = curve.field_order_size_in_bytes
 
         if is_compressed:
             return 1 + coord_size
@@ -129,7 +129,7 @@ class Point(object):
         if is_compressed is set to True.
         """
         affine_x, affine_y = self.to_affine()
-        key_size = self.curve.get_field_order_size_in_bytes()
+        key_size = self.curve.field_order_size_in_bytes
 
         if is_compressed:
             y_bit = (affine_y & 1) + 2

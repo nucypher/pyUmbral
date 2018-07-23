@@ -152,19 +152,20 @@ class Point(object):
         Returns the Point serialized as bytes. It will return a compressed form
         if is_compressed is set to True.
         """
-        affine_x, affine_y = self.to_affine()
-        key_size = self.curve.field_order_size_in_bytes
+        affine_x, affine_y = openssl._get_affine_coords_via_EC_POINT(
+                                self.ec_point, self.curve)
 
-        if is_compressed:
-            y_bit = (affine_y & 1) + 2
-            data = int.to_bytes(y_bit, 1, 'big')
-            data += int.to_bytes(affine_x, key_size, 'big')
-        else:
-            data = b'\x04'
-            data += int.to_bytes(affine_x, key_size, 'big')
-            data += int.to_bytes(affine_y, key_size, 'big')
+        length = self.expected_bytes_length(self.curve, is_compressed)
 
-        return data
+        bin_ptr = backend._ffi.new("unsigned char[]", length)
+        with backend._tmp_bn_ctx() as bn_ctx:
+            bin_len = backend._lib.EC_POINT_point2oct(
+                self.curve.ec_group, self.ec_point, 2 if is_compressed else 4, 
+                bin_ptr, length, bn_ctx
+            )
+            backend.openssl_assert(bin_len != 0)
+        
+        return bytes(backend._ffi.buffer(bin_ptr)[:length])
 
     @classmethod
     def get_generator_from_curve(cls, curve: Optional[Curve] = None) -> 'Point':

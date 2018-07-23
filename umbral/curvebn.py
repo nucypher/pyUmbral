@@ -137,7 +137,7 @@ class CurveBN(object):
         Returns the CurveBN as bytes.
         """
         size = backend._lib.BN_num_bytes(self.curve.order)
-        return int.to_bytes(int(self), size, 'big')
+        return openssl._bn_to_bytes(self.bignum, size)
 
     def __int__(self) -> int:
         """

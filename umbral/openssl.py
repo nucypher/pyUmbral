@@ -133,6 +133,27 @@ def _bytes_to_bn(bytes_seq: bytes, set_consttime_flag=True):
     backend.openssl_assert(bn != backend._ffi.NULL)    
     return bn
 
+@typing.no_type_check
+def _bn_to_bytes(bignum, length : int = None):
+    """
+    Converts the given OpenSSL BIGNUM into a Python bytes sequence.
+    If length is given, the return bytes will have such length.
+    If the BIGNUM doesn't fit, it raises a ValueError.
+    """
+
+    if bignum is None or bignum == backend._ffi.NULL:
+        raise ValueError("Input BIGNUM must have a value")
+
+    bn_num_bytes = backend._lib.BN_num_bytes(bignum)
+    if length is None:
+        length = bn_num_bytes
+    elif bn_num_bytes > length:
+        raise ValueError("Input BIGNUM doesn't fit in {} B".format(length))
+
+    bin_ptr = backend._ffi.new("unsigned char []", length)
+    bin_len = backend._lib.BN_bn2bin(bignum, bin_ptr)
+    return bytes.rjust(backend._ffi.buffer(bin_ptr, length)[:], length, b'\0')
+
 
 @typing.no_type_check
 def _get_new_EC_POINT(curve: 'Curve'):

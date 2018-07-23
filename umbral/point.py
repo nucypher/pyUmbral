@@ -157,15 +157,21 @@ class Point(object):
 
         length = self.expected_bytes_length(self.curve, is_compressed)
 
+        if is_compressed:
+            point_conversion_form = backend._lib.POINT_CONVERSION_COMPRESSED
+        else:
+            point_conversion_form = backend._lib.POINT_CONVERSION_UNCOMPRESSED
+
         bin_ptr = backend._ffi.new("unsigned char[]", length)
         with backend._tmp_bn_ctx() as bn_ctx:
             bin_len = backend._lib.EC_POINT_point2oct(
-                self.curve.ec_group, self.ec_point, 2 if is_compressed else 4, 
+                self.curve.ec_group, self.ec_point, point_conversion_form, 
                 bin_ptr, length, bn_ctx
             )
             backend.openssl_assert(bin_len != 0)
         
-        return bytes(backend._ffi.buffer(bin_ptr)[:length])
+        bignum_bytes = bytes(backend._ffi.buffer(bin_ptr, length)[:])
+        return bignum_bytes
 
     @classmethod
     def get_generator_from_curve(cls, curve: Optional[Curve] = None) -> 'Point':

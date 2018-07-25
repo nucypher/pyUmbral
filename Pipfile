@@ -4,10 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-
+# Third Party
 cryptography = ">=2.3"
 pynacl="*"
-bytestringSplitter = {git = "https://github.com/nucypher/bytestringSplitter.git", ref = "nucypher-depend"}
+# NuCypher
+bytestringsplitter = "*"
 
 [dev-packages]
 bumpversion = "*"
@@ -28,7 +29,6 @@ sphinx = "*"
 sphinx-autobuild = "*"
 # Testing libraries
 hypothesis = "*"
-
 
 [pipenv]
 allow_prereleases = true

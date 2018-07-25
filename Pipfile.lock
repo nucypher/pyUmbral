@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "25e1c99abfebd158262d8b5c7e7bc7dfa00310df5323168518e2da8ef624cf3e"
+            "sha256": "6bf258117ec3fd55941298696160e8fcaaf8df1eb695e7b658cf70d6f473f14a"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -22,8 +22,12 @@
             "version": "==0.24.0"
         },
         "bytestringsplitter": {
-            "git": "https://github.com/nucypher/bytestringSplitter.git",
-            "ref": "03bd45352ece826bcb1fc1fb6925a6a2e9e39190"
+            "hashes": [
+                "sha256:11be948eb29e98f1af0da95b1d27c6aef7ac50c4e7e82a221d371aca245af152",
+                "sha256:5454f63c482ad33a944ead52e0ebba27b9836f9ff6fb953b6f02b33d1d7db042"
+            ],
+            "index": "pypi",
+            "version": "==1.0.0a1"
         },
         "cffi": {
             "hashes": [
@@ -93,6 +97,12 @@
                 "sha256:684a38a6f903c1d71d6d5fac066b58d7768af4de2b832e426ec79c30daa94a16"
             ],
             "version": "==2.7"
+        },
+        "msgpack-python": {
+            "hashes": [
+                "sha256:378cc8a6d3545b532dfd149da715abae4fda2a3adb6d74e525d0d5e51f46909b"
+            ],
+            "version": "==0.5.6"
         },
         "pycparser": {
             "hashes": [

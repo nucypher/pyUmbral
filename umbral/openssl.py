@@ -152,7 +152,7 @@ def _bn_to_bytes(bignum, length : int = None):
 
     bin_ptr = backend._ffi.new("unsigned char []", length)
     bin_len = backend._lib.BN_bn2bin(bignum, bin_ptr)
-    return bytes.rjust(backend._ffi.buffer(bin_ptr, length)[:], length, b'\0')
+    return bytes.rjust(backend._ffi.buffer(bin_ptr, bin_len)[:], length, b'\0')
 
 
 @typing.no_type_check

@@ -1,0 +1,86 @@
+{
+  "name": "Test vectors for umbral.point.Point.unsafe_hash_to_point",
+  "params": "default",
+  "vectors": [
+    {
+      "data": "",
+      "label": "",
+      "point": "03a0e091bd2b6a143051756de26a6d901068c86bc284bdd98b69bcb1652c17c9e2"
+    },
+    {
+      "data": "",
+      "label": "616263",
+      "point": "035a55ac271cca507b2969eeb85c916d201bd840c2ff02fc52d672bf912fc2cca0"
+    },
+    {
+      "data": "",
+      "label": "4e75437970686572",
+      "point": "03b0538d63b7c65fe98147b0d4ddffcbbcf036159d98b68ce26cbe6401e90e4e58"
+    },
+    {
+      "data": "",
+      "label": "4e75637970686572",
+      "point": "03a15798c79dcb40d175123895f042821a9ffee682194e897c09ef9e8576429cb0"
+    },
+    {
+      "data": "616263",
+      "label": "",
+      "point": "03bef61d8affefa26c79cef077c99b6e4e877aa7af9ad84d7c0ca53d98df6432db"
+    },
+    {
+      "data": "616263",
+      "label": "616263",
+      "point": "027a735febf5b0f4c7de14d9d09cbf13c058e7495a3b7f6da0df0d8e63a4dc226e"
+    },
+    {
+      "data": "616263",
+      "label": "4e75437970686572",
+      "point": "0265d32bdafd32cfcecad58fc7168187cd0efd6bc61d8cfb71351b1bacd8d9bf57"
+    },
+    {
+      "data": "616263",
+      "label": "4e75637970686572",
+      "point": "0214485468fcce9c9dd33c327d19275279a367523251bf10ae8f5594b8867c3399"
+    },
+    {
+      "data": "4e75437970686572",
+      "label": "",
+      "point": "02f24cd798005b25295509e21d2a6e409537141333e277a7579283387b501d9258"
+    },
+    {
+      "data": "4e75437970686572",
+      "label": "616263",
+      "point": "0220b5525cbc5841d79f71dbe17d77ad855793fda5efea18be8e44c10b1b0725ae"
+    },
+    {
+      "data": "4e75437970686572",
+      "label": "4e75437970686572",
+      "point": "030c8958838fc5ffc7f8837de219784719b41569a95bb862d48786f8ce1214f57d"
+    },
+    {
+      "data": "4e75437970686572",
+      "label": "4e75637970686572",
+      "point": "029417e07352696fb045743edfe5a8e0be6e8472c235fe9771f62dc79a9bb59ee4"
+    },
+    {
+      "data": "4e75637970686572",
+      "label": "",
+      "point": "0328f43ef08daf8d0aab39b7f06028fb333858692e3a16c418e25bcdb7dc6ea188"
+    },
+    {
+      "data": "4e75637970686572",
+      "label": "616263",
+      "point": "028e007c73187e6ea78770505ec44288c9f6c9aa7faa1bb8491c7feb2d4b7e8860"
+    },
+    {
+      "data": "4e75637970686572",
+      "label": "4e75437970686572",
+      "point": "03b71644780f89ef47789cb149b42efb7e0430efe642cc5c79b929a0ee47235e35"
+    },
+    {
+      "data": "4e75637970686572",
+      "label": "4e75637970686572",
+      "point": "0389bc543bea291993e97f5871106757493afe046e833ced09e6dc3a89bf6aecbb"
+    }
+  ]
+}

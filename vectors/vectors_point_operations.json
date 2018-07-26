@@ -1,0 +1,33 @@
+{
+  "name": "Test vectors for Point operations",
+  "params": "default",
+  "first Point operand": "036c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0",
+  "second Point operand": "03d8bb1cac8b0f62236f5d3be9832075dc3690c6ff51183df3ecfe9f838563d5e2",
+  "CurveBN operand": "4c3cc961763f3aa2647cbc3e804879e30ea31a3b2230746e1cac932487de9b4b",
+  "vectors": [
+    {
+      "operation": "Addition",
+      "result": "030f8408ee10803131d0457227ea2e925e770ef32f493b35f5628948d010c16fe8"
+    },
+    {
+      "operation": "Subtraction",
+      "result": "03b7441fa69599309cb04c3a323be10247a733f8bd71eb7d2c09b108ea7e77f369"
+    },
+    {
+      "operation": "Multiplication",
+      "result": "027d1967adb9054098fd2847380a4070c658039a54b22672adb3d7c78b51116a05"
+    },
+    {
+      "operation": "Inversion",
+      "result": "026c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0"
+    },
+    {
+      "operation": "To_affine.X",
+      "result": "6c35a565fb814f5d24aa145a98fb2cea456c108823e1dff326d62dac3fc4f8f0"
+    },
+    {
+      "operation": "To_affine.Y",
+      "result": "afb057a603272551a3a031a1e6fae5b77d8ec4faef17855697f075e5c55de5c1"
+    }
+  ]
+}

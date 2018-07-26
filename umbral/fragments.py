@@ -100,6 +100,14 @@ class KFrag(object):
                receiving_pubkey: UmbralPublicKey) -> bool:
         return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
 
+    def verify_for_capsule(self, capsule : 'Capsule') -> bool:
+
+        correctness_keys = capsule.get_correctness_keys()
+
+        return self.verify(signing_pubkey=correctness_keys["verifying"],
+                           delegating_pubkey=correctness_keys["delegating"],
+                           receiving_pubkey=correctness_keys["receiving"])
+
     def __bytes__(self) -> bytes:
         return self.to_bytes()
 

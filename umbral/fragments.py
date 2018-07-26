@@ -32,6 +32,12 @@ from umbral.signing import Signature
 
 
 class KFrag(object):
+
+    class NotValid(ValueError):
+        """
+        raised if the KFrag does not pass verification.
+        """
+
     def __init__(self, id: bytes, bn_key: CurveBN, point_noninteractive: Point,
                  point_commitment: Point, point_xcoord: Point, signature: Signature) -> None:
         self._id = id

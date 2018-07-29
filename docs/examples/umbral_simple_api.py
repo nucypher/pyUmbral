@@ -42,7 +42,7 @@ alices_signer = signing.Signer(private_key=alices_signing_key)
 # ---------------------------
 # Now let's encrypt data with Alice's public key.
 # Invocation of `pre.encrypt` returns both the `ciphertext`,
-# and a `capsule`, Anyone with Alice's public key can perform
+# and a `capsule`. Anyone with Alice's public key can perform
 # this operation.
 
 plaintext = b'Proxy Re-encryption is cool!'
@@ -102,7 +102,7 @@ kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
 # ------------------------------
 # Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
 # Each Ursula performs re-encryption on the capsule using the `kfrag` 
-# provided by Alice, obtaining this way a "capsule fragment", or `cfrag`,
+# provided by Alice, obtaining this way a "capsule fragment", or `cfrag`.
 # Let's mock a network or transport layer by sampling `threshold` random `kfrags`,
 # one for each required Ursula.
 

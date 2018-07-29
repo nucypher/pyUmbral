@@ -17,50 +17,88 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
 .. _Cryptography.io: https://cryptography.io/en/latest/
 .. _OpenSSL: https://www.openssl.org/
 
+Usage
+=====
+
+**Key Generation**
+
+.. code-block:: python
+
+    from umbral import pre, keys, signing
+
+    # Generate Umbral keys for Alice.
+    alices_private_key = keys.UmbralPrivateKey.gen_key()
+    alices_public_key = alices_private_key.get_pubkey()
+
+    alices_signing_key = keys.UmbralPrivateKey.gen_key()
+    alices_verifying_key = alices_signing_key.get_pubkey()
+    alices_signer = signing.Signer(private_key=alices_signing_key)
+
+    # Generate Umbral keys for Bob.
+    bobs_private_key = keys.UmbralPrivateKey.gen_key()
+    bobs_public_key = bobs_private_key.get_pubkey()
+
 
 **Encryption**
 
 .. code-block:: python
-
-    from umbral import pre, keys
-
-    # Generate umbral keys for Alice.
-    alices_private_key = keys.UmbralPrivateKey.gen_key()
-    alices_public_key = alices_private_key.get_pubkey()
 
     # Encrypt data with Alice's public key.
     plaintext = b'Proxy Re-encryption is cool!'
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = pre.decrypt(ciphertext, capsule, 
-                            alices_private_key, alices_public_key)
-
-**Fragmentation**
-
-.. code-block:: python
-
-    # Generate umbral keys for Bob.
-    bobs_private_key = keys.UmbralPrivateKey.gen_key()
-    bobs_public_key = bobs_private_key.get_pubkey()
-
-    # Alice generates split re-encryption keys for Bob with "M of N".
-    kfrags = pre.split_rekey(alices_private_key, bobs_public_key, 10, 20)
+    cleartext = pre.decrypt(ciphertext=ciphertext, 
+                            capsule=capsule, 
+                            decrypting_key=alices_private_key)
 
 
-**Re-encryption**
+**Split Re-Encryption Keys**
 
 .. code-block:: python
 
-  # Ursula re-encrypts the capsule to obtain a cfrag.
-  # Bob attaches the cfrags to the capsule.
-  for kfrag in kfrags:
-      cfrag = pre.reencrypt(kfrag, capsule)
-      capsule.attach_cfrag(cfrag)
+    # Alice generates "M of N" split re-encryption keys for Bob. 
+    # In this example, 10 out of 20.
+    kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
+                             signer=alices_signer,
+                             receiving_pubkey=bobs_public_key,
+                             threshold=10,
+                             N=20)
 
-  # Bob activates and opens the capsule.
-  cleartext = pre.decrypt(ciphertext, capsule, 
-                          bobs_private_key, alices_public_key)
+
+**Re-Encryption**
+
+.. code-block:: python
+
+  # Several Ursulas perform re-encryption, and Bob collects the resulting `cfrags`.
+  # He must gather at least `threshold` `cfrags` in order to activate the capsule.
+
+  capsule.set_correctness_keys(delegating=alices_public_key,
+                               receiving=bobs_public_key,
+                               verifying=alices_verifying_key)
+
+  cfrags = list()           # Bob's cfrag collection
+  for kfrag in kfrags[:10]:
+    cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
+    cfrags.append(cfrag)    # Bob collects a cfrag
+
+
+**Decryption by Bob**
+
+.. code-block:: python
+
+  # Bob activates and opens the capsule
+  for cfrag in cfrags:
+    capsule.attach_cfrag(cfrag)
+
+  bob_cleartext = pre.decrypt(ciphertext=ciphertext, 
+                              capsule=capsule, 
+                              decrypting_key=bobs_private_key)
+  assert bob_cleartext == plaintext
+
+See more detailed usage examples in the docs_ directory.
+
+.. _docs : https://github.com/nucypher/pyUmbral/tree/master/docs
 
 
 Quick Installation

@@ -47,11 +47,12 @@ class CurveBN(object):
     @classmethod
     def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
-        Returns the size (in bytes) of a CurveBN given the curve.
+        Returns the size (in bytes) of a CurveBN given the curve,
+        which comes from the size of the order of the generated group.
         If no curve is provided, it uses the default.
         """
         curve = curve if curve is not None else default_curve()
-        return curve.field_order_size_in_bytes
+        return curve.group_order_size_in_bytes
 
     @classmethod
     def gen_rand(cls, curve: Optional[Curve] = None) -> 'CurveBN':

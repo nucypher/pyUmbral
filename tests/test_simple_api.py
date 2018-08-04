@@ -154,7 +154,15 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
     cfrags_bytes = list()
     for kfrag_bytes in kfrags_bytes:
         params = UmbralParameters(curve=curve)
+        delegating_pubkey = UmbralPublicKey.from_bytes(delegating_pubkey_bytes, params)
+        signing_pubkey = UmbralPublicKey.from_bytes(signing_pubkey_bytes, params)
+        receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
+
         capsule = pre.Capsule.from_bytes(capsule_bytes, params)
+        capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                     receiving=receiving_pubkey,
+                                     verifying=signing_pubkey)
+
         # TODO: use params instead of curve?
         kfrag = KFrag.from_bytes(kfrag_bytes, params.curve)
 
@@ -164,6 +172,9 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
         del capsule
         del kfrag
         del params
+        del delegating_pubkey
+        del signing_pubkey
+        del receiving_pubkey
 
     ## DECRYPTION DOMAIN (i.e., Bob's side)
     params = UmbralParameters(curve=curve)

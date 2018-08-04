@@ -51,6 +51,10 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[KFrag], Capsule]:
 
     kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, m, n)
 
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
+
     return kfrags, capsule
 
 

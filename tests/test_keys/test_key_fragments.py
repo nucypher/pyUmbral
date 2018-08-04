@@ -74,6 +74,10 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys, bobs_keys):
     # Example of potential metadata to describe the re-encryption request
     metadata = b'This is an example of metadata for re-encryption request'
 
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                     receiving=receiving_pubkey,
+                                     verifying=signing_privkey.get_pubkey())
+
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True, metadata=metadata)
     cfrag_bytes = cfrag.to_bytes()
 
@@ -108,6 +112,10 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys, bobs_keys):
     _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
+
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True)
     cfrag_bytes = cfrag.to_bytes()
@@ -146,6 +154,10 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys, bobs_keys):
     _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
+
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=False)
     cfrag_bytes = cfrag.to_bytes()

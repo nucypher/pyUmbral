@@ -223,9 +223,6 @@ class UmbralPublicKey(object):
 
         return umbral_pubkey
 
-    def get_pubkey(self):
-        raise NotImplementedError
-
     def to_cryptography_pubkey(self) -> _EllipticCurvePublicKey:
         """
         Returns a cryptography.io EllipticCurvePublicKey from the Umbral key.

@@ -154,9 +154,12 @@ def test_serialize_point_at_infinity():
 
 def test_coords_with_special_characteristics():
 
-    # Testing that a point with the x coordinate greater than the curve order is still valid
-    compressed = 0x02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c
-    compressed = compressed.to_bytes(32+1, byteorder='big')
+    # Testing that a point with x coordinate greater than the curve order is still valid.
+    # In particular, we will test the last valid point from the default curve (secp256k1)
+    # whose x coordinate is `field_order - 3` and is greater than the order of the curve
+
+    field_order = 2**256 - 0x1000003D1
+    compressed = b'\x02' + (field_order-3).to_bytes(32, 'big')
 
     last_point = Point.from_bytes(compressed)
 
@@ -165,5 +168,3 @@ def test_coords_with_special_characteristics():
         109188863561374057667848968960504138135859662956057034999983532397866404169138)
 
     assert last_point == Point.from_affine(coords)
-
-    # TODO: add point with x == 0 or y == 0, if existing

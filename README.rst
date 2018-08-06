@@ -5,8 +5,8 @@
 pyUmbral
 =========
 
-.. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
-    :target: https://travis-ci.org/nucypher/pyUmbral
+.. image:: https://circleci.com/gh/nucypher/pyUmbral/tree/master.svg?style=svg
+    :target: https://circleci.com/gh/nucypher/pyUmbral/tree/master
 
 pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
 Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library

@@ -109,43 +109,13 @@ class Point(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        compressed_size = cls.expected_bytes_length(curve)
-        # Check if compressed
-        if data[0] in [2, 3]:
-            if len(data) != compressed_size:
-                raise ValueError(
-                    "Expected {} B for compressed points".format(compressed_size)
-                    )
+        point = openssl._get_new_EC_POINT(curve)
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_oct2point(
+                curve.ec_group, point, data, len(data), bn_ctx);
+            backend.openssl_assert(res == 1)
 
-            affine_x = openssl._bytes_to_bn(data[1:])
-
-            type_y = data[0] - 2
-
-            ec_point = openssl._get_new_EC_POINT(curve)
-            with backend._tmp_bn_ctx() as bn_ctx:
-                res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
-                    curve.ec_group, ec_point, affine_x, type_y, bn_ctx
-                )
-                backend.openssl_assert(res == 1)
-            return cls(ec_point, curve)
-
-        # Handle uncompressed point
-        # TODO: Give better error messages
-        elif data[0] == 4:
-            coord_size = compressed_size - 1
-            uncompressed_size = 1 + (2 * coord_size)
-            if len(data) != uncompressed_size:
-                raise ValueError(
-                    "Expected {} B for uncompressed points".format(uncompressed_size)
-                    )
-
-            affine_x = openssl._bytes_to_bn(data[1:coord_size+1])
-            affine_y = openssl._bytes_to_bn(data[coord_size+1:])
-
-            ec_point = openssl._get_EC_POINT_via_affine(affine_x, affine_y, curve)
-            return cls(ec_point, curve)
-        else:
-            raise ValueError("Invalid point serialization.")
+        return cls(point, curve)
 
     def to_bytes(self, is_compressed: bool=True) -> bytes:
         """

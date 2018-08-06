@@ -67,15 +67,15 @@ def test_bytes_serializers(point_bytes, nid, curve):
     for point_representation in representations:
 
         malformed_point_bytes = point_representation + b'0x'
-        with pytest.raises(ValueError):
+        with pytest.raises(InternalError):
             _ = Point.from_bytes(malformed_point_bytes)
 
         malformed_point_bytes = point_representation[1:]
-        with pytest.raises(ValueError):
+        with pytest.raises(InternalError):
             _ = Point.from_bytes(malformed_point_bytes)
 
         malformed_point_bytes = point_representation[:-1]
-        with pytest.raises(ValueError):
+        with pytest.raises(InternalError):
             _ = Point.from_bytes(malformed_point_bytes)
 
 @pytest.mark.parametrize("curve, nid, point_affine", generate_test_points_affine())
@@ -100,7 +100,6 @@ def test_invalid_points(random_ec_point2):
     # - Invalid compressed point (code 110)
     # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
     assert e.value.err_code[0].reason in (107, 110)
-
 
 
 def test_generator_point():
@@ -144,12 +143,8 @@ def test_serialize_point_at_infinity():
     p = Point.gen_rand()
     point_at_infinity = p - p
     
-    with pytest.raises(InternalError) as e:
-        _bytes_point_at_infinity = point_at_infinity.to_bytes()
-
-    # We want to catch specific InternalExceptions:
-    # - Point at infinity (code 106)
-    assert e.value.err_code[0].reason == 106
+    bytes_point_at_infinity = point_at_infinity.to_bytes()
+    assert bytes_point_at_infinity == b'\x00'
 
 
 def test_coords_with_special_characteristics():

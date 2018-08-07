@@ -23,7 +23,7 @@ from umbral import pre, keys
 from umbral.point import Point
 from umbral.fragments import CorrectnessProof
 from umbral.signing import Signer
-from .conftest import parameters
+from ..conftest import parameters
 
 
 def test_correctness_proof_serialization(alices_keys):

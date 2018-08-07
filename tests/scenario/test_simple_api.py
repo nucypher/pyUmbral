@@ -27,7 +27,7 @@ from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from .conftest import parameters, wrong_parameters, other_supported_curves
+from ..conftest import parameters, wrong_parameters, other_supported_curves
 
 
 @pytest.mark.parametrize("N, M", parameters)

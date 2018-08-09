@@ -32,9 +32,21 @@ from ..conftest import parameters, wrong_parameters, other_supported_curves
 
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api(N, M, curve=default_curve()):
-    """Manually injects umbralparameters for multi-curve testing."""
+    """
+    This test models the main interactions between NuCypher actors (i.e., Alice, 
+    Bob, Data Source, and Ursulas) and artifacts (i.e., public and private keys,
+    ciphertexts, capsules, KFrags, CFrags, etc). 
+
+    The test covers all the main stages of data sharing with NuCypher:
+    key generation, delegation, encryption, decryption by 
+    Alice, re-encryption by Ursula, and decryption by Bob. 
+
+    Manually injects umbralparameters for multi-curve testing."""
+
+    # Generation of global parameters
     params = UmbralParameters(curve=curve)
 
+    # Key Generation (Alice)
     delegating_privkey = UmbralPrivateKey.gen_key(params=params)
     delegating_pubkey = delegating_privkey.get_pubkey()
 
@@ -42,25 +54,41 @@ def test_simple_api(N, M, curve=default_curve()):
     signing_pubkey = signing_privkey.get_pubkey()
     signer = Signer(signing_privkey)
 
+    # Key Generation (Bob)
     receiving_privkey = UmbralPrivateKey.gen_key(params=params)
     receiving_pubkey = receiving_privkey.get_pubkey()
 
+    # Encryption by an unnamed data source
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
+    # Decryption by Alice
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
 
+    # Split Re-Encryption Key Generation (aka Delegation)
+    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+
+
+    # Capsule preparation (necessary before re-encryotion and activation)
     capsule.set_correctness_keys(delegating=delegating_pubkey,
                                  receiving=receiving_pubkey,
                                  verifying=signing_pubkey)
 
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    for kfrag in kfrags:
+    # Bob requests re-encryption to some set of M ursulas
+    cfrags = list()
+    for kfrag in kfrags[:M]:
+        # Re-encryption by an Ursula
         cfrag = pre.reencrypt(kfrag, capsule)
+
+        # Bob collects the result
+        cfrags.append(cfrag)
+
+    # Capsule activation (by Bob)
+    for cfrag in cfrags:
         capsule.attach_cfrag(cfrag)
 
+    # Decryption by Bob
     reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
     assert reenc_cleartext == plain_data
 

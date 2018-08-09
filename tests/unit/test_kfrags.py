@@ -20,6 +20,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 from umbral.fragments import KFrag
 
 
+
 def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
     
     delegating_privkey, signing_privkey = alices_keys
@@ -40,6 +41,21 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
                                 delegating_pubkey=delegating_privkey.get_pubkey(),
                                 receiving_pubkey=receiving_pubkey)
 
+        assert new_kfrag == kfrag
+
+def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
+    for kfrag in kfrags:
+        assert kfrag.verify_for_capsule(prepared_capsule)
+
+        # If we alter some element, the verification fails
+        previous_id, kfrag._id = kfrag._id, bytes(32)
+        assert not kfrag.verify_for_capsule(prepared_capsule)    
+
+        # Let's restore the KFrag, and alter the re-encryption key instead
+        kfrag._id = previous_id
+        kfrag._bn_key += kfrag._bn_key
+        assert not kfrag.verify_for_capsule(prepared_capsule)    
+        
 
 def test_kfrag_as_dict_key(kfrags):
     dict_with_kfrags_as_keys = {}

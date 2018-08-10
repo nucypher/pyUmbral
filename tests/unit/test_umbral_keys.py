@@ -21,31 +21,30 @@ import base64
 
 import pytest
 
-from umbral import keys
 from umbral.config import default_params
-from umbral.keys import UmbralPublicKey
+from umbral.keys import UmbralPublicKey, UmbralPrivateKey, UmbralKeyingMaterial
 from umbral.point import Point
 
 
 def test_gen_key():
     # Pass in the parameters to test that manual param selection works
-    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
-    assert type(umbral_priv_key) == keys.UmbralPrivateKey
+    umbral_priv_key = UmbralPrivateKey.gen_key()
+    assert type(umbral_priv_key) == UmbralPrivateKey
 
     umbral_pub_key = umbral_priv_key.get_pubkey()
-    assert type(umbral_pub_key) == keys.UmbralPublicKey
+    assert type(umbral_pub_key) == UmbralPublicKey
 
 
 def test_derive_key_from_label():
-    umbral_keying_material = keys.UmbralKeyingMaterial()
+    umbral_keying_material = UmbralKeyingMaterial()
 
     label = b"my_healthcare_information"
 
     priv_key1 = umbral_keying_material.derive_privkey_by_label(label)
-    assert type(priv_key1) == keys.UmbralPrivateKey
+    assert type(priv_key1) == UmbralPrivateKey
 
     pub_key1 = priv_key1.get_pubkey()
-    assert type(pub_key1) == keys.UmbralPublicKey
+    assert type(pub_key1) == UmbralPublicKey
 
     # Check that key derivation is reproducible
     priv_key2 = umbral_keying_material.derive_privkey_by_label(label)
@@ -67,21 +66,25 @@ def test_derive_key_from_label():
 
 def test_private_key_serialization(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
+    umbral_key = UmbralPrivateKey(priv_key, default_params())
 
     encoded_key = umbral_key.to_bytes()
 
-    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key)
+    decoded_key = UmbralPrivateKey.from_bytes(encoded_key)
     assert priv_key == decoded_key.bn_key
 
 
 def test_private_key_serialization_with_encryption(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
+    umbral_key = UmbralPrivateKey(priv_key, default_params())
 
-    encoded_key = umbral_key.to_bytes(password=b'test')
+    insecure_cost = 15  # This is deliberately insecure, just to make the tests faster
+    encoded_key = umbral_key.to_bytes(password=b'test', 
+                                      _scrypt_cost=insecure_cost)
 
-    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key, password=b'test')
+    decoded_key = UmbralPrivateKey.from_bytes(encoded_key, 
+                                              password=b'test', 
+                                              _scrypt_cost=insecure_cost)
     assert priv_key == decoded_key.bn_key
 
 
@@ -91,11 +94,11 @@ def test_public_key_serialization(random_ec_curvebn1):
     params = default_params()
     pub_key = priv_key * params.g
 
-    umbral_key = keys.UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPublicKey(pub_key, params)
 
     encoded_key = umbral_key.to_bytes()
 
-    decoded_key = keys.UmbralPublicKey.from_bytes(encoded_key)
+    decoded_key = UmbralPublicKey.from_bytes(encoded_key)
     assert pub_key == decoded_key.point_key
 
 
@@ -105,7 +108,7 @@ def test_public_key_to_compressed_bytes(random_ec_curvebn1):
     params = default_params()
     pub_key = priv_key * params.g
 
-    umbral_key = keys.UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPublicKey(pub_key, params)
     key_bytes = bytes(umbral_key)
     assert len(key_bytes) == Point.expected_bytes_length(is_compressed=True)
 
@@ -116,24 +119,24 @@ def test_public_key_to_uncompressed_bytes(random_ec_curvebn1):
     params = default_params()
     pub_key = priv_key * params.g
 
-    umbral_key = keys.UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPublicKey(pub_key, params)
     key_bytes = umbral_key.to_bytes(is_compressed=False)
     assert len(key_bytes) == Point.expected_bytes_length(is_compressed=False)
 
 
 def test_key_encoder_decoder(random_ec_curvebn1):
     priv_key = random_ec_curvebn1
-    umbral_key = keys.UmbralPrivateKey(priv_key, default_params())
+    umbral_key = UmbralPrivateKey(priv_key, default_params())
 
     encoded_key = umbral_key.to_bytes(encoder=base64.urlsafe_b64encode)
 
-    decoded_key = keys.UmbralPrivateKey.from_bytes(encoded_key,
-                                                   decoder=base64.urlsafe_b64decode)
+    decoded_key = UmbralPrivateKey.from_bytes(encoded_key,
+                                              decoder=base64.urlsafe_b64decode)
     assert decoded_key.to_bytes() == umbral_key.to_bytes()
 
 
 def test_umbral_key_to_cryptography_keys():
-    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_priv_key = UmbralPrivateKey.gen_key()
     umbral_pub_key = umbral_priv_key.get_pubkey()
 
     crypto_privkey = umbral_priv_key.to_cryptography_privkey()
@@ -146,25 +149,30 @@ def test_umbral_key_to_cryptography_keys():
 
 
 def test_keying_material_serialization():
-    umbral_keying_material = keys.UmbralKeyingMaterial()
+    umbral_keying_material = UmbralKeyingMaterial()
 
     encoded_key = umbral_keying_material.to_bytes()
 
-    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key)
+    decoded_key = UmbralKeyingMaterial.from_bytes(encoded_key)
     assert umbral_keying_material.keying_material == decoded_key.keying_material
 
 
 def test_keying_material_serialization_with_encryption():
-    umbral_keying_material = keys.UmbralKeyingMaterial()
+    umbral_keying_material = UmbralKeyingMaterial()
 
-    encoded_key = umbral_keying_material.to_bytes(password=b'test')
+    insecure_cost = 15  # This is deliberately insecure, just to make the tests faster
+    encoded_key = umbral_keying_material.to_bytes(password=b'test',
+                                                  _scrypt_cost=insecure_cost)
 
-    decoded_key = keys.UmbralKeyingMaterial.from_bytes(encoded_key, password=b'test')
+    decoded_key = UmbralKeyingMaterial.from_bytes(encoded_key, 
+                                                  password=b'test',
+                                                  _scrypt_cost=insecure_cost)
+
     assert umbral_keying_material.keying_material == decoded_key.keying_material
 
 
 def test_umbral_public_key_equality():
-    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_priv_key = UmbralPrivateKey.gen_key()
     umbral_pub_key = umbral_priv_key.get_pubkey()
 
     as_bytes = bytes(umbral_pub_key)
@@ -175,23 +183,23 @@ def test_umbral_public_key_equality():
 
     assert not umbral_pub_key == b"some whatever bytes"
 
-    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_priv_key = UmbralPrivateKey.gen_key()
     another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
 
     assert not umbral_pub_key == another_umbral_pub_key
 
     # Also not equal to a totally disparate type.
-    assert not umbral_pub_key == 47
+    assert not umbral_pub_key == 107
 
 
 def test_umbral_public_key_as_dict_key():
-    umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    umbral_priv_key = UmbralPrivateKey.gen_key()
     umbral_pub_key = umbral_priv_key.get_pubkey()
 
     d = {umbral_pub_key: 19}
     assert d[umbral_pub_key] == 19
 
-    another_umbral_priv_key = keys.UmbralPrivateKey.gen_key()
+    another_umbral_priv_key = UmbralPrivateKey.gen_key()
     another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
 
     with pytest.raises(KeyError):

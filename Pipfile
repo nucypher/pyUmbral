@@ -23,6 +23,8 @@ codecov = "*"
 # Docs
 sphinx = "*"
 sphinx-autobuild = "*"
+# Testing libraries
+hypothesis = "*"
 
 [pipenv]
 allow_prereleases = true

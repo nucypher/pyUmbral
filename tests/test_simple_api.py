@@ -23,18 +23,11 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import pre
 from umbral.fragments import KFrag, CapsuleFrag
-from umbral.curve import SECP384R1, SECP256R1
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from .conftest import parameters, wrong_parameters
-
-
-secp_curves = [
-    SECP384R1,
-    SECP256R1
-]
+from .conftest import parameters, wrong_parameters, other_supported_curves
 
 
 @pytest.mark.parametrize("N, M", parameters)
@@ -72,7 +65,7 @@ def test_simple_api(N, M, curve=default_curve()):
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.parametrize("curve", secp_curves)
+@pytest.mark.parametrize("curve", other_supported_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
     test_simple_api(N, M, curve)
@@ -154,7 +147,15 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
     cfrags_bytes = list()
     for kfrag_bytes in kfrags_bytes:
         params = UmbralParameters(curve=curve)
+        delegating_pubkey = UmbralPublicKey.from_bytes(delegating_pubkey_bytes, params)
+        signing_pubkey = UmbralPublicKey.from_bytes(signing_pubkey_bytes, params)
+        receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
+
         capsule = pre.Capsule.from_bytes(capsule_bytes, params)
+        capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                     receiving=receiving_pubkey,
+                                     verifying=signing_pubkey)
+
         # TODO: use params instead of curve?
         kfrag = KFrag.from_bytes(kfrag_bytes, params.curve)
 
@@ -164,6 +165,9 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
         del capsule
         del kfrag
         del params
+        del delegating_pubkey
+        del signing_pubkey
+        del receiving_pubkey
 
     ## DECRYPTION DOMAIN (i.e., Bob's side)
     params = UmbralParameters(curve=curve)
@@ -187,7 +191,7 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
     assert reenc_cleartext == plain_data
 
 
-@pytest.mark.parametrize("curve", secp_curves)
+@pytest.mark.parametrize("curve", other_supported_curves)
 @pytest.mark.parametrize("N, M", parameters)
 def test_lifecycle_with_serialization_on_multiple_curves(N, M, curve):
     test_lifecycle_with_serialization(N, M, curve)

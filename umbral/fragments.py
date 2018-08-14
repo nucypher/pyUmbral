@@ -32,6 +32,12 @@ from umbral.signing import Signature
 
 
 class KFrag(object):
+
+    class NotValid(ValueError):
+        """
+        raised if the KFrag does not pass verification.
+        """
+
     def __init__(self, id: bytes, bn_key: CurveBN, point_noninteractive: Point,
                  point_commitment: Point, point_xcoord: Point, signature: Signature) -> None:
         self._id = id
@@ -93,6 +99,14 @@ class KFrag(object):
                delegating_pubkey: UmbralPublicKey,
                receiving_pubkey: UmbralPublicKey) -> bool:
         return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
+
+    def verify_for_capsule(self, capsule : 'Capsule') -> bool:
+
+        correctness_keys = capsule.get_correctness_keys()
+
+        return self.verify(signing_pubkey=correctness_keys["verifying"],
+                           delegating_pubkey=correctness_keys["delegating"],
+                           receiving_pubkey=correctness_keys["receiving"])
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()

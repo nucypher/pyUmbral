@@ -381,7 +381,10 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
               metadata: Optional[bytes] = None) -> CapsuleFrag:
 
     if not capsule.verify():
-        raise capsule.NotValid
+        raise Capsule.NotValid
+
+    if not kfrag.verify_for_capsule(capsule):
+        raise KFrag.NotValid
 
     rk = kfrag._bn_key
     e1 = rk * capsule._point_e

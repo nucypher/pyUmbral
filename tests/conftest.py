@@ -21,33 +21,36 @@ import pytest
 from collections import namedtuple
 
 from umbral import keys
-from umbral.curve import SECP256K1
+from umbral.curve import SECP256K1, SECP384R1, SECP256R1
 from umbral.curvebn import CurveBN
 from umbral.config import set_default_curve
 from umbral.point import Point
 
 set_default_curve(SECP256K1)
 
-
 MockKeyPair = namedtuple('TestKeyPair', 'priv pub')
 
-
-parameters = [
+parameters = (
     # (N, M)
     (1, 1),
     (6, 1),
     (6, 4),
     (6, 6),
     (50, 30)
-]
+)
 
-wrong_parameters = [
+wrong_parameters = (
     # (N, M)
     (-1, -1),   (-1, 0),    (-1, 5),
     (0, -1),    (0, 0),     (0, 5),
     (1, -1),    (1, 0),     (1, 5),
     (5, -1),    (5, 0),     (5, 10)
-]
+)
+
+other_supported_curves = (
+    SECP384R1,
+    SECP256R1
+)
 
 @pytest.fixture(scope='function')
 def alices_keys():

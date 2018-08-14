@@ -109,57 +109,35 @@ class Point(object):
         """
         curve = curve if curve is not None else default_curve()
 
-        compressed_size = cls.expected_bytes_length(curve)
-        # Check if compressed
-        if data[0] in [2, 3]:
-            if len(data) != compressed_size:
-                raise ValueError("X coordinate too large for curve.")
+        point = openssl._get_new_EC_POINT(curve)
+        with backend._tmp_bn_ctx() as bn_ctx:
+            res = backend._lib.EC_POINT_oct2point(
+                curve.ec_group, point, data, len(data), bn_ctx);
+            backend.openssl_assert(res == 1)
 
-            affine_x = int.from_bytes(data[1:], 'big')
-            affine_x = openssl._int_to_bn(affine_x, curve=None)
-
-            type_y = data[0] - 2
-
-            ec_point = openssl._get_new_EC_POINT(curve)
-            with backend._tmp_bn_ctx() as bn_ctx:
-                res = backend._lib.EC_POINT_set_compressed_coordinates_GFp(
-                    curve.ec_group, ec_point, affine_x, type_y, bn_ctx
-                )
-                backend.openssl_assert(res == 1)
-            return cls(ec_point, curve)
-
-        # Handle uncompressed point
-        # TODO: Give better error messages
-        elif data[0] == 4:
-            coord_size = compressed_size - 1
-            uncompressed_size = 1 + (2 * coord_size)
-            if len(data) != uncompressed_size:
-                raise ValueError("Uncompressed point does not have right size.")
-            affine_x = int.from_bytes(data[1:coord_size+1], 'big')
-            affine_y = int.from_bytes(data[1+coord_size:], 'big')
-
-            return cls.from_affine((affine_x, affine_y), curve)
-        else:
-            raise ValueError("Invalid point serialization.")
+        return cls(point, curve)
 
     def to_bytes(self, is_compressed: bool=True) -> bytes:
         """
         Returns the Point serialized as bytes. It will return a compressed form
         if is_compressed is set to True.
         """
-        affine_x, affine_y = self.to_affine()
-        key_size = self.curve.field_order_size_in_bytes
+        length = self.expected_bytes_length(self.curve, is_compressed)
 
         if is_compressed:
-            y_bit = (affine_y & 1) + 2
-            data = int.to_bytes(y_bit, 1, 'big')
-            data += int.to_bytes(affine_x, key_size, 'big')
+            point_conversion_form = backend._lib.POINT_CONVERSION_COMPRESSED
         else:
-            data = b'\x04'
-            data += int.to_bytes(affine_x, key_size, 'big')
-            data += int.to_bytes(affine_y, key_size, 'big')
+            point_conversion_form = backend._lib.POINT_CONVERSION_UNCOMPRESSED
 
-        return data
+        bin_ptr = backend._ffi.new("unsigned char[]", length)
+        with backend._tmp_bn_ctx() as bn_ctx:
+            bin_len = backend._lib.EC_POINT_point2oct(
+                self.curve.ec_group, self.ec_point, point_conversion_form, 
+                bin_ptr, length, bn_ctx
+            )
+            backend.openssl_assert(bin_len != 0)
+
+        return bytes(backend._ffi.buffer(bin_ptr, bin_len)[:])
 
     @classmethod
     def get_generator_from_curve(cls, curve: Optional[Curve] = None) -> 'Point':

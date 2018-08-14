@@ -150,7 +150,8 @@ Bob asks several Ursulas to re-encrypt the capsule so he can open it.
 Each Ursula performs re-encryption on the capsule using the `kfrag` 
 provided by Alice, obtaining this way a "capsule fragment", or `cfrag`,
 Let's mock a network or transport layer by sampling `threshold` random `kfrags`,
-one for each required Ursula.
+one for each required Ursula. Note that each Ursula must prepare the received 
+capsule before re-encryption by setting the proper correctness keys.
 
 Bob collects the resulting `cfrags` from several Ursulas. 
 Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
@@ -161,6 +162,11 @@ Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
     >>> import random
     >>> kfrags = random.sample(kfrags,  # All kfrags from above
     ...                        10)      # M - Threshold
+
+    >>> capsule.set_correctness_keys(delegating=alices_public_key,
+    ...                              receiving=bobs_public_key,
+    ...                              verifying=alices_verifying_key)
+    (True, True, True)
 
     >>> cfrags = list()                 # Bob's cfrag collection
     >>> for kfrag in kfrags:
@@ -175,15 +181,16 @@ Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
 Bob attaches cfrags to the capsule
 ----------------------------------
-Bob attaches at least `threshold` `cfrags` to the capsule;
-Then it can become *activated*.
+Bob attaches at least `threshold` `cfrags` to the capsule, 
+which has to be prepared in advance with the necessary correctness keys. 
+Only then it can become *activated*.
 
 .. doctest:: capsule_story
 
     >>> capsule.set_correctness_keys(delegating=alices_public_key,
     ...                              receiving=bobs_public_key,
     ...                              verifying=alices_verifying_key)
-    (True, True, True)
+    (False, False, False)
 
     >>> for cfrag in cfrags:
     ...     capsule.attach_cfrag(cfrag)

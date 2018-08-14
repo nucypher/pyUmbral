@@ -30,18 +30,24 @@ def test_kfrag_serialization(alices_keys, bobs_keys):
 
     kfrags = pre.split_rekey(delegating_privkey,
                              signer_alice,
-                             receiving_pubkey, 1, 2)
-    kfrag_bytes = kfrags[0].to_bytes()
-
+                             receiving_pubkey, 50, 100)
+    
     curve = default_curve()
-    assert len(kfrag_bytes) == KFrag.expected_bytes_length(curve)
 
-    new_frag = pre.KFrag.from_bytes(kfrag_bytes)
-    assert new_frag._id == kfrags[0]._id
-    assert new_frag._bn_key == kfrags[0]._bn_key
-    assert new_frag._point_noninteractive == kfrags[0]._point_noninteractive
-    assert new_frag._point_commitment == kfrags[0]._point_commitment
-    assert new_frag._point_xcoord == kfrags[0]._point_xcoord
+    for kfrag in kfrags:
+        kfrag_bytes = kfrag.to_bytes()
+        assert len(kfrag_bytes) == KFrag.expected_bytes_length(curve)
+
+        new_kfrag = KFrag.from_bytes(kfrag_bytes)
+        assert new_kfrag._id == kfrag._id
+        assert new_kfrag._bn_key == kfrag._bn_key
+        assert new_kfrag._point_noninteractive == kfrag._point_noninteractive
+        assert new_kfrag._point_commitment == kfrag._point_commitment
+        assert new_kfrag._point_xcoord == kfrag._point_xcoord
+
+        assert new_kfrag.verify(signing_pubkey=signing_privkey.get_pubkey(),
+                                delegating_pubkey=delegating_privkey.get_pubkey(),
+                                receiving_pubkey=receiving_pubkey)
 
 
 def test_kfrag_as_dict_key(alices_keys, bobs_keys):
@@ -73,6 +79,10 @@ def test_cfrag_serialization_with_proof_and_metadata(alices_keys, bobs_keys):
 
     # Example of potential metadata to describe the re-encryption request
     metadata = b'This is an example of metadata for re-encryption request'
+
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                     receiving=receiving_pubkey,
+                                     verifying=signing_privkey.get_pubkey())
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True, metadata=metadata)
     cfrag_bytes = cfrag.to_bytes()
@@ -108,6 +118,10 @@ def test_cfrag_serialization_with_proof_but_no_metadata(alices_keys, bobs_keys):
     _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
+
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=True)
     cfrag_bytes = cfrag.to_bytes()
@@ -146,6 +160,10 @@ def test_cfrag_serialization_no_proof_no_metadata(alices_keys, bobs_keys):
     _unused_key, capsule = pre._encapsulate(delegating_pubkey)
     kfrags = pre.split_rekey(delegating_privkey, signer_alice,
                              receiving_pubkey, 1, 2)
+
+    capsule.set_correctness_keys(delegating=delegating_pubkey,
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
 
     cfrag = pre.reencrypt(kfrags[0], capsule, provide_proof=False)
     cfrag_bytes = cfrag.to_bytes()

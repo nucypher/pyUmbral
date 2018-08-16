@@ -19,7 +19,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 from umbral import pre
 from umbral.signing import Signer
-from umbral.fragments import CapsuleFrag
+from umbral.fragments import CapsuleFrag, CorrectnessProof
 
 
 def test_cfrag_serialization_with_proof_and_metadata(prepared_capsule, kfrags):
@@ -100,3 +100,30 @@ def test_cfrag_serialization_no_proof_no_metadata(prepared_capsule, kfrags):
 
         new_proof = new_cfrag.proof
         assert new_proof is None
+
+
+def test_correctness_proof_serialization(prepared_capsule, kfrags):
+    
+    # Example of potential metadata to describe the re-encryption request
+    metadata = b"This is an example of metadata for re-encryption request"
+
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, prepared_capsule, metadata=metadata)
+        proof = cfrag.proof
+        proof_bytes = proof.to_bytes()
+
+        # A CorrectnessProof can be represented as
+        # the 228 total bytes of four Points (33 each) and three BigNums (32 each).
+        # TODO: Figure out final size for CorrectnessProofs
+        # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
+
+        new_proof = CorrectnessProof.from_bytes(proof_bytes)
+        assert new_proof._point_e2 == proof._point_e2
+        assert new_proof._point_v2 == proof._point_v2
+        assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
+        assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
+        assert new_proof.bn_sig == proof.bn_sig
+        assert new_proof.kfrag_signature == proof.kfrag_signature
+        assert new_proof.metadata == proof.metadata
+
+        

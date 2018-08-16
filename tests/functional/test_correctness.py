@@ -21,49 +21,8 @@ import pytest
 
 from umbral import pre, keys
 from umbral.point import Point
-from umbral.fragments import CorrectnessProof
 from umbral.signing import Signer
 from ..conftest import parameters
-
-
-def test_correctness_proof_serialization(alices_keys):
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
-    verifying_pubkey = signing_privkey.get_pubkey()
-
-    receiving_privkey = keys.UmbralPrivateKey.gen_key()
-    receiving_pubkey = receiving_privkey.get_pubkey()
-
-    params = delegating_privkey.params
-
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, 1, 2)
-
-    # Example of potential metadata to describe the re-encryption request
-    metadata = b"This is an example of metadata for re-encryption request"
-
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=verifying_pubkey)
-
-    cfrag = pre.reencrypt(kfrags[0], capsule, metadata=metadata)
-    proof = cfrag.proof
-    proof_bytes = proof.to_bytes()
-
-    # A CorrectnessProof can be represented as
-    # the 228 total bytes of four Points (33 each) and three BigNums (32 each).
-    # TODO: Figure out final size for CorrectnessProofs
-    # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
-
-    new_proof = CorrectnessProof.from_bytes(proof_bytes)
-    assert new_proof._point_e2 == proof._point_e2
-    assert new_proof._point_v2 == proof._point_v2
-    assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
-    assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
-    assert new_proof.bn_sig == proof.bn_sig
-    assert new_proof.kfrag_signature == proof.kfrag_signature
-    assert new_proof.metadata == proof.metadata
 
 
 @pytest.mark.parametrize("N, M", parameters)

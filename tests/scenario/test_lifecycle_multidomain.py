@@ -118,6 +118,8 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
         # TODO: use params instead of curve?
         kfrag = KFrag.from_bytes(kfrag_bytes, params.curve)
 
+        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey)
+
         cfrag_bytes = bytes(pre.reencrypt(kfrag, capsule))
         cfrags_bytes.append(cfrag_bytes)
 

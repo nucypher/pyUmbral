@@ -224,41 +224,6 @@ def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_ke
         _cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
 
 
-@pytest.mark.parametrize("N, M", parameters)
-def test_m_of_n(N, M, alices_keys, bobs_keys):
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
-
-    receiving_privkey, receiving_pubkey = bobs_keys
-
-    params = delegating_privkey.params
-
-    sym_key, capsule = pre._encapsulate(delegating_pubkey)
-
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    for kfrag in kfrags:
-        assert kfrag.verify(signing_privkey.get_pubkey(), delegating_privkey.get_pubkey(), receiving_pubkey)
-
-    for i, kfrag in enumerate(kfrags[:M]):
-        # Example of potential metadata to describe the re-encryption request
-        metadata = "This is an example of metadata for re-encryption request #{}"
-        metadata = metadata.format(i).encode()
-
-        cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)
-        capsule.attach_cfrag(cfrag)
-
-        assert cfrag.verify_correctness(capsule)
-
-    sym_key_from_capsule = pre._open_capsule(capsule, receiving_privkey)
-    assert sym_key == sym_key_from_capsule
-
-
 @pytest.mark.parametrize("N, M", [(N,M) for (N,M) in parameters if M>1])
 def test_inconsistent_cfrags(N, M, alices_keys, bobs_keys):
 

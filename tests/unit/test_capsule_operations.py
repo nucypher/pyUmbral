@@ -89,22 +89,17 @@ def test_decapsulation_by_alice(alices_keys):
     assert sym_key_2 == sym_key
 
 
-def test_bad_capsule_fails_reencryption(alices_keys, bobs_keys):
+def test_bad_capsule_fails_reencryption(kfrags):
     params = default_params()
-    delegating_privkey, _signing_privkey = alices_keys
-    signer_alice = Signer(_signing_privkey)
-
-    _receiving_privkey, receiving_pubkey = bobs_keys
-
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 1, 2)
 
     bollocks_capsule = Capsule(params,
                                point_e=Point.gen_rand(),
                                point_v=Point.gen_rand(),
                                bn_sig=CurveBN.gen_rand())
 
-    with pytest.raises(Capsule.NotValid):
-        pre.reencrypt(kfrags[0], bollocks_capsule)
+    for kfrag in kfrags:
+        with pytest.raises(Capsule.NotValid):
+            pre.reencrypt(kfrag, bollocks_capsule)
 
 
 def test_capsule_as_dict_key(alices_keys, bobs_keys):
@@ -144,19 +139,8 @@ def test_capsule_as_dict_key(alices_keys, bobs_keys):
     assert len(some_dict.keys()) == 1
 
 
-def test_capsule_length(alices_keys, bobs_keys):
-    delegating_privkey, signing_privkey = alices_keys
-    signer = Signer(signing_privkey)
-
-    priv_key_bob, pub_key_bob = bobs_keys
-
-    sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, pub_key_bob, 10, 15)
-
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 receiving=pub_key_bob,
-                                 verifying=signing_privkey.get_pubkey())
+def test_capsule_length(prepared_capsule, kfrags):
+    capsule = prepared_capsule
 
     for counter, kfrag in enumerate(kfrags):
         assert len(capsule) == counter

@@ -24,38 +24,28 @@ from umbral.point import Point
 from umbral.signing import Signer
 from ..conftest import parameters
 
+def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys, 
+                                                  kfrags, prepared_capsule):
 
-@pytest.mark.parametrize("N, M", parameters)
-def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
     delegating_privkey, signing_privkey = alices_keys
     delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
 
-    receiving_privkey = keys.UmbralPrivateKey.gen_key()
-    receiving_pubkey = receiving_privkey.get_pubkey()
+    receiving_privkey, receiving_pubkey = bobs_keys
+    
+    capsule_alice1 = prepared_capsule
 
-    params = delegating_privkey.params
-
-    _unused_key1, capsule_alice1 = pre._encapsulate(delegating_pubkey)
     _unused_key2, capsule_alice2 = pre._encapsulate(delegating_pubkey)
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    capsule_alice1.set_correctness_keys(delegating=delegating_pubkey,
-                                        receiving=receiving_pubkey,
-                                        verifying=signing_privkey.get_pubkey())
 
     capsule_alice2.set_correctness_keys(delegating=delegating_pubkey,
                                         receiving=receiving_pubkey,
                                         verifying=signing_privkey.get_pubkey())
 
-    cfrags, metadata = [], []
-    for i, kfrag in enumerate(kfrags[:M]):
+    cfrags = []
+    for i, kfrag in enumerate(kfrags):
 
         # Example of potential metadata to describe the re-encryption request
         metadata_i = "This is an example of metadata for re-encryption request #{}"
         metadata_i = metadata_i.format(i).encode()
-        metadata.append(metadata_i)
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
@@ -63,162 +53,108 @@ def test_cheating_ursula_replays_old_reencryption(N, M, alices_keys):
         else:
             cfrag = pre.reencrypt(kfrag, capsule_alice1, metadata=metadata_i)
 
-        # Next, we bypass the public method to attach CFrags to the capsule,
-        # -- called Capsule.append(cfrag) -- and insert it directly in the private
-        # list of CFrags. In case you were wondering...DON'T DO THIS!
-        capsule_alice1._attached_cfrags.append(cfrag)
         cfrags.append(cfrag)
 
-    # Let's activate the capsule
-    capsule_alice1._reconstruct_shamirs_secret(receiving_privkey)
 
-    with pytest.raises(pre.GenericUmbralError):
-        sym_key = pre._decapsulate_reencrypted(receiving_privkey, capsule_alice1)
-
+    # CFrag 0 is not valid ...
     assert not cfrags[0].verify_correctness(capsule_alice1)
 
-    # The response of cheating Ursula is in cfrags[0],
-    # so the rest of CFrags should be correct:
-    correct_cases = 0
-    for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
-        if cfrag_i.verify_correctness(capsule_alice1):
-            correct_cases += 1
-        else:
-            pytest.fail("One of the cfrags that was supposed to be correct wasn't.")
-    assert correct_cases == len(cfrags[1:])
-
-    # Alternatively, we can try to open the capsule directly.
-    # We should get an exception with an attached list of incorrect cfrags
+    # ... and trying to attach it raises an error.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _ = pre._open_capsule(capsule_alice1, receiving_privkey)
+        capsule_alice1.attach_cfrag(cfrags[0])
+
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
 
+    # The rest of CFrags should be correct:
+    correct_cases = 0
+    for cfrag_i in cfrags[1:]:
+        assert cfrag_i.verify_correctness(capsule_alice1)
+        capsule_alice1.attach_cfrag(cfrag_i)
+        correct_cases += 1
+        
+    assert correct_cases == len(cfrags[1:])
 
-@pytest.mark.parametrize("N, M", parameters)
-def test_cheating_ursula_sends_garbage(N, M, alices_keys):
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
+def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
+    
+    capsule_alice = prepared_capsule
 
-    receiving_privkey = keys.UmbralPrivateKey.gen_key()
-    receiving_pubkey = receiving_privkey.get_pubkey()
-
-    params = delegating_privkey.params
-
-    sym_key, capsule_alice = pre._encapsulate(delegating_pubkey)
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    capsule_alice.set_correctness_keys(delegating=delegating_pubkey,
-                                       receiving=receiving_pubkey,
-                                       verifying=signing_privkey.get_pubkey())
-
-    cfrags, metadata = [], []
-    for i, kfrag in enumerate(kfrags[:M]):
+    cfrags = []
+    for i, kfrag in enumerate(kfrags):
         # Example of potential metadata to describe the re-encryption request
         metadata_i = "This is an example of metadata for re-encryption request #{}"
         metadata_i = metadata_i.format(i).encode()
-        metadata.append(metadata_i)
 
         cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
-
-        capsule_alice.attach_cfrag(cfrag)
         cfrags.append(cfrag)
 
     # Let's put random garbage in one of the cfrags
     cfrags[0]._point_e1 = Point.gen_rand()
     cfrags[0]._point_v1 = Point.gen_rand()
 
-    capsule_alice._reconstruct_shamirs_secret(receiving_privkey)  # activate capsule
-
-    with pytest.raises(pre.GenericUmbralError):
-        _unused_key = pre._decapsulate_reencrypted(receiving_privkey, capsule_alice)
-
+    # Of course, this CFrag is not valid ...
     assert not cfrags[0].verify_correctness(capsule_alice)
 
-    # The response of cheating Ursula is in cfrags[0],
-    # so the rest of CFrags chould be correct:
-    for cfrag_i, metadata_i in zip(cfrags[1:], metadata[1:]):
-        assert cfrag_i.verify_correctness(capsule_alice)
-
-    # Alternatively, we can try to open the capsule directly.
-    # We should get an exception with an attached list of incorrect cfrags
+    # ... and trying to attach it raises an error.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        _decapsulated_key = pre._open_capsule(capsule_alice, receiving_privkey)
+        capsule_alice.attach_cfrag(cfrags[0])
 
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
     assert len(correctness_error.offending_cfrags) == 1
 
-
-@pytest.mark.parametrize("N, M", parameters)
-def test_decryption_fails_when_it_expects_a_proof_and_there_isnt(N, M, alices_keys, bobs_keys):
-    """Manually injects umbralparameters for multi-curve testing."""
-
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
-    receiving_privkey, receiving_pubkey = bobs_keys
-
-    plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
-    for kfrag in kfrags[:M]:
-        cfrag = pre.reencrypt(kfrag, capsule)
-        capsule.attach_cfrag(cfrag)
-
-    # Even thought we can successfully attach a CFrag, if the proof is lost
-    # (for example, it is chopped off a serialized CFrag or similar), then decrypt
-    # will still fail.
-    cfrag.proof = None
-
-    with pytest.raises(cfrag.NoProofProvided):
-        _cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
+    # The response of cheating Ursula is in cfrags[0],
+    # so the rest of CFrags chould be correct: 
+    for cfrag_i in cfrags[1:]:
+        assert cfrag_i.verify_correctness(capsule_alice)
+        capsule_alice.attach_cfrag(cfrag_i)
 
 
-@pytest.mark.parametrize("N, M", [(N,M) for (N,M) in parameters if M>1])
-def test_inconsistent_cfrags(N, M, alices_keys, bobs_keys):
+def test_cfrag_with_missing_proof_cannot_be_attached(kfrags, prepared_capsule):
 
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer = Signer(signing_privkey)
-
-    receiving_privkey, receiving_pubkey = bobs_keys
-
-    plain_data = b'peace at dawn'
-    ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
-
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
-
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                             receiving=receiving_pubkey,
-                             verifying=signing_privkey.get_pubkey())
+    capsule = prepared_capsule
 
     cfrags = []
-    for kfrag in kfrags[:M+1]:
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        cfrags.append(cfrag)
+
+    # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar), 
+    # then the CFrag cannot be attached.
+    cfrags[0].proof = None
+    with pytest.raises(cfrag.NoProofProvided):
+        capsule.attach_cfrag(cfrags[0])
+
+    # The remaining CFrags are fine, so they can be attached correctly 
+    for cfrag in cfrags[1:]:
+        capsule.attach_cfrag(cfrag)
+
+
+def test_inconsistent_cfrags(bobs_keys, kfrags, prepared_capsule):
+
+    receiving_privkey, receiving_pubkey = bobs_keys
+
+    capsule = prepared_capsule
+
+    cfrags = []
+    for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule)
         cfrags.append(cfrag)
     
     # For all cfrags that belong to the same policy, the values 
     # cfrag._point_noninteractive and cfrag._point_noninteractive
     # must be the same. If we swap them, it shouldn't be possible 
-    # to attach the cfrag to the capsule
+    # to attach the cfrag to the capsule. Let's mangle the first CFrag
     cfrags[0]._point_noninteractive, cfrags[0]._point_xcoord = cfrags[0]._point_xcoord, cfrags[0]._point_noninteractive
     with pytest.raises(pre.UmbralCorrectnessError):
         capsule.attach_cfrag(cfrags[0])
 
-    # The remaining M cfrags should be fine. Just for fun, let's try to 
-    # reconstruct the capsule with them:
+    # The remaining M cfrags should be fine. 
     for cfrag in cfrags[1:]:   
         capsule.attach_cfrag(cfrag)
 
+    # Just for fun, let's try to reconstruct the capsule with them:
     capsule._reconstruct_shamirs_secret(receiving_privkey)
 
     

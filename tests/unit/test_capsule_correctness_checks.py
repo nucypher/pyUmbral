@@ -27,7 +27,6 @@ from umbral.fragments import CapsuleFrag, KFrag
 from umbral.keys import UmbralPrivateKey
 from umbral.point import Point
 from umbral.pre import Capsule
-from umbral.signing import Signer
 from umbral.config import default_params
 
 

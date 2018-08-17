@@ -18,16 +18,10 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pytest
-from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import pre
-from umbral.fragments import KFrag, CapsuleFrag
-from umbral.config import default_curve
-from umbral.params import UmbralParameters
 from umbral.signing import Signer
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from ..conftest import parameters, wrong_parameters, other_supported_curves
+from ..conftest import wrong_parameters
 
 def test_public_key_encryption(alices_keys):
     delegating_privkey, _ = alices_keys

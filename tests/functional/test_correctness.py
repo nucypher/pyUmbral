@@ -19,10 +19,8 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.point import Point
-from umbral.signing import Signer
-from ..conftest import parameters
 
 def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys, 
                                                   kfrags, prepared_capsule):

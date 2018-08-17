@@ -18,7 +18,6 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from umbral import pre
-from umbral.signing import Signer
 from umbral.fragments import CapsuleFrag, CorrectnessProof
 
 
@@ -34,7 +33,7 @@ def test_cfrag_serialization_with_proof_and_metadata(prepared_capsule, kfrags):
         assert proof is not None
         assert proof.metadata is not None
 
-        new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
+        new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
@@ -65,7 +64,7 @@ def test_cfrag_serialization_with_proof_but_no_metadata(prepared_capsule, kfrags
         # TODO: Figure out final size for CFrags with proofs
         # assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
-        new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
+        new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
@@ -92,7 +91,7 @@ def test_cfrag_serialization_no_proof_no_metadata(prepared_capsule, kfrags):
 
         assert len(cfrag_bytes) == CapsuleFrag.expected_bytes_length()
 
-        new_cfrag = pre.CapsuleFrag.from_bytes(cfrag_bytes)
+        new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id

@@ -19,11 +19,9 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.point import Point
-from umbral.config import default_curve, default_params
-from umbral.signing import Signer
 
 
 def test_capsule_serialization(capsule):

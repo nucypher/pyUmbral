@@ -18,8 +18,8 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
-from distutils.core import setup
 
+from setuptools import setup
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -32,26 +32,17 @@ with open(os.path.join(BASE_DIR, "README.rst")) as f:
     long_description = f.read()
 
 
-DEPENDENCY_LINKS = ["http://github.com/nucypher/bytestringSplitter/tarball/master#egg=byteStringSplitter-0.0.1",
-                    # "./wheelhouse/cryptography-2.3.dev1-cp35-cp35m-linux_x86_64.whl",
-                    # "./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-linux_x86_64.whl",
-                    # "./wheelhouse/cryptography-2.3.dev1-cp37-cp37m-linux_x86_64.whl",
-                    # "./wheelhouse/cryptography-2.3.dev1-cp36-cp36m-macosx_10_13_x86_64.whl",
-                    ]
-
-INSTALL_REQUIRES = [
-                    # 'byteStringSplitter==0.0.1',
+INSTALL_REQUIRES = ['setuptools',
+                    'cryptography>=2.3',
                     'pynacl',
-                    'idna>=2.1',
-                    'asn1crypto>=0.21.0',
-                    'six>=1.4.1',
-                    'cffi>=1.7']
+                    'byteStringSplitter']
 
 EXTRAS_REQUIRE = {'testing': ['bumpversion',
+                              'hypothesis',
                               'pytest',
-                              'pytest-cov',
                               'pytest-mypy',
                               'pytest-mock',
+                              'pytest-cov',
                               'mock',
                               'coverage',
                               'codecov',
@@ -68,8 +59,6 @@ setup(name=ABOUT['__title__'],
       author=ABOUT['__author__'],
       description=ABOUT['__summary__'],
       long_description=long_description,
-
-      dependency_links=DEPENDENCY_LINKS,
       extras_require=EXTRAS_REQUIRE,
       install_requires=INSTALL_REQUIRES,
       packages=['umbral'],

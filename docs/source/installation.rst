@@ -1,6 +1,7 @@
 
 Installing pyUmbral
 ====================
+v0.1.0-alpha.0
 
 
 Acquire the source code

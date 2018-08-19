@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+setuptools = "*"
 # Third Party
 cryptography = ">=2.3"
 pynacl="*"

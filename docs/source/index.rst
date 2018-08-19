@@ -4,6 +4,8 @@
 ========
 pyUmbral
 ========
+v0.1.0-alpha.0
+
 
 .. image:: https://travis-ci.org/nucypher/pyUmbral.svg?branch=master
    :target: https://travis-ci.org/nucypher/pyUmbral

@@ -107,7 +107,9 @@ jobs:
       #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
       - run:
           name: Install dependencies
-          command: pipenv sync --three --dev
+          command: |
+              pipenv sync --three --dev
+              pipenv install --dev pytest
       - run:
           name: pyUmbral Tests (Python 3.5)
           command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml

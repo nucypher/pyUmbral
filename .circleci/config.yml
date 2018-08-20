@@ -250,10 +250,6 @@ jobs:
     <<: *python_37_base
     steps:
       - checkout
-      # - restore_cache:
-      #     keys:
-      #       - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
-      #       - v1-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "Makefile" }}
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -273,4 +269,4 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to pypi
-          command: pipenv run twine upload dist/*
+          command: pipenv run twine upload --repository testpypi dist/*

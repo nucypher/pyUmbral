@@ -75,8 +75,10 @@ EXTRAS_REQUIRE = {'testing': ['bumpversion',
 
 
 setup(name=ABOUT['__title__'],
+      url=ABOUT['__url__'],
       version=ABOUT['__version__'],
       author=ABOUT['__author__'],
+      author_email=ABOUT['__email__'],
       description=ABOUT['__summary__'],
       long_description=long_description,
       extras_require=EXTRAS_REQUIRE,

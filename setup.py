@@ -17,22 +17,62 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from distutils.core import setup, Extension
+import os
 
-INSTALL_REQUIRES = ['msgpack-python', 'pynacl'] #'pysha3',# TODO: Add cryptography wheel
+from setuptools import setup
 
-TESTS_REQUIRE = [
-    'pytest',
-    'coverage',
-    'pytest-cov',
-    'pdbpp',
-    'ipython'
-]
+BASE_DIR = os.path.dirname(__file__)
 
-setup(name='umbral',
-      version='0.1',
-      description='Umbral PRE implementation for NuCypher KMS',
-      #ext_modules=[elliptic_curve],
-      extras_require={'testing': TESTS_REQUIRE},
+ABOUT = dict()
+with open(os.path.join(BASE_DIR, "umbral", "__about__.py")) as f:
+    exec(f.read(), ABOUT)
+
+
+with open(os.path.join(BASE_DIR, "README.rst")) as f:
+    long_description = f.read()
+
+
+INSTALL_REQUIRES = ['setuptools',
+                    'cryptography>=2.3',
+                    'pynacl',
+                    'byteStringSplitter']
+
+EXTRAS_REQUIRE = {'testing': ['bumpversion',
+                              'hypothesis',
+                              'pytest',
+                              'pytest-mypy',
+                              'pytest-mock',
+                              'pytest-cov',
+                              'mock',
+                              'coverage',
+                              'codecov',
+                              'monkeytype==18.2.0'],
+
+                  'docs': ['sphinx', 'sphinx-autobuild'],
+
+                  'benchmarks': ['pytest-benchmark'],
+                  }
+
+
+setup(name=ABOUT['__title__'],
+      version=ABOUT['__version__'],
+      author=ABOUT['__author__'],
+      description=ABOUT['__summary__'],
+      long_description=long_description,
+      extras_require=EXTRAS_REQUIRE,
       install_requires=INSTALL_REQUIRES,
-      packages=['umbral'])
+      packages=['umbral'],
+
+      classifiers=[
+          "Development Status :: 2 - Pre-Alpha",
+          "Intended Audience :: Science/Research",
+          "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+          "Natural Language :: English",
+          "Programming Language :: Python :: Implementation",
+          "Programming Language :: Python :: 3 :: Only",
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "Topic :: Scientific/Engineering",
+        ]
+      )

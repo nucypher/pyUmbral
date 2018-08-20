@@ -25,6 +25,8 @@ from umbral.curve import SECP256K1, SECP384R1, SECP256R1
 from umbral.curvebn import CurveBN
 from umbral.config import set_default_curve
 from umbral.point import Point
+from umbral.signing import Signer
+from umbral import pre
 
 set_default_curve(SECP256K1)
 
@@ -84,4 +86,35 @@ def random_ec_curvebn1():
 @pytest.fixture()
 def random_ec_curvebn2():
     yield CurveBN.gen_rand()
+
+
+@pytest.fixture(scope='function')
+def capsule(alices_keys):
+    delegating_privkey, _signing_privkey = alices_keys
+    _sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
+    return capsule   
+
+@pytest.fixture
+def prepared_capsule(alices_keys, bobs_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    _receiving_privkey, receiving_pubkey = bobs_keys
+
+    _sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
+    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                 receiving=receiving_pubkey,
+                                 verifying=signing_privkey.get_pubkey())
+    return capsule    
+
+@pytest.fixture(scope='function')
+def kfrags(alices_keys, bobs_keys):
+    delegating_privkey, signing_privkey = alices_keys
+    delegating_pubkey = delegating_privkey.get_pubkey()
+    signer_alice = Signer(signing_privkey)
+
+    receiving_privkey, receiving_pubkey = bobs_keys
+
+    yield pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 6, 10)
+
+
+
 

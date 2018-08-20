@@ -103,8 +103,13 @@ jobs:
     <<: *python_35_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+      - run:
+          name: Install dependencies
+          command: |
+              pipenv sync --three --dev
+              pipenv install --dev pytest
       - run:
           name: pyUmbral Tests (Python 3.5)
           command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
@@ -117,8 +122,11 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
       - run:
           name: pyUmbral Tests (Python 3.6)
           command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python36-results.xml
@@ -131,8 +139,11 @@ jobs:
     <<: *python_37_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
       - run:
           name: pyUmbral Tests (Python 3.7)
           command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python37-results.xml
@@ -146,10 +157,13 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
-          name: Run Mypy Static Type Checks
+          name: Install dependencies
+          command: pipenv sync --three --dev
+      - run:
+          name: Run Mypy Static Type Checks (Always Succeed)
           command: |
               pipenv install --dev --skip-lock lxml
               pipenv run mypy --xslt-html-report ./mypy_report ./umbral --config-file=mypy.ini || true
@@ -160,8 +174,11 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
       - run:
           name: Run Documentation Tests
           command: |
@@ -175,8 +192,11 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      # - restore_cache:
+      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
       - run:
           name: Install Profiling Tools
           command: |
@@ -194,10 +214,13 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
-            - v2-benchmarks-py36
+      # - restore_cache:
+      #     keys:
+      #       - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+      #       - v2-benchmarks-py36
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
       - run:
           name: Benchmark Key Splitting and Reencryption
           command: |

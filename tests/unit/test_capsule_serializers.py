@@ -19,18 +19,13 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 
-from umbral import pre, keys
+from umbral import pre
 from umbral.curvebn import CurveBN
 from umbral.point import Point
-from umbral.config import default_curve, default_params
-from umbral.signing import Signer
 
 
-def test_capsule_serialization(alices_keys):
-    delegating_privkey, _signing_privkey = alices_keys
-    params = delegating_privkey.params
-
-    _symmetric_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
+def test_capsule_serialization(capsule):
+    params = capsule._umbral_params
     capsule_bytes = capsule.to_bytes()
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted
@@ -54,42 +49,32 @@ def test_capsule_serialization(alices_keys):
     assert new_capsule._bn_sig == capsule._bn_sig
 
 
-def test_activated_capsule_serialization(alices_keys, bobs_keys):
-    delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-    signer_alice = Signer(signing_privkey)
+def test_activated_capsule_serialization(prepared_capsule, kfrags, bobs_keys):
+    capsule = prepared_capsule
+    params = capsule._umbral_params
+    receiving_privkey, _receiving_pubkey = bobs_keys
 
-    params = delegating_privkey.params
+    for kfrag in kfrags:
+        cfrag = pre.reencrypt(kfrag, capsule)
+        
+        capsule.attach_cfrag(cfrag)
 
-    receiving_privkey, receiving_pubkey = bobs_keys
 
-    _unused_key, capsule = pre._encapsulate(delegating_pubkey)
+        capsule._reconstruct_shamirs_secret(receiving_privkey)
+        rec_capsule_bytes = capsule.to_bytes()
 
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 1, 2)
+        assert len(rec_capsule_bytes) == pre.Capsule.expected_bytes_length(activated=True)
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
+        new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes, params)
 
-    cfrag = pre.reencrypt(kfrags[0], capsule)
-    
-    capsule.attach_cfrag(cfrag)
+        # Again, the same three perspectives on equality.
+        assert new_rec_capsule == capsule
 
-    capsule._reconstruct_shamirs_secret(receiving_privkey)
-    rec_capsule_bytes = capsule.to_bytes()
+        assert new_rec_capsule.activated_components() == capsule.activated_components()
 
-    assert len(rec_capsule_bytes) == pre.Capsule.expected_bytes_length(activated=True)
-
-    new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes, params)
-
-    # Again, the same three perspectives on equality.
-    assert new_rec_capsule == capsule
-
-    assert new_rec_capsule.activated_components() == capsule.activated_components()
-
-    assert new_rec_capsule._point_e_prime == capsule._point_e_prime
-    assert new_rec_capsule._point_v_prime == capsule._point_v_prime
-    assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
+        assert new_rec_capsule._point_e_prime == capsule._point_e_prime
+        assert new_rec_capsule._point_v_prime == capsule._point_v_prime
+        assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_cannot_create_capsule_from_bogus_material(alices_keys):

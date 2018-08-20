@@ -115,15 +115,15 @@ class Curve:
         return self.__curve_name
 
     @property
-    def ec_group(self) -> int:
+    def ec_group(self):
         return self.__ec_group
 
     @property
-    def order(self) -> int:
+    def order(self):
         return self.__order
 
     @property
-    def generator(self) -> int:
+    def generator(self):
         return self.__generator
 
 

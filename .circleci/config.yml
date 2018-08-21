@@ -42,7 +42,6 @@ workflows:
           - doctests-36
           - reencryption_memory_profile-36
           - reencryption_benchmark-36
-          - hold
           filters:
             tags:
               only: /v[0-9]+.*/
@@ -270,4 +269,4 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to pypi
-          command: pipenv run twine upload --repository testpypi dist/*
+          command: pipenv run twine upload dist/*

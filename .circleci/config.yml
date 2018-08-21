@@ -4,45 +4,48 @@ workflows:
   version: 2
   build_test_deploy:
     jobs:
-      test:
-        - bundle_dependencies-35
-        - bundle_dependencies-36
-        - bundle_dependencies-37
-        - run_tests-35:
-            requires:
-              - bundle_dependencies-35
-        - run_tests-36:
-            requires:
-              - bundle_dependencies-36
-        - run_tests-37:
-            requires:
-              - bundle_dependencies-37
-        - mypy_type_check-36:
-            requires:
-              - run_tests-35
-              - run_tests-36
-              - run_tests-37
-        - doctests-36:
-            requires:
-              - run_tests-35
-              - run_tests-36
-              - run_tests-37
-        - reencryption_memory_profile-36:
-            requires:
-              - run_tests-35
-              - run_tests-36
-              - run_tests-37
-        - reencryption_benchmark-36:
-            requires:
-              - run_tests-35
-              - run_tests-36
-              - run_tests-37
+      - bundle_dependencies-35
+      - bundle_dependencies-36
+      - bundle_dependencies-37
+      - run_tests-35:
+          requires:
+            - bundle_dependencies-35
+      - run_tests-36:
+          requires:
+            - bundle_dependencies-36
+      - run_tests-37:
+          requires:
+            - bundle_dependencies-37
+      - mypy_type_check-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+            - run_tests-37
+      - doctests-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+            - run_tests-37
+      - reencryption_memory_profile-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+            - run_tests-37
+      - reencryption_benchmark-36:
+          requires:
+            - run_tests-35
+            - run_tests-36
+            - run_tests-37
       - deploy:
           requires:
-            - test
+          - mypy_type_check-36
+          - doctests-36
+          - reencryption_memory_profile-36
+          - reencryption_benchmark-36
+          - hold
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)+(\-[a-z]+(\.[0-9]+)?)?/
+              only: /v[0-9]+.*/
             branches:
               ignore: /.*/
 

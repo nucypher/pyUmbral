@@ -4,44 +4,72 @@ workflows:
   version: 2
   build_test_deploy:
     jobs:
-      - bundle_dependencies-35
-      - bundle_dependencies-36
-      - bundle_dependencies-37
+      - bundle_dependencies-35:
+          filters:
+            tags:
+              only: /.*/
+      - bundle_dependencies-36:
+          filters:
+            tags:
+              only: /.*/
+      - bundle_dependencies-37:
+          filters:
+            tags:
+              only: /.*/
       - run_tests-35:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - bundle_dependencies-35
       - run_tests-36:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - bundle_dependencies-36
       - run_tests-37:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - bundle_dependencies-37
       - mypy_type_check-36:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - run_tests-35
             - run_tests-36
             - run_tests-37
       - doctests-36:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - run_tests-35
             - run_tests-36
             - run_tests-37
       - reencryption_memory_profile-36:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - run_tests-35
             - run_tests-36
             - run_tests-37
       - reencryption_benchmark-36:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - run_tests-35
             - run_tests-36
             - run_tests-37
       - deploy:
           requires:
-          - mypy_type_check-36
-          - doctests-36
-          - reencryption_memory_profile-36
-          - reencryption_benchmark-36
+            - mypy_type_check-36
+            - doctests-36
           filters:
             tags:
               only: /v[0-9]+.*/
@@ -247,12 +275,14 @@ jobs:
           path: ./reports/pytest
 
   deploy:
-    <<: *python_37_base
+    <<: *python_36_base
     steps:
       - checkout
       - run:
           name: Install dependencies
-          command: pipenv sync --three --dev
+          command: |
+              pipenv sync --three --dev
+              pipenv install --dev --skip-lock twine
       - run:
           name: verify git tag == version
           command: pipenv run python setup.py verify

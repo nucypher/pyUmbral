@@ -2,7 +2,7 @@ version: 2.0
 
 workflows:
   version: 2
-  test:
+  build_test_deploy:
     jobs:
       - bundle_dependencies-35
       - bundle_dependencies-36
@@ -36,6 +36,17 @@ workflows:
             - run_tests-35
             - run_tests-36
             - run_tests-37
+      - deploy:
+          requires:
+          - mypy_type_check-36
+          - doctests-36
+          - reencryption_memory_profile-36
+          - reencryption_benchmark-36
+          filters:
+            tags:
+              only: /^v?[0-9]+(\.[0-9]+)*(\-[a-z]+(\.[0-9])?)?$/
+            branches:
+              ignore: /.*/
 
 
 python_35_base: &python_35_base
@@ -234,3 +245,28 @@ jobs:
           path: ./histograms
       - store_test_results:
           path: ./reports/pytest
+
+  deploy:
+    <<: *python_37_base
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: pipenv sync --three --dev
+      - run:
+          name: verify git tag == version
+          command: pipenv run python setup.py verify
+      - run:
+          name: init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+      - run:
+          name: create packages
+          command: |
+            pipenv run python setup.py sdist
+            pipenv run python setup.py bdist_wheel
+      - run:
+          name: upload to pypi
+          command: pipenv run twine upload --repository testpypi dist/*

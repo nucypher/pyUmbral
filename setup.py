@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Copyright (C) 2018 NuCypher
 
@@ -18,8 +21,11 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
+import sys
 
 from setuptools import setup
+from setuptools.command.install import install
+
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -30,6 +36,20 @@ with open(os.path.join(BASE_DIR, "umbral", "__about__.py")) as f:
 
 with open(os.path.join(BASE_DIR, "README.rst")) as f:
     long_description = f.read()
+
+
+class VerifyVersionCommand(install):
+    """Custom command to verify that the git tag matches our version"""
+    description = 'verify that the git tag matches our version'
+
+    def run(self):
+        tag = os.getenv('CIRCLE_TAG')
+
+        if tag != ABOUT['__version__']:
+            info = "Git tag: {0} does not match the version of this app: {1}".format(
+                tag, ABOUT['__version__']
+            )
+            sys.exit(info)
 
 
 INSTALL_REQUIRES = ['setuptools',
@@ -55,14 +75,15 @@ EXTRAS_REQUIRE = {'testing': ['bumpversion',
 
 
 setup(name=ABOUT['__title__'],
+      url=ABOUT['__url__'],
       version=ABOUT['__version__'],
       author=ABOUT['__author__'],
+      author_email=ABOUT['__email__'],
       description=ABOUT['__summary__'],
       long_description=long_description,
       extras_require=EXTRAS_REQUIRE,
       install_requires=INSTALL_REQUIRES,
       packages=['umbral'],
-
       classifiers=[
           "Development Status :: 2 - Pre-Alpha",
           "Intended Audience :: Science/Research",
@@ -74,5 +95,7 @@ setup(name=ABOUT['__title__'],
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
           "Topic :: Scientific/Engineering",
-        ]
+        ],
+      python_requires='>=3',
+      cmdclass={'verify': VerifyVersionCommand}
       )

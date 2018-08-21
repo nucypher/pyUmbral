@@ -19,6 +19,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import json
 import os
+from os.path import dirname, abspath
 
 from umbral.curvebn import CurveBN
 from umbral.point import Point, unsafe_hash_to_point

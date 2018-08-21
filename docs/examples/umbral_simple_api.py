@@ -113,6 +113,10 @@ kfrags = random.sample(kfrags,  # All kfrags from above
 # Bob collects the resulting `cfrags` from several Ursulas. 
 # Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
+bob_capsule.set_correctness_keys(delegating=alices_public_key,
+                                 receiving=bobs_public_key,
+                                 verifying=alices_verifying_key)
+
 cfrags = list()                 # Bob's cfrag collection
 for kfrag in kfrags:
 	cfrag = pre.reencrypt(kfrag=kfrag, capsule=bob_capsule)
@@ -126,10 +130,6 @@ assert len(cfrags) == 10
 # ----------------------------------
 # Bob attaches at least `threshold` `cfrags` to the capsule;
 # then it can become *activated*.
-
-bob_capsule.set_correctness_keys(delegating=alices_public_key,
-                                 receiving=bobs_public_key,
-                                 verifying=alices_verifying_key)
 
 for cfrag in cfrags:
 	bob_capsule.attach_cfrag(cfrag)

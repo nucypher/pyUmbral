@@ -38,10 +38,9 @@ workflows:
             - run_tests-37
       - deploy:
           requires:
-          - mypy_type_check-36
-          - doctests-36
-          - reencryption_memory_profile-36
-          - reencryption_benchmark-36
+            - run_tests-36
+            - mypy_type_check-36
+            - doctests-36
           filters:
             tags:
               only: /v[0-9]+.*/
@@ -247,7 +246,7 @@ jobs:
           path: ./reports/pytest
 
   deploy:
-    <<: *python_37_base
+    <<: *python_36_base
     steps:
       - checkout
       - run:

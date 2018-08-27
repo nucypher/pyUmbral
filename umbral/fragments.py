@@ -117,6 +117,9 @@ class KFrag(object):
     def __hash__(self):
         return hash(bytes(self._id))
 
+    def __repr__(self):
+        return "{}:{}".format(self.__class__.__name__, self._id.hex()[:15])
+
 
 class CorrectnessProof(object):
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
@@ -277,3 +280,6 @@ class CapsuleFrag(object):
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
+
+    def __repr__(self):
+        return "CFrag:{}".format(self._point_e1.to_bytes().hex()[2:17])

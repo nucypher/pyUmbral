@@ -278,7 +278,7 @@ class Capsule(object):
             # This is not constant time obviously, but it's hard to imagine how this is valuable as
             # an attacker already knows about her own Capsule.  It's possible that a Bob, having
             # activated a Capsule, will make it available for comparison via an API amidst other
-            # (dormat) Capsules.  Then an attacker can, by alternating between activated and dormant
+            # (dormant) Capsules.  Then an attacker can, by alternating between activated and dormant
             # Capsules, determine if a given Capsule is activated.  Do we care about this?
             # Again, it's hard to imagine why.
             return False
@@ -295,6 +295,8 @@ class Capsule(object):
     def __len__(self) -> int:
         return len(self._attached_cfrags)
 
+    def __repr__(self):
+        return "{}:{}".format(self.__class__.__name__, hex(int(self._bn_sig))[2:17])
 
 def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
                 receiving_pubkey: UmbralPublicKey,

@@ -256,7 +256,7 @@ class UmbralPublicKey(object):
         return self.point_key.to_bytes()
 
     def __repr__(self):
-        return "{}:{}".format(self.__class__, self.point_key.to_bytes().hex()[:15])
+        return "{}:{}".format(self.__class__.__name__, self.point_key.to_bytes().hex()[:15])
 
     def __eq__(self, other: Optional[Union[bytes, 'UmbralPublicKey', int]]) -> bool:
         if type(other) == bytes:

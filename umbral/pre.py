@@ -29,7 +29,7 @@ from bytestring_splitter import BytestringSplitter
 from umbral._pre import prove_cfrag_correctness
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
-from umbral.dem import UmbralDEM, DEM_KEYSIZE
+from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
@@ -382,10 +382,10 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
 def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True, 
               metadata: Optional[bytes] = None) -> CapsuleFrag:
 
-    if not capsule.verify():
+    if capsule is None or not capsule.verify():
         raise Capsule.NotValid
 
-    if not kfrag.verify_for_capsule(capsule):
+    if kfrag is None or not kfrag.verify_for_capsule(capsule):
         raise KFrag.NotValid
 
     rk = kfrag._bn_key
@@ -526,22 +526,21 @@ def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKe
     and return the resulting cleartext.
     """
 
+    if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
+        raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
+
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
         # (i.e., this is a re-encrypted capsule)
-
         encapsulated_key = _open_capsule(capsule, decrypting_key, check_proof=check_proof)
-        dem = UmbralDEM(encapsulated_key)
-
-        original_capsule_bytes = capsule._original_to_bytes()
-        cleartext = dem.decrypt(ciphertext, authenticated_data=original_capsule_bytes)
+        capsule_bytes = capsule._original_to_bytes()
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
         # (i.e., this is an original capsule)
-        decapsulated_key = _decapsulate_original(decrypting_key, capsule)
-        dem = UmbralDEM(decapsulated_key)
-
+        encapsulated_key = _decapsulate_original(decrypting_key, capsule)
         capsule_bytes = bytes(capsule)
-        cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
+
+    dem = UmbralDEM(encapsulated_key)
+    cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
 
     return cleartext

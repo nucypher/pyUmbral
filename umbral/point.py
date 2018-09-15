@@ -41,10 +41,11 @@ class Point(object):
 
     @classmethod
     def expected_bytes_length(cls, curve: Optional[Curve] = None,
-                              is_compressed: bool=True):
+                              is_compressed: bool = True):
         """
-        Returns the size (in bytes) of a compressed Point given a curve.
+        Returns the size (in bytes) of a Point given a curve.
         If no curve is provided, it uses the default curve.
+        By default, it assumes compressed representation (is_compressed = True).
         """
         curve = curve if curve is not None else default_curve()
 

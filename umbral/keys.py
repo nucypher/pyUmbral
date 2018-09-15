@@ -32,6 +32,7 @@ from umbral.config import default_params
 from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
 from umbral.point import Point
+from umbral.curve import Curve
 
 
 class UmbralPrivateKey(object):
@@ -209,6 +210,16 @@ class UmbralPublicKey(object):
 
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
+
+    @classmethod
+    def expected_bytes_length(cls, curve: Optional[Curve] = None,
+                              is_compressed: bool = True):
+        """
+        Returns the size (in bytes) of an UmbralPublicKey given a curve.
+        If no curve is provided, it uses the default curve.
+        By default, it assumes compressed representation (is_compressed = True).
+        """
+        return Point.expected_bytes_length(curve=curve, is_compressed=is_compressed)
 
     def to_bytes(self, encoder: Callable = None, is_compressed: bool = True):
         """

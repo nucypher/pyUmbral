@@ -24,11 +24,12 @@ from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
 from umbral.point import Point
 from umbral.signing import Signature
+from umbral.params import UmbralParameters
 
 
 class KFrag(object):
@@ -97,14 +98,24 @@ class KFrag(object):
     def verify(self,
                signing_pubkey: UmbralPublicKey,
                delegating_pubkey: UmbralPublicKey,
-               receiving_pubkey: UmbralPublicKey) -> bool:
-        return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
+               receiving_pubkey: UmbralPublicKey,
+               params: Optional[UmbralParameters] = None,
+              ) -> bool:
 
-    def verify_for_capsule(self, capsule : 'Capsule') -> bool:
+        if params is None:
+            params = default_params()
+        return verify_kfrag(kfrag=self,
+                            params=params,
+                            delegating_pubkey=delegating_pubkey,
+                            signing_pubkey=signing_pubkey,
+                            receiving_pubkey=receiving_pubkey)
+
+    def verify_for_capsule(self, capsule: 'Capsule') -> bool:
 
         correctness_keys = capsule.get_correctness_keys()
 
-        return self.verify(signing_pubkey=correctness_keys["verifying"],
+        return self.verify(params=capsule._umbral_params,
+                           signing_pubkey=correctness_keys["verifying"],
                            delegating_pubkey=correctness_keys["delegating"],
                            receiving_pubkey=correctness_keys["receiving"])
 

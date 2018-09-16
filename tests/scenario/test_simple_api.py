@@ -76,7 +76,7 @@ def test_simple_api(N, M, curve=default_curve()):
     cfrags = list()
     for kfrag in kfrags[:M]:
         # Ursula checks that the received kfrag is valid
-        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey)
+        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey, params)
 
         # Re-encryption by an Ursula
         cfrag = pre.reencrypt(kfrag, capsule)

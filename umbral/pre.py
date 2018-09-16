@@ -62,7 +62,7 @@ class Capsule(object):
                  verifying_pubkey: None = None
                  ) -> None:
 
-        self._umbral_params = params
+        self._umbral_params = params    # TODO: Change to self.params (#167)
 
         if isinstance(point_e, Point):
             if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
@@ -298,9 +298,14 @@ class Capsule(object):
     def __repr__(self):
         return "{}:{}".format(self.__class__.__name__, hex(int(self._bn_sig))[2:17])
 
-def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
+def split_rekey(delegating_privkey: UmbralPrivateKey,
+                signer: Signer,
                 receiving_pubkey: UmbralPublicKey,
-                threshold: int, N: int) -> List[KFrag]:
+                threshold: int,
+                N: int,
+                sign_delegating_key : Optional[bool] = True,
+                sign_receiving_key : Optional[bool] = True,
+                ) -> List[KFrag]:
     """
     Creates a re-encryption key from Alice to Bob and splits it in KFrags,
     using Shamir's Secret Sharing. Requires a threshold number of KFrags
@@ -319,8 +324,8 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
 
     g = params.g
 
-    pubkey_a_point = delegating_privkey.get_pubkey().point_key
-    privkey_a_bn = delegating_privkey.bn_key
+    delegating_pubkey = delegating_privkey.get_pubkey()
+    delegating_privkey = delegating_privkey.bn_key
 
     pubkey_b_point = receiving_pubkey.point_key
 
@@ -331,7 +336,7 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
     ni = priv_ni * g
     d = CurveBN.hash(ni, pubkey_b_point, pubkey_b_point * priv_ni, params=params)
 
-    coeffs = [privkey_a_bn * (~d)]
+    coeffs = [delegating_privkey * (~d)]
     coeffs += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
 
     u = params.u
@@ -363,8 +368,15 @@ def split_rekey(delegating_privkey: UmbralPrivateKey, signer: Signer,
 
         u1 = rk * u
 
-        kfrag_validity_message = bytes().join(
-            bytes(material) for material in (id, pubkey_a_point, pubkey_b_point, u1, ni, xcoord))
+        pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
+        if not sign_delegating_key:
+            delegating_pubkey = b'\x00' * pubkey_size
+        if not sign_receiving_key:
+            receiving_pubkey = b'\x00' * pubkey_size
+
+        validity_input = (id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+
+        kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
         signature = signer(kfrag_validity_message)
 
         kfrag = KFrag(id=id,
@@ -498,8 +510,6 @@ def _open_capsule(capsule: Capsule, receiving_privkey: UmbralPrivateKey,
 
     This will often be a symmetric key.
     """
-
-    receiving_pubkey = receiving_privkey.get_pubkey()
 
     if check_proof:
         offending_cfrags = []

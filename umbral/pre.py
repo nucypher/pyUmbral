@@ -32,8 +32,10 @@ from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.signing import Signer
-from umbral.utils import poly_eval, lambda_coeff, kdf
 from umbral.curve import Curve
+from umbral.utils import poly_eval, lambda_coeff
+from umbral.random_oracles import kdf, hash_to_curvebn
+
 
 class GenericUmbralError(Exception):
     pass
@@ -154,8 +156,7 @@ class Capsule(object):
 
         g = self.params.g
         e, v, s = self.components()
-
-        h = CurveBN.hash(e, v, params=self.params)
+        h = hash_to_curvebn(e, v, params=self.params)
 
         result = s * g == v + (h * e)      # type: bool
         return result
@@ -232,11 +233,11 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
     from constant_sorrow import constants
 
     # Secret value 'd' allows to make Umbral non-interactive
-    d = CurveBN.hash(precursor,
-                     bob_pubkey_point,
-                     dh_point,
-                     bytes(constants.NON_INTERACTIVE),
-                     params=params)
+    d = hash_to_curvebn(precursor,
+                        bob_pubkey_point,
+                        dh_point,
+                        bytes(constants.NON_INTERACTIVE),
+                        params=params)
 
     # Coefficients of the generating polynomial
     coefficients = [delegating_privkey.bn_key * (~d)]
@@ -252,12 +253,12 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         # Sharing corresponds to x in the tuple (x, f(x)), with f being the
         # generating polynomial), is used to prevent reconstruction of the
         # re-encryption key without Bob's intervention
-        share_index = CurveBN.hash(precursor,
-                                   bob_pubkey_point,
-                                   dh_point,
-                                   bytes(constants.X_COORDINATE),
-                                   kfrag_id,
-                                   params=params)
+        share_index = hash_to_curvebn(precursor,
+                                      bob_pubkey_point,
+                                      dh_point,
+                                      bytes(constants.X_COORDINATE),
+                                      kfrag_id,
+                                      params=params)
 
         # The re-encryption key share is the result of evaluating the generating
         # polynomial for the index value
@@ -341,7 +342,7 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
     priv_u = CurveBN.gen_rand(params.curve)
     pub_u = priv_u * g  # type: Any
 
-    h = CurveBN.hash(pub_r, pub_u, params=params)
+    h = hash_to_curvebn(pub_r, pub_u, params=params)
     s = priv_u + (priv_r * h)
 
     shared_key = (priv_r + priv_u) * alice_pubkey.point_key  # type: Any
@@ -382,18 +383,19 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
     if len(capsule._attached_cfrags) > 1:
-        xs = [CurveBN.hash(precursor,
-                           pub_key,
-                           dh_point,
-                           bytes(constants.X_COORDINATE),
-                           cfrag._kfrag_id,
-                           params=params)
+        xs = [hash_to_curvebn(precursor,
+                              pub_key,
+                              dh_point,
+                              bytes(constants.X_COORDINATE),
+                              cfrag._kfrag_id,
+                              params=params)
               for cfrag in capsule._attached_cfrags]
 
         e_summands, v_summands = list(), list()
         for cfrag, x in zip(capsule._attached_cfrags, xs):
             if precursor != cfrag._point_precursor:
                 raise ValueError("Attached CFrags are not pairwise consistent")
+
 
             lambda_i = lambda_coeff(x, xs)
             e_summands.append(lambda_i * cfrag._point_e1)
@@ -406,14 +408,14 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
         v_prime = capsule._attached_cfrags[0]._point_v1
 
     # Secret value 'd' allows to make Umbral non-interactive
-    d = CurveBN.hash(precursor,
-                     pub_key,
-                     dh_point,
-                     bytes(constants.NON_INTERACTIVE),
-                     params=params)
+    d = hash_to_curvebn(precursor,
+                        pub_key,
+                        dh_point,
+                        bytes(constants.NON_INTERACTIVE),
+                        params=params)
 
     e, v, s = capsule.components()
-    h = CurveBN.hash(e, v, params=params)
+    h = hash_to_curvebn(e, v, params=params)
 
     orig_pub_key = capsule.get_correctness_keys()['delegating'].point_key  # type: ignore
 

@@ -22,7 +22,8 @@ from umbral.curve import Curve
 
 class UmbralParameters(object):
     def __init__(self, curve: Curve) -> None:
-        from umbral.point import Point, unsafe_hash_to_point
+        from umbral.point import Point
+        from umbral.random_oracles import unsafe_hash_to_point
 
         self.curve = curve
         self.CURVE_KEY_SIZE_BYTES = self.curve.field_order_size_in_bytes

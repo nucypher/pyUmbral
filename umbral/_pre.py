@@ -23,6 +23,7 @@ from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.config import default_params
+from umbral.random_oracles import hash_to_curvebn
 
 
 def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
@@ -58,7 +59,8 @@ def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if metadata is not None:
         hash_input.append(metadata)
-    h = CurveBN.hash(*hash_input, params=params)
+
+    h = hash_to_curvebn(*hash_input, params=params)
     ########
 
     z3 = t + h * rk
@@ -101,7 +103,8 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if cfrag.proof.metadata is not None:
         hash_input.append(cfrag.proof.metadata)
-    h = CurveBN.hash(*hash_input, params=params)
+
+    h = hash_to_curvebn(*hash_input, params=params)
     ########
 
     precursor = cfrag._point_precursor

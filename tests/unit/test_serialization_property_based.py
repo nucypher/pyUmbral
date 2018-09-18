@@ -19,13 +19,14 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 from cryptography.hazmat.backends.openssl import backend
 from hypothesis import HealthCheck, given, settings, unlimited
-from hypothesis.strategies import binary, booleans, integers, lists, text, tuples
+from hypothesis.strategies import binary, booleans, integers, tuples
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.fragments import CorrectnessProof, KFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
-from umbral.point import Point, unsafe_hash_to_point
+from umbral.point import Point
+from umbral.random_oracles import unsafe_hash_to_point
 from umbral.pre import Capsule
 
 # test parameters

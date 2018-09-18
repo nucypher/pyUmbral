@@ -20,12 +20,10 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 from typing import Optional, Union, cast
 
 from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
 from umbral.config import default_curve
 from umbral.curve import Curve
-from umbral.params import UmbralParameters
 
 
 class CurveBN(object):
@@ -84,38 +82,6 @@ class CurveBN(object):
         curve = curve if curve is not None else default_curve()
         conv_bn = openssl._int_to_bn(num, curve)
         return cls(conv_bn, curve)
-
-    @classmethod
-    def hash(cls, *crypto_items, params: UmbralParameters) -> 'CurveBN':
-        # TODO: Clean this in an upcoming cleanup of pyUmbral
-        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        for item in crypto_items:
-            try:
-                item_bytes = item.to_bytes()
-            except AttributeError:
-                if isinstance(item, bytes):
-                    item_bytes = item
-                else:
-                    raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
-            blake2b.update(item_bytes)
-
-        hash_digest = openssl._bytes_to_bn(blake2b.finalize())
-
-        _1 = backend._lib.BN_value_one()
-        
-        order_minus_1 = openssl._get_new_BN()
-        res = backend._lib.BN_sub(order_minus_1, params.curve.order, _1)
-        backend.openssl_assert(res == 1)
-
-        bignum = openssl._get_new_BN()
-        with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.BN_mod(bignum, hash_digest, order_minus_1, bn_ctx)
-            backend.openssl_assert(res == 1)
-
-        res = backend._lib.BN_add(bignum, bignum, _1)
-        backend.openssl_assert(res == 1)
-        
-        return cls(bignum, params.curve)
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CurveBN':

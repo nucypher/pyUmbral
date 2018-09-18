@@ -17,11 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import List 
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from typing import List
 
 from umbral.curvebn import CurveBN
 from umbral.point import Point
@@ -46,15 +42,3 @@ def poly_eval(coeff: List[CurveBN], x: CurveBN) -> CurveBN:
         result = (result * x) + coeff[i]
 
     return result
-
-
-def kdf(ecpoint: Point, key_length: int) -> bytes:
-    data = ecpoint.to_bytes(is_compressed=True)
-
-    return HKDF(
-        algorithm=hashes.BLAKE2b(64),
-        length=key_length,
-        salt=None,
-        info=None,
-        backend=default_backend()
-    ).derive(data)

@@ -33,6 +33,7 @@ from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.curve import Curve
+from umbral.random_oracles import hash_to_curvebn
 
 
 class UmbralPrivateKey(object):
@@ -319,7 +320,7 @@ class UmbralKeyingMaterial(object):
             backend=default_backend()
         ).derive(self.keying_material)
 
-        bn_key = CurveBN.hash(key_material, params=params)
+        bn_key = hash_to_curvebn(key_material, params=params)
         return UmbralPrivateKey(bn_key, params)
 
     @classmethod

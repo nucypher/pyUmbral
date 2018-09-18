@@ -21,10 +21,11 @@ import json
 import os
 
 from umbral.curvebn import CurveBN
-from umbral.point import Point, unsafe_hash_to_point
+from umbral.point import Point
 from umbral.keys import UmbralPublicKey
 from umbral.config import default_params
 from umbral.fragments import KFrag, CapsuleFrag
+from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
 from umbral import pre
 
 def test_curvebn_operations():
@@ -71,7 +72,7 @@ def test_curvebn_hash():
     for vector in vector_suite['vectors']:
         hash_input = [bytes.fromhex(item['bytes']) for item in vector['input']]
         expected = CurveBN.from_bytes(bytes.fromhex(vector['output']))
-        assert CurveBN.hash(*hash_input, params=params) == expected
+        assert hash_to_curvebn(*hash_input, params=params) == expected
 
 
 def test_point_operations():

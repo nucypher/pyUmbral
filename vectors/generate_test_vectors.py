@@ -5,7 +5,8 @@ from umbral import pre
 from umbral.keys import UmbralPrivateKey
 from umbral.signing import Signer
 from umbral.curvebn import CurveBN
-from umbral.point import Point, unsafe_hash_to_point
+from umbral.point import Point
+from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
 from umbral.config import set_default_curve, default_params
 
 
@@ -131,7 +132,7 @@ inputs = ([b''],
 
 vectors = list()
 for input_to_hash in inputs:
-    bn_output = CurveBN.hash(*input_to_hash, params=params)
+    bn_output = hash_to_curvebn(*input_to_hash, params=params)
     json_input = [{'class': data.__class__.__name__,
                    'bytes': hexlify(data),
                    } for data in input_to_hash]

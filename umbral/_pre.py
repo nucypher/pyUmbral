@@ -152,7 +152,7 @@ def verify_kfrag(kfrag: 'KFrag',
 
     u = params.u
 
-    id = kfrag._id
+    kfrag_id = kfrag._id
     key = kfrag._bn_key
     u1 = kfrag._point_commitment
     ni = kfrag._point_noninteractive
@@ -169,7 +169,7 @@ def verify_kfrag(kfrag: 'KFrag',
     if receiving_pubkey is None:
         receiving_pubkey = b'\x00' * pubkey_size
 
-    validity_input = (id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
 
     kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
     valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, signing_pubkey)

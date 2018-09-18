@@ -298,6 +298,7 @@ class Capsule(object):
     def __repr__(self):
         return "{}:{}".format(self.__class__.__name__, hex(int(self._bn_sig))[2:17])
 
+
 def split_rekey(delegating_privkey: UmbralPrivateKey,
                 signer: Signer,
                 receiving_pubkey: UmbralPublicKey,
@@ -305,7 +306,7 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
                 N: int,
                 sign_delegating_key : Optional[bool] = True,
                 sign_receiving_key : Optional[bool] = True,
-                ) -> List[KFrag]:
+               ) -> List[KFrag]:
     """
     Creates a re-encryption key from Alice to Bob and splits it in KFrags,
     using Shamir's Secret Sharing. Requires a threshold number of KFrags
@@ -360,9 +361,9 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
 
     kfrags = []
     for _ in range(N):
-        id = os.urandom(bn_size)
+        kfrag_id = os.urandom(bn_size)
 
-        share_x = CurveBN.hash(id, hashed_dh_tuple, params=params)
+        share_x = CurveBN.hash(kfrag_id, hashed_dh_tuple, params=params)
 
         rk = poly_eval(coeffs, share_x)
 
@@ -374,12 +375,12 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
         if not sign_receiving_key:
             receiving_pubkey = b'\x00' * pubkey_size
 
-        validity_input = (id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+        validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
 
         kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
         signature = signer(kfrag_validity_message)
 
-        kfrag = KFrag(id=id,
+        kfrag = KFrag(id=kfrag_id,
                       bn_key=rk,
                       point_noninteractive=ni,
                       point_commitment=u1,

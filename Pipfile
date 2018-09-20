@@ -7,7 +7,8 @@ name = "pypi"
 setuptools = "*"
 # Third Party
 cryptography = ">=2.3"
-pynacl="*"
+pynacl = "*"
+pysha3 = "*"
 # NuCypher
 bytestringsplitter = "*"
 constant-sorrow = "*"

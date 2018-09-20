@@ -25,6 +25,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.exceptions import InternalError
 
+import sha3
+
 from umbral import openssl
 from umbral.curvebn import CurveBN
 from umbral.point import Point
@@ -56,7 +58,31 @@ class Blake2b(Hash):
     def finalize(self):
         return self._blake2b.finalize()
 
-# TODO: Subclass _Hash with BLAKE2b(64) and double-keccak
+
+class ExtendedKeccak(Hash):
+
+    _UPPER_PREFIX = b'\x00'
+    _LOWER_PREFIX = b'\x01'
+
+    def __init__(self):
+        self._upper = sha3.keccak_256()
+        self._lower = sha3.keccak_256()
+
+        self._upper.update(self._UPPER_PREFIX)
+        self._lower.update(self._LOWER_PREFIX)
+
+    def update(self, data: bytes):
+        self._upper.update(data)
+        self._lower.update(data)
+
+    def copy(self):
+        replica = type(self)()
+        replica._upper = self._upper.copy()
+        replica._lower = self._lower.copy()
+        return replica
+
+    def finalize(self):
+        return self._upper.digest() + self._lower.digest()
 
 
 def kdf(ecpoint: Point,

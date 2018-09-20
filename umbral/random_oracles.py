@@ -103,9 +103,12 @@ def kdf(ecpoint: Point,
 # TODO: Common API for all hash_to_curvebn functions.
 # Should check the correct number and type args, instead of current approach.
 
-def hash_to_curvebn(*crypto_items, params: UmbralParameters) -> CurveBN:
+def hash_to_curvebn(*crypto_items,
+                    params: UmbralParameters,
+                    use_blake2b=True,
+                    ) -> CurveBN:
 
-    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+    hash_function = Blake2b() if use_blake2b else ExtendedKeccak()
     for item in crypto_items:
         try:
             item_bytes = item.to_bytes()
@@ -114,9 +117,9 @@ def hash_to_curvebn(*crypto_items, params: UmbralParameters) -> CurveBN:
                 item_bytes = item
             else:
                 raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
-        blake2b.update(item_bytes)
+        hash_function.update(item_bytes)
 
-    hash_digest = openssl._bytes_to_bn(blake2b.finalize())
+    hash_digest = openssl._bytes_to_bn(hash_function.finalize())
 
     _1 = backend._lib.BN_value_one()
 

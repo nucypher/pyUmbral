@@ -105,8 +105,7 @@ def kdf(ecpoint: Point,
 
 def hash_to_curvebn(*crypto_items,
                     params: UmbralParameters,
-                    use_blake2b=True,
-                    ) -> CurveBN:
+                    use_blake2b=True) -> CurveBN:
 
     hash_function = Blake2b() if use_blake2b else ExtendedKeccak()
     for item in crypto_items:

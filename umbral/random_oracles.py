@@ -32,15 +32,29 @@ from umbral.params import UmbralParameters
 from umbral.config import default_params
 
 
-class _Hash:
+class Hash:
+
+    def update(self, data: bytes): pass
+
+    def copy(self): pass
+
+    def finalize(self): pass
+
+
+class Blake2b(Hash):
+    def __init__(self):
+        self._blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+
     def update(self, data: bytes):
-        pass
+        self._blake2b.update(data)
 
     def copy(self):
-        pass    
+        replica = type(self)()
+        replica._blake2b = self._blake2b.copy()
+        return replica
 
     def finalize(self):
-        pass
+        return self._blake2b.finalize()
 
 # TODO: Subclass _Hash with BLAKE2b(64) and double-keccak
 

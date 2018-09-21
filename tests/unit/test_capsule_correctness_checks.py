@@ -21,9 +21,8 @@ import os
 
 import pytest
 
-from umbral import pre
 from umbral.curvebn import CurveBN
-from umbral.fragments import CapsuleFrag, KFrag
+from umbral.fragments import CapsuleFrag
 from umbral.keys import UmbralPrivateKey
 from umbral.point import Point
 from umbral.pre import Capsule
@@ -51,43 +50,6 @@ def test_cannot_attach_cfrag_without_keys():
 
     with pytest.raises(TypeError):
         capsule.attach_cfrag(cfrag)
-
-
-def test_set_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):
-    """
-    If the three keys do appear together, along with the capsule,
-    we can attach them all at once.
-    """
-
-    delegating_privkey, signing_privkey = alices_keys
-    _receiving_privkey, receiving_pubkey = bobs_keys
-
-    capsule.set_correctness_keys(delegating_privkey.get_pubkey(),
-                                 receiving_pubkey,
-                                 signing_privkey.get_pubkey()
-                                )
-
-    for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule)
-        capsule.attach_cfrag(cfrag)
-
-def test_set_invalid_correctness_keys(alices_keys, capsule, kfrags):
-    """
-    If the three keys do appear together, along with the capsule,
-    we can attach them all at once.
-    """
-
-    delegating_privkey, signing_privkey = alices_keys
-    unrelated_receiving_pubkey = UmbralPrivateKey.gen_key().get_pubkey()
-
-    capsule.set_correctness_keys(delegating_privkey.get_pubkey(),
-                                 unrelated_receiving_pubkey,
-                                 signing_privkey.get_pubkey()
-                                )
-
-    for kfrag in kfrags:
-        with pytest.raises(KFrag.NotValid):
-            cfrag = pre.reencrypt(kfrag, capsule)
 
 
 def test_cannot_attach_cfrag_without_proof():

@@ -152,7 +152,7 @@ class Capsule(object):
 
         if current_key is None:
             if key is None:
-                raise TypeError("The {} key is not set and you didn't pass one.".format(key_type))
+                return False
             elif self._umbral_params != key.params:
                 raise TypeError("You are trying to set a key with different UmbralParameters.")
             else:

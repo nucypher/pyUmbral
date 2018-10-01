@@ -97,8 +97,8 @@ class KFrag(object):
 
     def verify(self,
                signing_pubkey: UmbralPublicKey,
-               delegating_pubkey: UmbralPublicKey,
-               receiving_pubkey: UmbralPublicKey,
+               delegating_pubkey: UmbralPublicKey = None,
+               receiving_pubkey: UmbralPublicKey = None,
                params: Optional[UmbralParameters] = None,
               ) -> bool:
 

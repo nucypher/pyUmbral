@@ -31,7 +31,7 @@ def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
                             metadata: Optional[bytes] = None
                             ) -> None:
 
-    params = capsule._umbral_params
+    params = capsule.params
 
     # Check correctness of original ciphertext
     if not capsule.verify():
@@ -63,7 +63,7 @@ def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
 
     z3 = t + h * rk
 
-    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature)
+    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
 
 
 def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
@@ -74,7 +74,7 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     signing_pubkey = correctness_keys['verifying']
     receiving_pubkey = correctness_keys['receiving']
 
-    params = capsule._umbral_params
+    params = capsule.params
 
     ####
     # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
@@ -104,8 +104,7 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     h = CurveBN.hash(*hash_input, params=params)
     ########
 
-    ni = cfrag._point_noninteractive
-    xcoord = cfrag._point_xcoord
+    precursor = cfrag._point_precursor
     kfrag_id = cfrag._kfrag_id
 
     pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
@@ -116,7 +115,7 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     if receiving_pubkey is None:
         receiving_pubkey = b'\x00' * pubkey_size
 
-    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
 
     kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
     valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_validity_message, signing_pubkey)
@@ -152,11 +151,10 @@ def verify_kfrag(kfrag: 'KFrag',
 
     u = params.u
 
-    kfrag_id = kfrag._id
+    kfrag_id = kfrag.id
     key = kfrag._bn_key
     u1 = kfrag._point_commitment
-    ni = kfrag._point_noninteractive
-    xcoord = kfrag._point_xcoord
+    precursor = kfrag._point_precursor
 
     #  We check that the commitment u1 is well-formed
     correct_commitment = u1 == key * u
@@ -169,9 +167,9 @@ def verify_kfrag(kfrag: 'KFrag',
     if receiving_pubkey is None:
         receiving_pubkey = b'\x00' * pubkey_size
 
-    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
 
     kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
-    valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, signing_pubkey)
+    valid_kfrag_signature = kfrag.signature_for_proxy.verify(kfrag_validity_message, signing_pubkey)
 
     return correct_commitment & valid_kfrag_signature

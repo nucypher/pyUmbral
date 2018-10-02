@@ -21,8 +21,6 @@ import os
 import typing
 from typing import Dict, List, Optional, Tuple, Union
 
-from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
 from bytestring_splitter import BytestringSplitter
@@ -56,19 +54,19 @@ class Capsule(object):
                  bn_sig: Optional[CurveBN] = None,
                  point_e_prime: Optional[Point] = None,
                  point_v_prime: Optional[Point] = None,
-                 point_noninteractive: Optional[Point] = None,
+                 point_precursor: Optional[Point] = None,
                  delegating_pubkey: Optional[UmbralPublicKey] = None,
                  receiving_pubkey: Optional[UmbralPublicKey] = None,
                  verifying_pubkey: None = None
                  ) -> None:
 
-        self._umbral_params = params    # TODO: Change to self.params (#167)
+        self.params = params
 
         if isinstance(point_e, Point):
             if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
                 raise TypeError("Need point_e, point_v, and bn_sig to make a Capsule.")
         elif isinstance(point_e_prime, Point):
-            if not isinstance(point_v_prime, Point) or not isinstance(point_noninteractive, Point):
+            if not isinstance(point_v_prime, Point) or not isinstance(point_precursor, Point):
                 raise TypeError("Need e_prime, v_prime, and point_noninteractive to make an activated Capsule.")
         else:
             raise TypeError(
@@ -85,7 +83,7 @@ class Capsule(object):
 
         self._point_e_prime = point_e_prime
         self._point_v_prime = point_v_prime
-        self._point_noninteractive = point_noninteractive
+        self._point_precursor = point_precursor
 
         self._attached_cfrags = list()    # type: list
 
@@ -136,7 +134,7 @@ class Capsule(object):
                 (CurveBN, bn_size, arguments),  # bn_sig
                 (Point, point_size, arguments),  # point_e_prime
                 (Point, point_size, arguments),  # point_v_prime
-                (Point, point_size, arguments)  # point_noninteractive
+                (Point, point_size, arguments)  # point_precursor
             )
         else:
             raise ValueError("Byte string does not have a valid length for a Capsule")
@@ -153,7 +151,7 @@ class Capsule(object):
         if current_key is None:
             if key is None:
                 return False
-            elif self._umbral_params != key.params:
+            elif self.params != key.params:
                 raise TypeError("You are trying to set a key with different UmbralParameters.")
             else:
                 self._cfrag_correctness_keys[key_type] = key
@@ -193,11 +191,11 @@ class Capsule(object):
 
     def verify(self) -> bool:
 
-        g = self._umbral_params.g
+        g = self.params.g
         e = self._point_e
         v = self._point_v
         s = self._bn_sig
-        h = CurveBN.hash(e, v, params=self._umbral_params)
+        h = CurveBN.hash(e, v, params=self.params)
 
         result = s * g == v + (h * e)      # type: bool
         return result
@@ -213,51 +211,44 @@ class Capsule(object):
         return self._point_e, self._point_v, self._bn_sig
 
     def activated_components(self) -> Union[Tuple[None, None, None], Tuple[Point, Point, Point]]:
-        return self._point_e_prime, self._point_v_prime, self._point_noninteractive
+        return self._point_e_prime, self._point_v_prime, self._point_precursor
 
     def _reconstruct_shamirs_secret(self, priv_b: UmbralPrivateKey) -> None:
-        params = self._umbral_params
-        g = params.g
+        params = self.params
 
         pub_b = priv_b.get_pubkey()
         priv_b = priv_b.bn_key
 
-        cfrag_0 = self._attached_cfrags[0]
-        id_0 = cfrag_0._kfrag_id
-        ni = cfrag_0._point_noninteractive
-        xcoord = cfrag_0._point_xcoord
-
-        dh_xcoord = priv_b * xcoord
-
-        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        blake2b.update(xcoord.to_bytes())
-        blake2b.update(pub_b.to_bytes())
-        blake2b.update(dh_xcoord.to_bytes())
-        hashed_dh_tuple = blake2b.finalize()
+        precursor = self._attached_cfrags[0]._point_precursor
+        dh_point = priv_b * precursor
 
         if len(self._attached_cfrags) > 1:
-            xs = [CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=params)
+            xs = [CurveBN.hash(precursor,
+                               pub_b,
+                               dh_point,
+                               b"X-COORDINATE",
+                               cfrag._kfrag_id,
+                               params=params)
                   for cfrag in self._attached_cfrags]
-            x_0 = CurveBN.hash(id_0, hashed_dh_tuple, params=params)
-            lambda_0 = lambda_coeff(x_0, xs)
-            e = lambda_0 * cfrag_0._point_e1
-            v = lambda_0 * cfrag_0._point_v1
 
-            for cfrag in self._attached_cfrags[1:]:
-                if (ni, xcoord) != (cfrag._point_noninteractive, cfrag._point_xcoord):
+            e_summands = list()
+            v_summands = list()
+            for cfrag, x in zip(self._attached_cfrags, xs):
+                if precursor != cfrag._point_precursor:
                     raise ValueError("Attached CFrags are not pairwise consistent")
 
-                x_i = CurveBN.hash(cfrag._kfrag_id, hashed_dh_tuple, params=params)
-                lambda_i = lambda_coeff(x_i, xs)
-                e = e + (lambda_i * cfrag._point_e1)
-                v = v + (lambda_i * cfrag._point_v1)
-        else:
-            e = cfrag_0._point_e1
-            v = cfrag_0._point_v1
+                lambda_i = lambda_coeff(x, xs)
+                e_summands.append(lambda_i * cfrag._point_e1)
+                v_summands.append(lambda_i * cfrag._point_v1)
 
-        self._point_e_prime = e
-        self._point_v_prime = v
-        self._point_noninteractive = ni
+            self._point_e_prime = sum(e_summands[1:], e_summands[0])
+            self._point_v_prime = sum(v_summands[1:], v_summands[0])
+
+        else:
+            self._point_e_prime = self._attached_cfrags[0]._point_e1
+            self._point_v_prime = self._attached_cfrags[0]._point_v1
+
+        self._point_precursor = precursor
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
@@ -308,11 +299,11 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
                 sign_receiving_key : Optional[bool] = True,
                ) -> List[KFrag]:
     """
-    Creates a re-encryption key from Alice to Bob and splits it in KFrags,
-    using Shamir's Secret Sharing. Requires a threshold number of KFrags
-    out of N to guarantee correctness of re-encryption.
+    Creates a re-encryption key from Alice's delegating public key to Bob's
+    receiving public key, and splits it in KFrags, using Shamir's Secret Sharing.
+    Requires a threshold number of KFrags out of N.
 
-    Returns a list of KFrags.
+    Returns a dictionary which includes the list of N KFrags
     """
 
     if threshold <= 0 or threshold > N:
@@ -328,64 +319,77 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
     delegating_pubkey = delegating_privkey.get_pubkey()
     delegating_privkey = delegating_privkey.bn_key
 
-    pubkey_b_point = receiving_pubkey.point_key
+    bob_pubkey_point = receiving_pubkey.point_key
 
-    # 'ni' stands for 'Non Interactive'.
-    # This point is used as an ephemeral public key in a DH key exchange,
-    # and the resulting shared secret 'd' allows to make Umbral non-interactive
-    priv_ni = CurveBN.gen_rand(params.curve)
-    ni = priv_ni * g
-    d = CurveBN.hash(ni, pubkey_b_point, pubkey_b_point * priv_ni, params=params)
+    # The precursor point is used as an ephemeral public key in a DH key exchange,
+    # and the resulting shared secret 'dh_point' is used to derive other secret values
+    private_precursor = CurveBN.gen_rand(params.curve)
+    precursor = private_precursor * g
 
-    coeffs = [delegating_privkey * (~d)]
-    coeffs += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
+    dh_point = private_precursor * bob_pubkey_point
 
-    u = params.u
+    # Secret value 'd' allows to make Umbral non-interactive
+    d = CurveBN.hash(precursor,
+                     bob_pubkey_point,
+                     dh_point,
+                     b"NON-INTERACTIVE",
+                     params=params)
 
-    # 'xcoord' stands for 'X coordinate'.
-    # This point is used as an ephemeral public key in a DH key exchange,
-    # and the resulting shared secret 'dh_xcoord' contributes to prevent
-    # reconstruction of the re-encryption key without Bob's intervention
-    priv_xcoord = CurveBN.gen_rand(params.curve)
-    xcoord = priv_xcoord * g
-
-    dh_xcoord = priv_xcoord * pubkey_b_point
-
-    blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-    blake2b.update(xcoord.to_bytes())
-    blake2b.update(pubkey_b_point.to_bytes())
-    blake2b.update(dh_xcoord.to_bytes())
-    hashed_dh_tuple = blake2b.finalize()
+    # Coefficients of the generating polynomial
+    coefficients = [delegating_privkey * (~d)]
+    coefficients += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
 
     bn_size = CurveBN.expected_bytes_length(params.curve)
 
-    kfrags = []
+    kfrags = list()
     for _ in range(N):
         kfrag_id = os.urandom(bn_size)
 
-        share_x = CurveBN.hash(kfrag_id, hashed_dh_tuple, params=params)
+        # The index of the re-encryption key share (which in Shamir's Secret
+        # Sharing corresponds to x in the tuple (x, f(x)), with f being the
+        # generating polynomial), is used to prevent reconstruction of the
+        # re-encryption key without Bob's intervention
+        share_index = CurveBN.hash(precursor,
+                                   bob_pubkey_point,
+                                   dh_point,
+                                   b"X-COORDINATE",
+                                   kfrag_id,
+                                   params=params)
 
-        rk = poly_eval(coeffs, share_x)
+        # The re-encryption key share is the result of evaluating the generating
+        # polynomial for the index value
+        rk = poly_eval(coefficients, share_index)
 
-        u1 = rk * u
+        commitment = rk * params.u
+
+        validity_message_for_bob = (kfrag_id,
+                                    delegating_pubkey,
+                                    receiving_pubkey,
+                                    commitment,
+                                    precursor,
+                                    )
+        validity_message_for_bob = bytes().join(bytes(item) for item in validity_message_for_bob)
+        signature_for_bob = signer(validity_message_for_bob)
 
         pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
-        if not sign_delegating_key:
-            delegating_pubkey = b'\x00' * pubkey_size
-        if not sign_receiving_key:
-            receiving_pubkey = b'\x00' * pubkey_size
+        blank_pubkey = b'\x00' * pubkey_size
 
-        validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, ni, xcoord)
+        validity_message_for_proxy = (kfrag_id,
+                                      delegating_pubkey if sign_delegating_key else blank_pubkey,
+                                      receiving_pubkey if sign_receiving_key else blank_pubkey,
+                                      commitment,
+                                      precursor,
+                                      )
+        validity_message_for_proxy = bytes().join(bytes(item) for item in validity_message_for_proxy)
+        signature_for_proxy = signer(validity_message_for_proxy)
 
-        kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
-        signature = signer(kfrag_validity_message)
-
-        kfrag = KFrag(id=kfrag_id,
+        kfrag = KFrag(identifier=kfrag_id,
                       bn_key=rk,
-                      point_noninteractive=ni,
-                      point_commitment=u1,
-                      point_xcoord=xcoord,
-                      signature=signature)
+                      point_commitment=commitment,
+                      point_precursor=precursor,
+                      signature_for_proxy=signature_for_proxy,
+                      signature_for_bob=signature_for_bob,
+                      )
 
         kfrags.append(kfrag)
 
@@ -405,9 +409,8 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
     e1 = rk * capsule._point_e
     v1 = rk * capsule._point_v
 
-    cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag._id,
-                        point_noninteractive=kfrag._point_noninteractive,
-                        point_xcoord=kfrag._point_xcoord)
+    cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag.id,
+                        point_precursor=kfrag._point_precursor)
 
     if provide_proof:
         prove_cfrag_correctness(cfrag, kfrag, capsule, metadata)
@@ -439,51 +442,54 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
     return key, Capsule(point_e=pub_r, point_v=pub_u, bn_sig=s, params=params)
 
 
-def _decapsulate_original(priv_key: UmbralPrivateKey, capsule: Capsule, 
+def _decapsulate_original(priv_key: UmbralPrivateKey,
+                          capsule: Capsule,
                           key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
 
-    priv_key = priv_key.bn_key
-
-    shared_key = priv_key * (capsule._point_e + capsule._point_v)
-    key = kdf(shared_key, key_length)
-
     if not capsule.verify():
         # Check correctness of original ciphertext
-        # (check nº 2) at the end to avoid timing oracles
         raise capsule.NotValid("Capsule verification failed.")
 
+    shared_key = priv_key.bn_key * (capsule._point_e + capsule._point_v)
+    key = kdf(shared_key, key_length)
     return key
 
 
 def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsule,
                              key_length: int = DEM_KEYSIZE) -> bytes:
-    """Derive the same symmetric key"""
-    params = capsule._umbral_params
+    """Derive the same symmetric encapsulated_key"""
+    params = capsule.params
 
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    ni = capsule._point_noninteractive
-    d = CurveBN.hash(ni, pub_key, priv_key * ni, params=params)
+    precursor = capsule._point_precursor
 
-    e_prime = capsule._point_e_prime
-    v_prime = capsule._point_v_prime
+    dh_point = priv_key * precursor
 
-    shared_key = d * (e_prime + v_prime)
+    # Secret value 'd' allows to make Umbral non-interactive
+    d = CurveBN.hash(precursor,
+                     pub_key,
+                     dh_point,
+                     b"NON-INTERACTIVE",
+                     params=params)
 
-    key = kdf(shared_key, key_length)
-
+    inv_d = ~d
     e = capsule._point_e
     v = capsule._point_v
     s = capsule._bn_sig
     h = CurveBN.hash(e, v, params=params)
-    inv_d = ~d
+    e_prime = capsule._point_e_prime
+    v_prime = capsule._point_v_prime
     orig_pub_key = capsule.get_correctness_keys()['delegating'].point_key
 
     if not (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime:
         raise GenericUmbralError()
-    return key
+
+    shared_key = d * (e_prime + v_prime)
+    encapsulated_key = kdf(shared_key, key_length)
+    return encapsulated_key
 
 
 def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Capsule]:
@@ -553,5 +559,4 @@ def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKe
 
     dem = UmbralDEM(encapsulated_key)
     cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
-
     return cleartext

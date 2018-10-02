@@ -49,12 +49,12 @@ signatures = tuples(integers(min_value=1, max_value=backend._bn_to_int(curve.ord
 
 # # utility
 def assert_kfrag_eq(k0, k1):
-    assert(all([ k0._id                   == k1._id
-               , k0._bn_key               == k1._bn_key
-               , k0._point_noninteractive == k1._point_noninteractive
-               , k0._point_commitment     == k1._point_commitment
-               , k0._point_xcoord         == k1._point_xcoord
-               , k0.signature             == k1.signature
+    assert(all([ k0.id                == k1.id
+               , k0._bn_key           == k1._bn_key
+               , k0._point_precursor  == k1._point_precursor
+               , k0._point_commitment == k1._point_commitment
+               , k0.signature_for_bob == k1.signature_for_bob
+               , k0.signature_for_proxy == k1.signature_for_proxy
                ]))
 
 def assert_cp_eq(c0, c1):
@@ -79,10 +79,11 @@ def test_bn_roundtrip(bn):
 def test_point_roundtrip(p, c):
     assert(p == Point.from_bytes(p.to_bytes(is_compressed=c)))
 
-@given(binary(min_size=bn_size, max_size=bn_size), bns, points, points, points, signatures)
+@given(binary(min_size=bn_size, max_size=bn_size), bns, points, points, signatures, signatures)
 @settings(max_examples=max_examples, timeout=unlimited)
-def test_kfrag_roundtrip(d, b0, p0, p1, p2, sig):
-    k = KFrag(d, b0, p0, p1, p2, sig)
+def test_kfrag_roundtrip(d, b0, p0, p1, sig_proxy, sig_bob):
+    k = KFrag(identifier=d, bn_key=b0, point_commitment=p0, point_precursor=p1,
+              signature_for_proxy=sig_proxy, signature_for_bob=sig_bob)
     assert_kfrag_eq(k, KFrag.from_bytes(k.to_bytes()))
 
 @given(points, points, bns)

@@ -128,32 +128,6 @@ def test_cfrag_with_missing_proof_cannot_be_attached(kfrags, prepared_capsule):
         capsule.attach_cfrag(cfrag)
 
 
-def test_inconsistent_cfrags(bobs_keys, kfrags, prepared_capsule):
-    receiving_privkey, receiving_pubkey = bobs_keys
-
-    capsule = prepared_capsule
-
-    cfrags = []
-    for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule)
-        cfrags.append(cfrag)
-
-    # For all cfrags that belong to the same policy, the values
-    # cfrag._point_noninteractive and cfrag._point_noninteractive
-    # must be the same. If we swap them, it shouldn't be possible
-    # to attach the cfrag to the capsule. Let's mangle the first CFrag
-    cfrags[0]._point_noninteractive, cfrags[0]._point_xcoord = cfrags[0]._point_xcoord, cfrags[0]._point_noninteractive
-    with pytest.raises(pre.UmbralCorrectnessError):
-        capsule.attach_cfrag(cfrags[0])
-
-    #  The remaining M cfrags should be fine.
-    for cfrag in cfrags[1:]:
-        capsule.attach_cfrag(cfrag)
-
-    # Just for fun, let's try to reconstruct the capsule with them:
-    capsule._reconstruct_shamirs_secret(receiving_privkey)
-
-
 def test_kfrags_signed_without_correctness_keys(alices_keys, bobs_keys, capsule):
     delegating_privkey, signing_privkey = alices_keys
     delegating_pubkey = delegating_privkey.get_pubkey()

@@ -71,7 +71,7 @@ def test_capsule_equality():
     activated_capsule = Capsule(params,
                                 point_e_prime=Point.gen_rand(),
                                 point_v_prime=Point.gen_rand(),
-                                point_noninteractive=Point.gen_rand())
+                                point_precursor=Point.gen_rand())
 
     assert activated_capsule != one_capsule
 

@@ -59,7 +59,6 @@ def test_activated_capsule_serialization(prepared_capsule, kfrags, bobs_keys):
         
         capsule.attach_cfrag(cfrag)
 
-
         capsule._reconstruct_shamirs_secret(receiving_privkey)
         rec_capsule_bytes = capsule.to_bytes()
 
@@ -74,7 +73,7 @@ def test_activated_capsule_serialization(prepared_capsule, kfrags, bobs_keys):
 
         assert new_rec_capsule._point_e_prime == capsule._point_e_prime
         assert new_rec_capsule._point_v_prime == capsule._point_v_prime
-        assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
+        assert new_rec_capsule._point_precursor == capsule._point_precursor
 
 
 def test_cannot_create_capsule_from_bogus_material(alices_keys):

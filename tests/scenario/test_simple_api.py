@@ -97,4 +97,4 @@ def test_simple_api(N, M, curve=default_curve()):
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
     test_simple_api(N, M, curve)
-    
+

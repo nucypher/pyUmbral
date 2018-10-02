@@ -44,8 +44,7 @@ def test_cannot_attach_cfrag_without_keys():
     cfrag = CapsuleFrag(point_e1=Point.gen_rand(),
                         point_v1=Point.gen_rand(),
                         kfrag_id=os.urandom(10),
-                        point_noninteractive=Point.gen_rand(),
-                        point_xcoord=Point.gen_rand(),
+                        point_precursor=Point.gen_rand(),
                         )
 
     with pytest.raises(TypeError):
@@ -67,8 +66,7 @@ def test_cannot_attach_cfrag_without_proof():
     cfrag = CapsuleFrag(point_e1=Point.gen_rand(),
                         point_v1=Point.gen_rand(),
                         kfrag_id=os.urandom(10),
-                        point_noninteractive=Point.gen_rand(),
-                        point_xcoord=Point.gen_rand(),
+                        point_precursor=Point.gen_rand(),
                         )
     key_details = capsule.set_correctness_keys(
         UmbralPrivateKey.gen_key().get_pubkey(),

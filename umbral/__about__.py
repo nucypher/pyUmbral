@@ -8,7 +8,7 @@ __title__ = "umbral"
 
 __url__ = "https://github.com/nucypher/pyUmbral"
 
-__summary__ = 'Nucypher\'s Umbral Proxy Re-Encryption Implementation',
+__summary__ = 'NuCypher\'s Umbral Proxy Re-Encryption Implementation',
 
 __version__ = "0.1.0-alpha.4"
 

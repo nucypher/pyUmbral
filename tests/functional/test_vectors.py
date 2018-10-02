@@ -188,7 +188,7 @@ def test_cfrags():
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
+        assert new_cfrag._point_precursor == cfrag._point_precursor
         assert new_cfrag._point_xcoord == cfrag._point_xcoord
         assert new_cfrag.proof is None
         assert cfrag.to_bytes() == new_cfrag.to_bytes()

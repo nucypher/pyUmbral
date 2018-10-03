@@ -399,10 +399,9 @@ def split_rekey(delegating_privkey: UmbralPrivateKey,
 def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True, 
               metadata: Optional[bytes] = None) -> CapsuleFrag:
 
-    if capsule is None or not capsule.verify():
+    if not isinstance(capsule, Capsule) or not capsule.verify():
         raise Capsule.NotValid
-
-    if kfrag is None or not kfrag.verify_for_capsule(capsule):
+    elif not isinstance(kfrag, KFrag) or not kfrag.verify_for_capsule(capsule):
         raise KFrag.NotValid
 
     rk = kfrag._bn_key
@@ -545,6 +544,10 @@ def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKe
 
     if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
         raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
+    elif not isinstance(capsule, Capsule) or not capsule.verify():
+        raise Capsule.NotValid
+    elif not isinstance(decrypting_key, UmbralPrivateKey):
+        raise TypeError("The decrypting key is not an UmbralPrivateKey")
 
     if capsule._attached_cfrags:
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.

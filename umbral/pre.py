@@ -21,8 +21,6 @@ import os
 import typing
 from typing import Dict, List, Optional, Tuple, Union
 
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
-
 from bytestring_splitter import BytestringSplitter
 from umbral._pre import prove_cfrag_correctness
 from umbral.config import default_curve
@@ -34,6 +32,7 @@ from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.signing import Signer
 from umbral.utils import poly_eval, lambda_coeff, kdf
+from umbral.curve import Curve
 
 
 class GenericUmbralError(Exception):
@@ -49,46 +48,34 @@ class UmbralCorrectnessError(GenericUmbralError):
 class Capsule(object):
     def __init__(self,
                  params: UmbralParameters,
-                 point_e: Optional[Point] = None,
-                 point_v: Optional[Point] = None,
-                 bn_sig: Optional[CurveBN] = None,
-                 point_e_prime: Optional[Point] = None,
-                 point_v_prime: Optional[Point] = None,
-                 point_precursor: Optional[Point] = None,
-                 delegating_pubkey: Optional[UmbralPublicKey] = None,
-                 receiving_pubkey: Optional[UmbralPublicKey] = None,
-                 verifying_pubkey: None = None
+                 point_e: Point,
+                 point_v: Point,
+                 bn_sig: CurveBN,
                  ) -> None:
 
         self.params = params
 
-        if isinstance(point_e, Point):
-            if not isinstance(point_v, Point) or not isinstance(bn_sig, CurveBN):
-                raise TypeError("Need point_e, point_v, and bn_sig to make a Capsule.")
-        elif isinstance(point_e_prime, Point):
-            if not isinstance(point_v_prime, Point) or not isinstance(point_precursor, Point):
-                raise TypeError("Need e_prime, v_prime, and point_noninteractive to make an activated Capsule.")
-        else:
-            raise TypeError(
-                "Need proper Points and/or CurveBNs to make a Capsule.  Pass either Alice's data or Bob's. " \
-                "Passing both is also fine.")
-
-        self._cfrag_correctness_keys = {"delegating": delegating_pubkey,
-                                        "receiving": receiving_pubkey,
-                                        "verifying": verifying_pubkey}
+        if not all((isinstance(point_e, Point),
+                    isinstance(point_v, Point),
+                    isinstance(bn_sig, CurveBN))):
+            raise TypeError("Need valid point_e, point_v, and bn_sig to make a Capsule.")
 
         self._point_e = point_e
         self._point_v = point_v
         self._bn_sig = bn_sig
 
-        self._point_e_prime = point_e_prime
-        self._point_v_prime = point_v_prime
-        self._point_precursor = point_precursor
-
         self._attached_cfrags = list()    # type: list
+        self._cfrag_correctness_keys = {
+            'delegating': None, 'receiving': None, 'verifying': None
+        }   # type: dict
+
+    class NotValid(ValueError):
+        """
+        raised if the capsule does not pass verification.
+        """
 
     @classmethod
-    def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None, activated: bool = False) -> int:
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a Capsule given the curve.
         If no curve is provided, it will use the default curve.
@@ -97,15 +84,7 @@ class Capsule(object):
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
 
-        if not activated:
-            return (bn_size * 1) + (point_size * 2)
-        else:
-            return (bn_size * 1) + (point_size * 5)
-
-    class NotValid(ValueError):
-        """
-        raised if the capsule does not pass verification.
-        """
+        return (bn_size * 1) + (point_size * 2)
 
     @classmethod
     def from_bytes(cls, capsule_bytes: bytes, params: UmbralParameters) -> 'Capsule':
@@ -116,25 +95,13 @@ class Capsule(object):
 
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
-
-        capsule_bytes_length = len(capsule_bytes)
-        expected_len_original = cls.expected_bytes_length(curve, activated=False)
-        expected_len_activated = cls.expected_bytes_length(curve, activated=True)
         arguments = {'curve': curve}
-        if capsule_bytes_length == expected_len_original:
+
+        if len(capsule_bytes) == cls.expected_bytes_length(curve):
             splitter = BytestringSplitter(
                 (Point, point_size, arguments),  # point_e
                 (Point, point_size, arguments),  # point_v
                 (CurveBN, bn_size, arguments)  # bn_sig
-            )
-        elif capsule_bytes_length == expected_len_activated:
-            splitter = BytestringSplitter(
-                (Point, point_size, arguments),  # point_e
-                (Point, point_size, arguments),  # point_v
-                (CurveBN, bn_size, arguments),  # bn_sig
-                (Point, point_size, arguments),  # point_e_prime
-                (Point, point_size, arguments),  # point_v_prime
-                (Point, point_size, arguments)  # point_precursor
             )
         else:
             raise ValueError("Byte string does not have a valid length for a Capsule")
@@ -176,25 +143,17 @@ class Capsule(object):
 
         return delegating_key_details, receiving_key_details, verifying_key_details
 
-    @typing.no_type_check
-    def _original_to_bytes(self) -> bytes:
-        return bytes().join(c.to_bytes() for c in self.original_components())
-
     def to_bytes(self) -> bytes:
         """
         Serialize the Capsule into a bytestring.
         """
-        bytes_representation = self._original_to_bytes()
-        if all(self.activated_components()):
-            bytes_representation += bytes().join(c.to_bytes() for c in self.activated_components())
-        return bytes_representation
+        return bytes().join(c.to_bytes() for c in self.components())
 
     def verify(self) -> bool:
 
         g = self.params.g
-        e = self._point_e
-        v = self._point_v
-        s = self._bn_sig
+        e, v, s = self.components()
+
         h = CurveBN.hash(e, v, params=self.params)
 
         result = s * g == v + (h * e)      # type: bool
@@ -207,11 +166,9 @@ class Capsule(object):
             error_msg = "CFrag is not correct and cannot be attached to the Capsule"
             raise UmbralCorrectnessError(error_msg, [cfrag])
 
-    def original_components(self) -> Tuple[Point, Point, CurveBN]:
+    def components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig
 
-    def activated_components(self) -> Union[Tuple[None, None, None], Tuple[Point, Point, Point]]:
-        return self._point_e_prime, self._point_v_prime, self._point_precursor
 
     def _reconstruct_shamirs_secret(self, priv_b: UmbralPrivateKey) -> None:
         params = self.params
@@ -255,32 +212,14 @@ class Capsule(object):
 
     def __eq__(self, other: 'Capsule') -> bool:
         """
-        If both Capsules are activated, we compare only the activated components.
-        Otherwise, we compare only original components.
         Each component is compared to its counterpart in constant time per the __eq__ of Point and CurveBN.
         """
-        if all(self.activated_components() + other.activated_components()):
-            activated_match = self.activated_components() == other.activated_components()
-            return activated_match
-        elif all(self.original_components() + other.original_components()):
-            original_match = self.original_components() == other.original_components()
-            return original_match
-        else:
-            # This is not constant time obviously, but it's hard to imagine how this is valuable as
-            # an attacker already knows about her own Capsule.  It's possible that a Bob, having
-            # activated a Capsule, will make it available for comparison via an API amidst other
-            # (dormant) Capsules.  Then an attacker can, by alternating between activated and dormant
-            # Capsules, determine if a given Capsule is activated.  Do we care about this?
-            # Again, it's hard to imagine why.
-            return False
+        return self.components() == other.components() and all(self.components())
 
     @typing.no_type_check
     def __hash__(self) -> int:
-        # We only ever want to store in a hash table based on original components;
-        # A Capsule that is part of a dict needs to continue to be lookup-able even
-        # after activation.
-        # Note: In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
-        component_bytes = tuple(component.to_bytes() for component in self.original_components())
+        # In case this isn't obvious, don't use this as a secure hash.  Use BLAKE2b or something.
+        component_bytes = tuple(component.to_bytes() for component in self.components())
         return hash(component_bytes)
 
     def __len__(self) -> int:
@@ -553,13 +492,11 @@ def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKe
         # Since there are cfrags attached, we assume this is Bob opening the Capsule.
         # (i.e., this is a re-encrypted capsule)
         encapsulated_key = _open_capsule(capsule, decrypting_key, check_proof=check_proof)
-        capsule_bytes = capsule._original_to_bytes()
     else:
         # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
         # (i.e., this is an original capsule)
         encapsulated_key = _decapsulate_original(decrypting_key, capsule)
-        capsule_bytes = bytes(capsule)
 
     dem = UmbralDEM(encapsulated_key)
-    cleartext = dem.decrypt(ciphertext, authenticated_data=capsule_bytes)
+    cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
     return cleartext

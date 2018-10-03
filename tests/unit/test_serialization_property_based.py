@@ -92,13 +92,6 @@ def test_capsule_roundtrip_0(p0, p1, b):
     c = Capsule(params=params, point_e=p0, point_v=p1, bn_sig=b)
     assert(c == Capsule.from_bytes(c.to_bytes(), params=params))
 
-@given(points, points, bns, points, points, points)
-@settings(max_examples=max_examples, timeout=unlimited)
-def test_capsule_roundtrip_1(p0, p1, b, p2, p3, p4):
-    c = Capsule(params=params, point_e=p0, point_v=p1, bn_sig=b, 
-                point_e_prime=p2, point_v_prime=p3, point_noninteractive=p4)
-    assert(c == Capsule.from_bytes(c.to_bytes(), params))
-
 @given(points, points, points, points, bns, signatures)
 @settings(max_examples=max_examples, timeout=unlimited)
 def test_cp_roundtrip(p0, p1, p2, p3, b0, sig):

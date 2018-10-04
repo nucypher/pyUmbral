@@ -64,7 +64,7 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
     receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
 
     signer = Signer(signing_privkey)
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+    kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, M, N, signer)
     kfrags_bytes = tuple(map(bytes, kfrags))
 
     del kfrags

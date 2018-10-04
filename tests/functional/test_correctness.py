@@ -135,13 +135,13 @@ def test_kfrags_signed_without_correctness_keys(alices_keys, bobs_keys, capsule)
 
     receiving_privkey, receiving_pubkey = bobs_keys
 
-    kfrags = pre.split_rekey(delegating_privkey=delegating_privkey,
-                             signer=Signer(signing_privkey),
-                             receiving_pubkey=receiving_pubkey,
-                             threshold=6,
-                             N=10,
-                             sign_delegating_key=False,
-                             sign_receiving_key=False)
+    kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
+                                 signer=Signer(signing_privkey),
+                                 receiving_pubkey=receiving_pubkey,
+                                 threshold=6,
+                                 N=10,
+                                 sign_delegating_key=False,
+                                 sign_receiving_key=False)
 
     for kfrag in kfrags:
         assert kfrag.verify(signing_pubkey=signing_privkey.get_pubkey(),

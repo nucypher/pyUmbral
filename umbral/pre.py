@@ -170,43 +170,6 @@ class Capsule(object):
         return self._point_e, self._point_v, self._bn_sig
 
 
-    def _reconstruct_shamirs_secret(self, priv_b: UmbralPrivateKey) -> None:
-        params = self.params
-
-        pub_b = priv_b.get_pubkey()
-        priv_b = priv_b.bn_key
-
-        precursor = self._attached_cfrags[0]._point_precursor
-        dh_point = priv_b * precursor
-
-        if len(self._attached_cfrags) > 1:
-            xs = [CurveBN.hash(precursor,
-                               pub_b,
-                               dh_point,
-                               b"X-COORDINATE",
-                               cfrag._kfrag_id,
-                               params=params)
-                  for cfrag in self._attached_cfrags]
-
-            e_summands = list()
-            v_summands = list()
-            for cfrag, x in zip(self._attached_cfrags, xs):
-                if precursor != cfrag._point_precursor:
-                    raise ValueError("Attached CFrags are not pairwise consistent")
-
-                lambda_i = lambda_coeff(x, xs)
-                e_summands.append(lambda_i * cfrag._point_e1)
-                v_summands.append(lambda_i * cfrag._point_v1)
-
-            self._point_e_prime = sum(e_summands[1:], e_summands[0])
-            self._point_v_prime = sum(v_summands[1:], v_summands[0])
-
-        else:
-            self._point_e_prime = self._attached_cfrags[0]._point_e1
-            self._point_v_prime = self._attached_cfrags[0]._point_v1
-
-        self._point_precursor = precursor
-
     def __bytes__(self) -> bytes:
         return self.to_bytes()
 
@@ -397,14 +360,39 @@ def _decapsulate_original(priv_key: UmbralPrivateKey,
 def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsule,
                              key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric encapsulated_key"""
+
     params = capsule.params
 
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    precursor = capsule._point_precursor
-
+    precursor = capsule._attached_cfrags[0]._point_precursor
     dh_point = priv_key * precursor
+
+    # Combination of CFrags via Shamir's Secret Sharing reconstruction
+    if len(capsule._attached_cfrags) > 1:
+        xs = [CurveBN.hash(precursor,
+                           pub_key,
+                           dh_point,
+                           b"X-COORDINATE",
+                           cfrag._kfrag_id,
+                           params=params)
+              for cfrag in capsule._attached_cfrags]
+
+        e_summands, v_summands = list(), list()
+        for cfrag, x in zip(capsule._attached_cfrags, xs):
+            if precursor != cfrag._point_precursor:
+                raise ValueError("Attached CFrags are not pairwise consistent")
+
+            lambda_i = lambda_coeff(x, xs)
+            e_summands.append(lambda_i * cfrag._point_e1)
+            v_summands.append(lambda_i * cfrag._point_v1)
+
+        e_prime = sum(e_summands[1:], e_summands[0])
+        v_prime = sum(v_summands[1:], v_summands[0])
+    else:
+        e_prime = capsule._attached_cfrags[0]._point_e1
+        v_prime = capsule._attached_cfrags[0]._point_v1
 
     # Secret value 'd' allows to make Umbral non-interactive
     d = CurveBN.hash(precursor,
@@ -413,16 +401,12 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
                      b"NON-INTERACTIVE",
                      params=params)
 
-    inv_d = ~d
-    e = capsule._point_e
-    v = capsule._point_v
-    s = capsule._bn_sig
+    e, v, s = capsule.components()
     h = CurveBN.hash(e, v, params=params)
-    e_prime = capsule._point_e_prime
-    v_prime = capsule._point_v_prime
+
     orig_pub_key = capsule.get_correctness_keys()['delegating'].point_key
 
-    if not (s * inv_d) * orig_pub_key == (h * e_prime) + v_prime:
+    if not (s / d) * orig_pub_key == (h * e_prime) + v_prime:
         raise GenericUmbralError()
 
     shared_key = d * (e_prime + v_prime)
@@ -465,8 +449,6 @@ def _open_capsule(capsule: Capsule, receiving_privkey: UmbralPrivateKey,
         if offending_cfrags:
             error_msg = "Decryption error: Some CFrags are not correct"
             raise UmbralCorrectnessError(error_msg, offending_cfrags)
-
-    capsule._reconstruct_shamirs_secret(receiving_privkey)
 
     key = _decapsulate_reencrypted(receiving_privkey, capsule)
     return key

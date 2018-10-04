@@ -53,7 +53,7 @@ receiving_key = receiving_privkey.get_pubkey()
 
 signer = Signer(signing_privkey)
 
-kfrags = pre.split_rekey(delegating_privkey, signer, receiving_key, 6, 10)
+kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_key, 6, 10)
 
 plain_data = b'peace at dawn'
 

@@ -192,20 +192,20 @@ class Capsule(object):
         return "{}:{}".format(self.__class__.__name__, hex(int(self._bn_sig))[2:17])
 
 
-def split_rekey(delegating_privkey: UmbralPrivateKey,
-                signer: Signer,
-                receiving_pubkey: UmbralPublicKey,
-                threshold: int,
-                N: int,
-                sign_delegating_key : Optional[bool] = True,
-                sign_receiving_key : Optional[bool] = True,
-               ) -> List[KFrag]:
+def generate_kfrags(delegating_privkey: UmbralPrivateKey,
+                    receiving_pubkey: UmbralPublicKey,
+                    threshold: int,
+                    N: int,
+                    signer: Signer,
+                    sign_delegating_key: Optional[bool] = True,
+                    sign_receiving_key: Optional[bool] = True,
+                    ) -> List[KFrag]:
     """
     Creates a re-encryption key from Alice's delegating public key to Bob's
     receiving public key, and splits it in KFrags, using Shamir's Secret Sharing.
     Requires a threshold number of KFrags out of N.
 
-    Returns a dictionary which includes the list of N KFrags
+    Returns a list of N KFrags
     """
 
     if threshold <= 0 or threshold > N:

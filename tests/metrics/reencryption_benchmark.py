@@ -93,7 +93,7 @@ def test_split_rekey_performance(benchmark, m: int, n: int) -> None:
         return args, kwargs
 
     print("\nBenchmarking {function} with M:{M} of N:{N}...".format(function="pre.split_rekey", M=m, N=n))
-    benchmark.pedantic(pre.split_rekey, setup=__setup, rounds=1000)
+    benchmark.pedantic(pre.generate_kfrags, setup=__setup, rounds=1000)
     assert True  # ensure function finishes and succeeds.
 
 
@@ -111,7 +111,7 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int) -> None
 
     def __setup():
         delegating_privkey, signer, receiving_pubkey, ciphertext, capsule = __standard_encryption_api()
-        kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, m, n)
+        kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
         one_kfrag, *remaining_kfrags = kfrags
         args, kwargs = tuple(), {"kfrag": one_kfrag, "capsule": capsule},
         return args, kwargs
@@ -133,7 +133,7 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int) -> None
 def test_single_frag_reencryption_performance(benchmark, m: int, n: int) -> None:
 
     delegating_privkey, signer, receiving_pubkey, ciphertext, capsule = __standard_encryption_api()
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, m, n)
+    kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
     one_kfrag, *remaining_kfrags = kfrags
     args, kwargs = tuple(), {"kfrag": one_kfrag, "capsule": capsule},
 

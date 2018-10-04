@@ -64,7 +64,7 @@ def test_simple_api(N, M, curve=default_curve()):
     assert cleartext == plain_data
 
     # Split Re-Encryption Key Generation (aka Delegation)
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+    kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, M, N, signer)
 
 
     # Capsule preparation (necessary before re-encryotion and activation)

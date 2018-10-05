@@ -54,6 +54,10 @@ other_supported_curves = (
     SECP256R1
 )
 
+kfrag_signing_modes = (
+    (True, True), (True, False), (False, True), (False, False)
+)
+
 @pytest.fixture(scope='function')
 def alices_keys():
     delegating_priv = keys.UmbralPrivateKey.gen_key()

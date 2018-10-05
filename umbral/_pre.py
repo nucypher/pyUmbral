@@ -107,14 +107,6 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     precursor = cfrag._point_precursor
     kfrag_id = cfrag._kfrag_id
 
-    pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
-
-    if delegating_pubkey is None:
-        delegating_pubkey = b'\x00' * pubkey_size
-
-    if receiving_pubkey is None:
-        receiving_pubkey = b'\x00' * pubkey_size
-
     validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
 
     kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
@@ -153,21 +145,18 @@ def verify_kfrag(kfrag: 'KFrag',
 
     kfrag_id = kfrag.id
     key = kfrag._bn_key
-    u1 = kfrag._point_commitment
+    commitment = kfrag._point_commitment
     precursor = kfrag._point_precursor
 
-    #  We check that the commitment u1 is well-formed
-    correct_commitment = u1 == key * u
+    #  We check that the commitment is well-formed
+    correct_commitment = commitment == key * u
+    validity_input = [kfrag_id, commitment, precursor, (kfrag.keys_in_signature,)]
 
-    pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
+    if kfrag.delegating_key_in_signature():
+        validity_input.append(delegating_pubkey)
 
-    if delegating_pubkey is None:
-        delegating_pubkey = b'\x00' * pubkey_size
-
-    if receiving_pubkey is None:
-        receiving_pubkey = b'\x00' * pubkey_size
-
-    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
+    if kfrag.receiving_key_in_signature():
+        validity_input.append(receiving_pubkey)
 
     kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
     valid_kfrag_signature = kfrag.signature_for_proxy.verify(kfrag_validity_message, signing_pubkey)

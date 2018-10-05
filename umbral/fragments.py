@@ -31,6 +31,12 @@ from umbral.point import Point
 from umbral.signing import Signature
 from umbral.params import UmbralParameters
 
+#TODO: Use ConstantSorrow for this
+NO_KEY = 0x00
+DELEGATING_ONLY = 0x01
+RECEIVING_ONLY = 0x02
+DELEGATING_AND_RECEIVING = 0x03
+
 
 class KFrag(object):
 
@@ -41,6 +47,7 @@ class KFrag(object):
                  point_precursor: Point,
                  signature_for_proxy: Signature,
                  signature_for_bob: Signature,
+                 keys_in_signature=DELEGATING_AND_RECEIVING,
                  ) -> None:
         self.id = identifier
         self._bn_key = bn_key
@@ -48,6 +55,7 @@ class KFrag(object):
         self._point_precursor = point_precursor
         self.signature_for_proxy = signature_for_proxy
         self.signature_for_bob = signature_for_bob
+        self.keys_in_signature = keys_in_signature
 
     class NotValid(ValueError):
         """
@@ -70,8 +78,9 @@ class KFrag(object):
         # self._point_precursor --> 1 point_size
         # self.signature_for_proxy --> 2 bn_size
         # self.signature_for_bob --> 2 bn_size
+        # self.keys_in_signature --> 1
 
-        return bn_size * 6 + point_size * 2
+        return bn_size * 6 + point_size * 2 + 1
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'KFrag':
@@ -90,12 +99,19 @@ class KFrag(object):
             (CurveBN, bn_size, arguments),  # bn_key
             (Point, point_size, arguments),  # point_commitment
             (Point, point_size, arguments),  # point_precursor
+            (int, 1, {'byteorder': 'big'}),  # keys_in_signature
             (Signature, signature_size, arguments),  # signature_for_proxy
             (Signature, signature_size, arguments),  # signature_for_bob
         )
         components = splitter(data)
 
-        return cls(*components)
+        return cls(identifier=components[0],
+                   bn_key=components[1],
+                   point_commitment=components[2],
+                   point_precursor=components[3],
+                   keys_in_signature=components[4],
+                   signature_for_proxy=components[5],
+                   signature_for_bob=components[6])
 
     def to_bytes(self) -> bytes:
         """
@@ -106,9 +122,10 @@ class KFrag(object):
         precursor = self._point_precursor.to_bytes()
         signature_for_proxy = bytes(self.signature_for_proxy)
         signature_for_bob = bytes(self.signature_for_bob)
+        mode = self.keys_in_signature.to_bytes(1, 'big')
 
         return self.id + key + commitment + precursor \
-             + signature_for_proxy + signature_for_bob
+             + mode + signature_for_proxy + signature_for_bob
 
     def verify(self,
                signing_pubkey: UmbralPublicKey,
@@ -131,6 +148,14 @@ class KFrag(object):
                            signing_pubkey=correctness_keys["verifying"],
                            delegating_pubkey=correctness_keys["delegating"],
                            receiving_pubkey=correctness_keys["receiving"])
+
+    def delegating_key_in_signature(self):
+        return self.keys_in_signature == DELEGATING_ONLY or \
+               self.keys_in_signature == DELEGATING_AND_RECEIVING
+
+    def receiving_key_in_signature(self):
+        return self.keys_in_signature == RECEIVING_ONLY or \
+               self.keys_in_signature == DELEGATING_AND_RECEIVING
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()

@@ -37,7 +37,7 @@ def test_cfrag_serialization_with_proof_and_metadata(prepared_capsule, kfrags):
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
+        assert new_cfrag._point_precursor == cfrag._point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is not None
@@ -68,7 +68,7 @@ def test_cfrag_serialization_with_proof_but_no_metadata(prepared_capsule, kfrags
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
+        assert new_cfrag._point_precursor == cfrag._point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is not None
@@ -95,7 +95,7 @@ def test_cfrag_serialization_no_proof_no_metadata(prepared_capsule, kfrags):
         assert new_cfrag._point_e1 == cfrag._point_e1
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_noninteractive == cfrag._point_noninteractive
+        assert new_cfrag._point_precursor == cfrag._point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is None

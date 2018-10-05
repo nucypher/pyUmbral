@@ -49,7 +49,7 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[KFrag], Capsule]:
     plain_data = os.urandom(32)
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, m, n)
+    kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
 
     capsule.set_correctness_keys(delegating=delegating_pubkey,
                                  receiving=receiving_pubkey,

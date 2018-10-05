@@ -20,7 +20,6 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 from umbral.fragments import KFrag
 
 
-
 def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
     
     delegating_privkey, signing_privkey = alices_keys
@@ -31,11 +30,13 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
         assert len(kfrag_bytes) == KFrag.expected_bytes_length()
 
         new_kfrag = KFrag.from_bytes(kfrag_bytes)
-        assert new_kfrag._id == kfrag._id
+        assert new_kfrag.id == kfrag.id
         assert new_kfrag._bn_key == kfrag._bn_key
-        assert new_kfrag._point_noninteractive == kfrag._point_noninteractive
+        assert new_kfrag._point_precursor == kfrag._point_precursor
         assert new_kfrag._point_commitment == kfrag._point_commitment
-        assert new_kfrag._point_xcoord == kfrag._point_xcoord
+        assert new_kfrag.keys_in_signature == kfrag.keys_in_signature
+        assert new_kfrag.signature_for_proxy == kfrag.signature_for_proxy
+        assert new_kfrag.signature_for_bob == kfrag.signature_for_bob
 
         assert new_kfrag.verify(signing_pubkey=signing_privkey.get_pubkey(),
                                 delegating_pubkey=delegating_privkey.get_pubkey(),
@@ -43,22 +44,23 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
 
         assert new_kfrag == kfrag
 
+
 def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
     for kfrag in kfrags:
         assert kfrag.verify_for_capsule(prepared_capsule)
 
         # If we alter some element, the verification fails
-        previous_id, kfrag._id = kfrag._id, bytes(32)
+        previous_id, kfrag.id = kfrag.id, bytes(32)
         assert not kfrag.verify_for_capsule(prepared_capsule)    
 
-        # Let's restore the KFrag, and alter the re-encryption key instead
-        kfrag._id = previous_id
+        # Let's restore the KFrag, and alter the re-encryption key instead
+        kfrag.id = previous_id
         kfrag._bn_key += kfrag._bn_key
         assert not kfrag.verify_for_capsule(prepared_capsule)    
         
 
 def test_kfrag_as_dict_key(kfrags):
-    dict_with_kfrags_as_keys = {}
+    dict_with_kfrags_as_keys = dict()
     dict_with_kfrags_as_keys[kfrags[0]] = "Some llamas.  Definitely some llamas."
     dict_with_kfrags_as_keys[kfrags[1]] = "No llamas here.  Definitely not."
 

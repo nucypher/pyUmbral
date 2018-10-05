@@ -37,5 +37,9 @@ def test_wrong_N_M_in_split_rekey(N, M, alices_keys, bobs_keys):
     _receiving_privkey, receiving_pubkey = bobs_keys
 
     with pytest.raises(ValueError):
-        _kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+        _kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
+                                      signer=signer,
+                                      receiving_pubkey=receiving_pubkey,
+                                      threshold=M,
+                                      N=N)
 

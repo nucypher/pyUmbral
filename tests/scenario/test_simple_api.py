@@ -64,7 +64,7 @@ def test_simple_api(N, M, curve=default_curve()):
     assert cleartext == plain_data
 
     # Split Re-Encryption Key Generation (aka Delegation)
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+    kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, M, N, signer)
 
 
     # Capsule preparation (necessary before re-encryotion and activation)
@@ -76,7 +76,7 @@ def test_simple_api(N, M, curve=default_curve()):
     cfrags = list()
     for kfrag in kfrags[:M]:
         # Ursula checks that the received kfrag is valid
-        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey)
+        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey, params)
 
         # Re-encryption by an Ursula
         cfrag = pre.reencrypt(kfrag, capsule)
@@ -97,4 +97,4 @@ def test_simple_api(N, M, curve=default_curve()):
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api_on_multiple_curves(N, M, curve):
     test_simple_api(N, M, curve)
-    
+

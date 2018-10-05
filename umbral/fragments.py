@@ -24,28 +24,44 @@ from bytestring_splitter import BytestringSplitter
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
-from umbral.config import default_curve
+from umbral.config import default_curve, default_params
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
 from umbral.point import Point
 from umbral.signing import Signature
+from umbral.params import UmbralParameters
+
+from constant_sorrow.constants import NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
+
+NO_KEY(b'\x00')
+DELEGATING_ONLY(b'\x01')
+RECEIVING_ONLY(b'\x02')
+DELEGATING_AND_RECEIVING(b'\x03')
 
 
 class KFrag(object):
+
+    def __init__(self,
+                 identifier: bytes,
+                 bn_key: CurveBN,
+                 point_commitment: Point,
+                 point_precursor: Point,
+                 signature_for_proxy: Signature,
+                 signature_for_bob: Signature,
+                 keys_in_signature=DELEGATING_AND_RECEIVING,
+                 ) -> None:
+        self.id = identifier
+        self._bn_key = bn_key
+        self._point_commitment = point_commitment
+        self._point_precursor = point_precursor
+        self.signature_for_proxy = signature_for_proxy
+        self.signature_for_bob = signature_for_bob
+        self.keys_in_signature = keys_in_signature
 
     class NotValid(ValueError):
         """
         raised if the KFrag does not pass verification.
         """
-
-    def __init__(self, id: bytes, bn_key: CurveBN, point_noninteractive: Point,
-                 point_commitment: Point, point_xcoord: Point, signature: Signature) -> None:
-        self._id = id
-        self._bn_key = bn_key
-        self._point_noninteractive = point_noninteractive
-        self._point_commitment = point_commitment
-        self._point_xcoord = point_xcoord
-        self.signature = signature
 
     @classmethod
     def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None) -> int:
@@ -57,7 +73,15 @@ class KFrag(object):
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
 
-        return (bn_size * 4) + (point_size * 3)
+        # self.id --> 1 bn_size
+        # self._bn_key --> 1 bn_size
+        # self._point_commitment --> 1 point_size
+        # self._point_precursor --> 1 point_size
+        # self.signature_for_proxy --> 2 bn_size
+        # self.signature_for_bob --> 2 bn_size
+        # self.keys_in_signature --> 1
+
+        return bn_size * 6 + point_size * 2 + 1
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'KFrag':
@@ -68,45 +92,71 @@ class KFrag(object):
 
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
+        signature_size = Signature.expected_bytes_length(curve)
         arguments = {'curve': curve}
 
         splitter = BytestringSplitter(
             bn_size,  # id
             (CurveBN, bn_size, arguments),  # bn_key
-            (Point, point_size, arguments),  # point_noninteractive
             (Point, point_size, arguments),  # point_commitment
-            (Point, point_size, arguments),  # point_xcoord
-            (Signature, Signature.expected_bytes_length(curve), arguments)
+            (Point, point_size, arguments),  # point_precursor
+            1,  # keys_in_signature
+            (Signature, signature_size, arguments),  # signature_for_proxy
+            (Signature, signature_size, arguments),  # signature_for_bob
         )
         components = splitter(data)
 
-        return cls(*components)
+        return cls(identifier=components[0],
+                   bn_key=components[1],
+                   point_commitment=components[2],
+                   point_precursor=components[3],
+                   keys_in_signature=components[4],
+                   signature_for_proxy=components[5],
+                   signature_for_bob=components[6])
 
     def to_bytes(self) -> bytes:
         """
         Serialize the KFrag into a bytestring.
         """
         key = self._bn_key.to_bytes()
-        ni = self._point_noninteractive.to_bytes()
         commitment = self._point_commitment.to_bytes()
-        xcoord = self._point_xcoord.to_bytes()
-        signature = bytes(self.signature)
+        precursor = self._point_precursor.to_bytes()
+        signature_for_proxy = bytes(self.signature_for_proxy)
+        signature_for_bob = bytes(self.signature_for_bob)
+        mode = bytes(self.keys_in_signature)
 
-        return self._id + key + ni + commitment + xcoord + signature
+        return self.id + key + commitment + precursor \
+             + mode + signature_for_proxy + signature_for_bob
 
     def verify(self,
                signing_pubkey: UmbralPublicKey,
                delegating_pubkey: UmbralPublicKey,
-               receiving_pubkey: UmbralPublicKey) -> bool:
-        return verify_kfrag(self, delegating_pubkey, signing_pubkey, receiving_pubkey)
+               receiving_pubkey: UmbralPublicKey,
+               params: Optional[UmbralParameters] = None,
+               ) -> bool:
+        if params is None:
+            params = default_params()
+        return verify_kfrag(kfrag=self,
+                            params=params,
+                            delegating_pubkey=delegating_pubkey,
+                            signing_pubkey=signing_pubkey,
+                            receiving_pubkey=receiving_pubkey)
 
-    def verify_for_capsule(self, capsule : 'Capsule') -> bool:
-
+    def verify_for_capsule(self, capsule: 'Capsule') -> bool:
         correctness_keys = capsule.get_correctness_keys()
 
-        return self.verify(signing_pubkey=correctness_keys["verifying"],
+        return self.verify(params=capsule.params,
+                           signing_pubkey=correctness_keys["verifying"],
                            delegating_pubkey=correctness_keys["delegating"],
                            receiving_pubkey=correctness_keys["receiving"])
+
+    def delegating_key_in_signature(self):
+        return self.keys_in_signature == DELEGATING_ONLY or \
+               self.keys_in_signature == DELEGATING_AND_RECEIVING
+
+    def receiving_key_in_signature(self):
+        return self.keys_in_signature == RECEIVING_ONLY or \
+               self.keys_in_signature == DELEGATING_AND_RECEIVING
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
@@ -115,15 +165,15 @@ class KFrag(object):
         return hmac.compare_digest(bytes(self), bytes(other))
 
     def __hash__(self):
-        return hash(bytes(self._id))
+        return hash(bytes(self.id))
 
     def __repr__(self):
-        return "{}:{}".format(self.__class__.__name__, self._id.hex()[:15])
+        return "{}:{}".format(self.__class__.__name__, self.id.hex()[:15])
 
 
 class CorrectnessProof(object):
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
-                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: bytes,
+                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: Signature,
                  metadata: Optional[bytes] = None) -> None:
         self._point_e2 = point_e2
         self._point_v2 = point_v2
@@ -196,14 +246,12 @@ class CapsuleFrag(object):
                  point_e1: Point,
                  point_v1: Point,
                  kfrag_id: bytes,
-                 point_noninteractive: Point,
-                 point_xcoord: Point,
+                 point_precursor: Point,
                  proof: Optional[CorrectnessProof] = None) -> None:
         self._point_e1 = point_e1
         self._point_v1 = point_v1
         self._kfrag_id = kfrag_id
-        self._point_noninteractive = point_noninteractive
-        self._point_xcoord = point_xcoord
+        self._point_precursor = point_precursor
         self.proof = proof
 
     class NoProofProvided(TypeError):
@@ -222,7 +270,7 @@ class CapsuleFrag(object):
         bn_size = CurveBN.expected_bytes_length(curve)
         point_size = Point.expected_bytes_length(curve)
 
-        return (bn_size * 1) + (point_size * 4)
+        return (bn_size * 1) + (point_size * 3)
 
     @classmethod
     def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'CapsuleFrag':
@@ -239,8 +287,7 @@ class CapsuleFrag(object):
             (Point, point_size, arguments),  # point_e1
             (Point, point_size, arguments),  # point_v1
             bn_size,  # kfrag_id
-            (Point, point_size, arguments),  # point_noninteractive
-            (Point, point_size, arguments)  # point_xcoord
+            (Point, point_size, arguments),  # point_precursor
         )
         components = splitter(data, return_remainder=True)
 
@@ -254,10 +301,9 @@ class CapsuleFrag(object):
         """
         e1 = self._point_e1.to_bytes()
         v1 = self._point_v1.to_bytes()
-        ni = self._point_noninteractive.to_bytes()
-        xcoord = self._point_xcoord.to_bytes()
+        precursor = self._point_precursor.to_bytes()
 
-        serialized_cfrag = e1 + v1 + self._kfrag_id + ni + xcoord
+        serialized_cfrag = e1 + v1 + self._kfrag_id + precursor
 
         if self.proof is not None:
             serialized_cfrag += self.proof.to_bytes()
@@ -267,8 +313,15 @@ class CapsuleFrag(object):
     def verify_correctness(self, capsule: 'Capsule') -> bool:
         return assess_cfrag_correctness(self, capsule)
 
-    def attach_proof(self, e2: Point, v2: Point, u1: Point, u2: Point, z3: CurveBN, kfrag_signature: Signature,
+    def attach_proof(self,
+                     e2: Point,
+                     v2: Point,
+                     u1: Point,
+                     u2: Point,
+                     z3: CurveBN,
+                     kfrag_signature: Signature,
                      metadata: Optional[bytes]) -> None:
+
         self.proof = CorrectnessProof(point_e2=e2,
                                       point_v2=v2,
                                       point_kfrag_commitment=u1,

@@ -34,6 +34,9 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
         assert new_kfrag._bn_key == kfrag._bn_key
         assert new_kfrag._point_precursor == kfrag._point_precursor
         assert new_kfrag._point_commitment == kfrag._point_commitment
+        assert new_kfrag.keys_in_signature == kfrag.keys_in_signature
+        assert new_kfrag.signature_for_proxy == kfrag.signature_for_proxy
+        assert new_kfrag.signature_for_bob == kfrag.signature_for_bob
 
         assert new_kfrag.verify(signing_pubkey=signing_privkey.get_pubkey(),
                                 delegating_pubkey=delegating_privkey.get_pubkey(),
@@ -47,11 +50,11 @@ def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
         assert kfrag.verify_for_capsule(prepared_capsule)
 
         # If we alter some element, the verification fails
-        previous_id, kfrag._id = kfrag.id, bytes(32)
+        previous_id, kfrag.id = kfrag.id, bytes(32)
         assert not kfrag.verify_for_capsule(prepared_capsule)    
 
         # Let's restore the KFrag, and alter the re-encryption key instead
-        kfrag._id = previous_id
+        kfrag.id = previous_id
         kfrag._bn_key += kfrag._bn_key
         assert not kfrag.verify_for_capsule(prepared_capsule)    
         

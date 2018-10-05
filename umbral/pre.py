@@ -26,7 +26,8 @@ from umbral._pre import prove_cfrag_correctness
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
-from umbral.fragments import KFrag, CapsuleFrag
+from umbral.fragments import (KFrag, CapsuleFrag, NO_KEY, DELEGATING_ONLY,
+                              RECEIVING_ONLY, DELEGATING_AND_RECEIVING)
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
@@ -273,15 +274,22 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         validity_message_for_bob = bytes().join(bytes(item) for item in validity_message_for_bob)
         signature_for_bob = signer(validity_message_for_bob)
 
-        pubkey_size = UmbralPublicKey.expected_bytes_length(curve=params.curve)
-        blank_pubkey = b'\x00' * pubkey_size
+        if sign_delegating_key and sign_receiving_key:
+            mode = DELEGATING_AND_RECEIVING
+        elif sign_delegating_key:
+            mode = DELEGATING_ONLY
+        elif sign_receiving_key:
+            mode = RECEIVING_ONLY
+        else:
+            mode = NO_KEY
 
-        validity_message_for_proxy = (kfrag_id,
-                                      delegating_pubkey if sign_delegating_key else blank_pubkey,
-                                      receiving_pubkey if sign_receiving_key else blank_pubkey,
-                                      commitment,
-                                      precursor,
-                                      )
+        validity_message_for_proxy = [kfrag_id, commitment, precursor, (mode,)]
+
+        if sign_delegating_key:
+            validity_message_for_proxy.append(delegating_pubkey)
+        if sign_receiving_key:
+            validity_message_for_proxy.append(receiving_pubkey)
+
         validity_message_for_proxy = bytes().join(bytes(item) for item in validity_message_for_proxy)
         signature_for_proxy = signer(validity_message_for_proxy)
 
@@ -291,6 +299,7 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
                       point_precursor=precursor,
                       signature_for_proxy=signature_for_proxy,
                       signature_for_bob=signature_for_bob,
+                      keys_in_signature=mode,
                       )
 
         kfrags.append(kfrag)

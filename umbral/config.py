@@ -45,7 +45,7 @@ class _CONFIG:
         return cls.__params
 
     @classmethod
-    def curve(cls) -> Type[Curve]:
+    def curve(cls) -> Curve:
         if not cls.__curve:
             cls.__set_curve_by_default()
         return cls.__curve
@@ -67,7 +67,7 @@ def set_default_curve(curve: Optional[Curve] = None) -> None:
     return _CONFIG.set_curve(curve)
 
 
-def default_curve() -> Type[Curve]:
+def default_curve() -> Curve:
     return _CONFIG.curve()
 
 

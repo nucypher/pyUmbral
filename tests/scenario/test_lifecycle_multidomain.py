@@ -18,8 +18,6 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pytest
-from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import pre
 from umbral.fragments import KFrag, CapsuleFrag

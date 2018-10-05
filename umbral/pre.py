@@ -35,7 +35,6 @@ from umbral.signing import Signer
 from umbral.utils import poly_eval, lambda_coeff, kdf
 from umbral.curve import Curve
 
-
 class GenericUmbralError(Exception):
     pass
 
@@ -169,7 +168,6 @@ class Capsule(object):
 
     def components(self) -> Tuple[Point, Point, CurveBN]:
         return self._point_e, self._point_v, self._bn_sig
-
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()

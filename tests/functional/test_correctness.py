@@ -22,6 +22,7 @@ import pytest
 from umbral import pre
 from umbral.point import Point
 from umbral.signing import Signer
+from umbral.fragments import CapsuleFrag
 
 
 def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
@@ -120,7 +121,7 @@ def test_cfrag_with_missing_proof_cannot_be_attached(kfrags, prepared_capsule):
     # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar), 
     #  then the CFrag cannot be attached.
     cfrags[0].proof = None
-    with pytest.raises(cfrag.NoProofProvided):
+    with pytest.raises(CapsuleFrag.NoProofProvided):
         capsule.attach_cfrag(cfrags[0])
 
     # The remaining CFrags are fine, so they can be attached correctly 

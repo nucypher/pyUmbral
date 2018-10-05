@@ -116,7 +116,3 @@ def kfrags(alices_keys, bobs_keys):
                               signer=signer_alice,
                               receiving_pubkey=receiving_pubkey,
                               threshold=6, N=10)
-
-
-
-

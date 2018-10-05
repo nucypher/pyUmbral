@@ -57,7 +57,7 @@ def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
         kfrag.id = previous_id
         kfrag._bn_key += kfrag._bn_key
         assert not kfrag.verify_for_capsule(prepared_capsule)    
-        
+
 
 def test_kfrag_as_dict_key(kfrags):
     dict_with_kfrags_as_keys = dict()
@@ -65,3 +65,5 @@ def test_kfrag_as_dict_key(kfrags):
     dict_with_kfrags_as_keys[kfrags[1]] = "No llamas here.  Definitely not."
 
     assert dict_with_kfrags_as_keys[kfrags[0]] != dict_with_kfrags_as_keys[kfrags[1]]
+
+

@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from cryptography.hazmat.backends.openssl import backend
-
-from umbral import openssl
 from umbral.curve import Curve
 
 

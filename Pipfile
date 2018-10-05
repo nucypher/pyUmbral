@@ -10,6 +10,7 @@ cryptography = ">=2.3"
 pynacl="*"
 # NuCypher
 bytestringsplitter = "*"
+constantSorrow = {git = "https://github.com/nucypher/constantSorrow.git", ref = "nucypher-depend"}
 
 [dev-packages]
 bumpversion = "*"

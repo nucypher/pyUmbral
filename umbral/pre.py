@@ -283,7 +283,7 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         else:
             mode = NO_KEY
 
-        validity_message_for_proxy = [kfrag_id, commitment, precursor, (mode,)]
+        validity_message_for_proxy = [kfrag_id, commitment, precursor, mode]
 
         if sign_delegating_key:
             validity_message_for_proxy.append(delegating_pubkey)

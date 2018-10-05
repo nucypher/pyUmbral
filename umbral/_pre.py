@@ -150,7 +150,7 @@ def verify_kfrag(kfrag: 'KFrag',
 
     #  We check that the commitment is well-formed
     correct_commitment = commitment == key * u
-    validity_input = [kfrag_id, commitment, precursor, (kfrag.keys_in_signature,)]
+    validity_input = [kfrag_id, commitment, precursor, kfrag.keys_in_signature]
 
     if kfrag.delegating_key_in_signature():
         validity_input.append(delegating_pubkey)

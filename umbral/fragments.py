@@ -31,11 +31,12 @@ from umbral.point import Point
 from umbral.signing import Signature
 from umbral.params import UmbralParameters
 
-#TODO: Use ConstantSorrow for this
-NO_KEY = 0x00
-DELEGATING_ONLY = 0x01
-RECEIVING_ONLY = 0x02
-DELEGATING_AND_RECEIVING = 0x03
+from constant_sorrow.constants import NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
+
+NO_KEY(b'\x00')
+DELEGATING_ONLY(b'\x01')
+RECEIVING_ONLY(b'\x02')
+DELEGATING_AND_RECEIVING(b'\x03')
 
 
 class KFrag(object):
@@ -99,7 +100,7 @@ class KFrag(object):
             (CurveBN, bn_size, arguments),  # bn_key
             (Point, point_size, arguments),  # point_commitment
             (Point, point_size, arguments),  # point_precursor
-            (int, 1, {'byteorder': 'big'}),  # keys_in_signature
+            1,  # keys_in_signature
             (Signature, signature_size, arguments),  # signature_for_proxy
             (Signature, signature_size, arguments),  # signature_for_bob
         )
@@ -122,7 +123,7 @@ class KFrag(object):
         precursor = self._point_precursor.to_bytes()
         signature_for_proxy = bytes(self.signature_for_proxy)
         signature_for_bob = bytes(self.signature_for_bob)
-        mode = self.keys_in_signature.to_bytes(1, 'big')
+        mode = bytes(self.keys_in_signature)
 
         return self.id + key + commitment + precursor \
              + mode + signature_for_proxy + signature_for_bob

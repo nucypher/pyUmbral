@@ -173,7 +173,7 @@ class KFrag(object):
 
 class CorrectnessProof(object):
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
-                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: bytes,
+                 point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: Signature,
                  metadata: Optional[bytes] = None) -> None:
         self._point_e2 = point_e2
         self._point_v2 = point_v2

@@ -229,11 +229,13 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
 
     dh_point = private_precursor * bob_pubkey_point
 
+    from constant_sorrow import constants
+
     # Secret value 'd' allows to make Umbral non-interactive
     d = CurveBN.hash(precursor,
                      bob_pubkey_point,
                      dh_point,
-                     b"NON-INTERACTIVE",
+                     bytes(constants.NON_INTERACTIVE),
                      params=params)
 
     # Coefficients of the generating polynomial
@@ -253,7 +255,7 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         share_index = CurveBN.hash(precursor,
                                    bob_pubkey_point,
                                    dh_point,
-                                   b"X-COORDINATE",
+                                   bytes(constants.X_COORDINATE),
                                    kfrag_id,
                                    params=params)
 
@@ -376,12 +378,14 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     precursor = capsule._attached_cfrags[0]._point_precursor
     dh_point = priv_key * precursor
 
+    from constant_sorrow import constants
+
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
     if len(capsule._attached_cfrags) > 1:
         xs = [CurveBN.hash(precursor,
                            pub_key,
                            dh_point,
-                           b"X-COORDINATE",
+                           bytes(constants.X_COORDINATE),
                            cfrag._kfrag_id,
                            params=params)
               for cfrag in capsule._attached_cfrags]
@@ -405,7 +409,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     d = CurveBN.hash(precursor,
                      pub_key,
                      dh_point,
-                     b"NON-INTERACTIVE",
+                     bytes(constants.NON_INTERACTIVE),
                      params=params)
 
     e, v, s = capsule.components()

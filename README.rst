@@ -54,17 +54,17 @@ Usage
                             decrypting_key=alices_private_key)
 
 
-**Split Re-Encryption Keys**
+**Re-Encryption Key Fragments**
 
 .. code-block:: python
 
-    # Alice generates "M of N" split re-encryption keys for Bob. 
+    # Alice generates "M of N" re-encryption key fragments (or "KFrags") for Bob.
     # In this example, 10 out of 20.
-    kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
-                             signer=alices_signer,
-                             receiving_pubkey=bobs_public_key,
-                             threshold=10,
-                             N=20)
+    kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
+                                 signer=alices_signer,
+                                 receiving_pubkey=bobs_public_key,
+                                 threshold=10,
+                                 N=20)
 
 
 **Re-Encryption**

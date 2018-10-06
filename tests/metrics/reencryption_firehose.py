@@ -49,7 +49,7 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[KFrag], Capsule]:
     plain_data = os.urandom(32)
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
+    kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, m, n, signer)
 
     capsule.set_correctness_keys(delegating=delegating_pubkey,
                                  receiving=receiving_pubkey,
@@ -65,18 +65,18 @@ def firehose(m: int=6, n: int=10) -> None:
     one_kfrag, *remaining_kfrags = kfrags
 
     print('Re-encrypting...')
-    successful_rencryptions = 0
+    successful_reencryptions = 0
     for iteration in range(int(REENCRYPTIONS)):
 
         _cfrag = pre.reencrypt(one_kfrag, capsule)    # <<< REENCRYPTION HAPPENS HERE
 
-        successful_rencryptions += 1
+        successful_reencryptions += 1
         if iteration % 20 == 0:
             print('Performed {} Re-encryptions...'.format(iteration))
 
-    failure_message = "A Reencryption failed. {} of {} succeeded".format(successful_rencryptions, REENCRYPTIONS)
-    assert successful_rencryptions == REENCRYPTIONS, failure_message
-    print("Successfully performed {} reencryptions".format(successful_rencryptions), end='\n')
+    failure_message = "A Reencryption failed. {} of {} succeeded".format(successful_reencryptions, REENCRYPTIONS)
+    assert successful_reencryptions == REENCRYPTIONS, failure_message
+    print("Successfully performed {} reencryptions".format(successful_reencryptions), end='\n')
 
 
 if __name__ == "__main__":

@@ -75,24 +75,24 @@ def __standard_encryption_api() -> tuple:
 
 
 #
-# Key Splitting Benchmarks
+# KFrag Generation Benchmarks
 #
 
 
-@pytest.mark.benchmark(group="Reencryption Key Splitting Performance",
+@pytest.mark.benchmark(group="Reencryption Key Generation Performance",
                        disable_gc=True,
                        warmup=True,
                        warmup_iterations=10)
 @pytest.mark.parametrize("m, n", FRAG_VALUES)
-def test_split_rekey_performance(benchmark, m: int, n: int) -> None:
+def test_generate_kfrags_performance(benchmark, m: int, n: int) -> None:
 
     def __setup():
         delegating_privkey, signer, receiving_pubkey, ciphertext, capsule = __standard_encryption_api()
-        args = (delegating_privkey, signer, receiving_pubkey)
-        kwargs = {"threshold": m, "N": n}
+        args = (delegating_privkey, receiving_pubkey)
+        kwargs = {"threshold": m, "N": n, "signer": signer}
         return args, kwargs
 
-    print("\nBenchmarking {function} with M:{M} of N:{N}...".format(function="pre.split_rekey", M=m, N=n))
+    print("\nBenchmarking {function} with M:{M} of N:{N}...".format(function="pre.generate_kfrags", M=m, N=n))
     benchmark.pedantic(pre.generate_kfrags, setup=__setup, rounds=1000)
     assert True  # ensure function finishes and succeeds.
 
@@ -111,7 +111,7 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int) -> None
 
     def __setup():
         delegating_privkey, signer, receiving_pubkey, ciphertext, capsule = __standard_encryption_api()
-        kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
+        kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, m, n, signer)
         one_kfrag, *remaining_kfrags = kfrags
         args, kwargs = tuple(), {"kfrag": one_kfrag, "capsule": capsule},
         return args, kwargs
@@ -133,7 +133,7 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int) -> None
 def test_single_frag_reencryption_performance(benchmark, m: int, n: int) -> None:
 
     delegating_privkey, signer, receiving_pubkey, ciphertext, capsule = __standard_encryption_api()
-    kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_pubkey, m, n)
+    kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, m, n, signer)
     one_kfrag, *remaining_kfrags = kfrags
     args, kwargs = tuple(), {"kfrag": one_kfrag, "capsule": capsule},
 

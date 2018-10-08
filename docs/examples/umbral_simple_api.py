@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-# 1
+#1
 # Sets a default curve (secp256k1)
 import random
 from umbral import pre, keys, config, signing
 
 config.set_default_curve()
 
-# 2
+#2
 # Generate an Umbral key pair
 # ---------------------------
 # First, Let's generate two asymmetric key pairs for Alice:
@@ -37,7 +37,7 @@ alices_signing_key = keys.UmbralPrivateKey.gen_key()
 alices_verifying_key = alices_signing_key.get_pubkey()
 alices_signer = signing.Signer(private_key=alices_signing_key)
 
-# 3
+#3
 # Encrypt some data for Alice
 # ---------------------------
 # Now let's encrypt data with Alice's public key.
@@ -49,7 +49,7 @@ plaintext = b'Proxy Re-encryption is cool!'
 ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 print(ciphertext)
 
-# 4
+#4
 # Decrypt data for Alice
 # ----------------------
 # Since data was encrypted with Alice's public key,
@@ -60,18 +60,18 @@ cleartext = pre.decrypt(ciphertext=ciphertext,
                         decrypting_key=alices_private_key)
 print(cleartext)
 
-# 5
+#5
 # Bob Exists
 # -----------
 
 bobs_private_key = keys.UmbralPrivateKey.gen_key()
 bobs_public_key = bobs_private_key.get_pubkey()
 
-# 6
+#6
 # Bob receives a capsule through a side channel (s3, ipfs, Google cloud, etc)
 bob_capsule = capsule
 
-# 7
+#7
 # Attempt Bob's decryption (fail)
 try:
     fail_decrypted_data = pre.decrypt(ciphertext=ciphertext,
@@ -80,7 +80,7 @@ try:
 except:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
-# 8
+#8
 # Alice grants access to Bob by generating kfrags 
 # -----------------------------------------------
 # When Alice wants to grant Bob access to open her encrypted messages, 
@@ -95,7 +95,7 @@ kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
                              threshold=10,
                              N=20)
 
-# 9
+#9
 # Ursulas perform re-encryption
 # ------------------------------
 # Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
@@ -123,7 +123,7 @@ for kfrag in kfrags:
 
 assert len(cfrags) == 10
 
-# 10
+#10
 # Bob attaches cfrags to the capsule
 # ----------------------------------
 # Bob attaches at least `threshold` `cfrags` to the capsule;
@@ -132,7 +132,7 @@ assert len(cfrags) == 10
 for cfrag in cfrags:
     bob_capsule.attach_cfrag(cfrag)
 
-# 11
+#11
 # Bob activates and opens the capsule
 # ------------------------------------
 # Finally, Bob activates and opens the capsule,

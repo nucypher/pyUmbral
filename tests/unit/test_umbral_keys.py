@@ -203,7 +203,7 @@ def test_umbral_public_key_as_dict_key():
     another_umbral_pub_key = another_umbral_priv_key.get_pubkey()
 
     with pytest.raises(KeyError):
-        d[another_umbral_pub_key]
+        _ = d[another_umbral_pub_key]
 
     d[another_umbral_pub_key] = False
 

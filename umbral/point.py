@@ -161,7 +161,7 @@ class Point(object):
         # 1 is not-equal, 0 is equal, -1 is error
         return not bool(is_equal)
 
-    def __mul__(self, other) -> 'Point':
+    def __mul__(self, other: CurveBN) -> 'Point':
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """

@@ -19,7 +19,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import typing
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 
 from bytestring_splitter import BytestringSplitter
 from umbral._pre import prove_cfrag_correctness
@@ -109,7 +109,7 @@ class Capsule(object):
         components = splitter(capsule_bytes)
         return cls(params, *components)
 
-    def _set_cfrag_correctness_key(self, key_type: str, key: UmbralPublicKey) -> bool:
+    def _set_cfrag_correctness_key(self, key_type: str, key: Optional[UmbralPublicKey]) -> bool:
         if key_type not in ("delegating", "receiving", "verifying"): 
             raise ValueError("You can only set 'delegating', 'receiving' or 'verifying' keys.") 
 
@@ -147,7 +147,8 @@ class Capsule(object):
         """
         Serialize the Capsule into a bytestring.
         """
-        return bytes().join(c.to_bytes() for c in self.components())
+        e, v, s = self.components()
+        return e.to_bytes() + v.to_bytes() + s.to_bytes()
 
     def verify(self) -> bool:
 
@@ -172,11 +173,11 @@ class Capsule(object):
     def __bytes__(self) -> bytes:
         return self.to_bytes()
 
-    def __eq__(self, other: 'Capsule') -> bool:
+    def __eq__(self, other) -> bool:
         """
         Each component is compared to its counterpart in constant time per the __eq__ of Point and CurveBN.
         """
-        return self.components() == other.components() and all(self.components())
+        return hasattr(other, "components") and self.components() == other.components() and all(self.components())
 
     @typing.no_type_check
     def __hash__(self) -> int:
@@ -218,14 +219,13 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
     g = params.g
 
     delegating_pubkey = delegating_privkey.get_pubkey()
-    delegating_privkey = delegating_privkey.bn_key
 
     bob_pubkey_point = receiving_pubkey.point_key
 
     # The precursor point is used as an ephemeral public key in a DH key exchange,
     # and the resulting shared secret 'dh_point' is used to derive other secret values
     private_precursor = CurveBN.gen_rand(params.curve)
-    precursor = private_precursor * g
+    precursor = private_precursor * g   # type: Any
 
     dh_point = private_precursor * bob_pubkey_point
 
@@ -239,7 +239,7 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
                      params=params)
 
     # Coefficients of the generating polynomial
-    coefficients = [delegating_privkey * (~d)]
+    coefficients = [delegating_privkey.bn_key * (~d)]
     coefficients += [CurveBN.gen_rand(params.curve) for _ in range(threshold - 1)]
 
     bn_size = CurveBN.expected_bytes_length(params.curve)
@@ -263,14 +263,14 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         # polynomial for the index value
         rk = poly_eval(coefficients, share_index)
 
-        commitment = rk * params.u
+        commitment = rk * params.u  # type: Any
 
         validity_message_for_bob = (kfrag_id,
                                     delegating_pubkey,
                                     receiving_pubkey,
                                     commitment,
                                     precursor,
-                                    )
+                                    )  # type: Any
         validity_message_for_bob = bytes().join(bytes(item) for item in validity_message_for_bob)
         signature_for_bob = signer(validity_message_for_bob)
 
@@ -283,7 +283,7 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
         else:
             mode = NO_KEY
 
-        validity_message_for_proxy = [kfrag_id, commitment, precursor, mode]
+        validity_message_for_proxy = [kfrag_id, commitment, precursor, mode]  # type: Any
 
         if sign_delegating_key:
             validity_message_for_proxy.append(delegating_pubkey)
@@ -316,8 +316,8 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
         raise KFrag.NotValid
 
     rk = kfrag._bn_key
-    e1 = rk * capsule._point_e
-    v1 = rk * capsule._point_v
+    e1 = rk * capsule._point_e  # type: Any
+    v1 = rk * capsule._point_v  # type: Any
 
     cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag.id,
                         point_precursor=kfrag._point_precursor)
@@ -336,15 +336,15 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
     g = params.g
 
     priv_r = CurveBN.gen_rand(params.curve)
-    pub_r = priv_r * g
+    pub_r = priv_r * g  # type: Any
 
     priv_u = CurveBN.gen_rand(params.curve)
-    pub_u = priv_u * g
+    pub_u = priv_u * g  # type: Any
 
     h = CurveBN.hash(pub_r, pub_u, params=params)
     s = priv_u + (priv_r * h)
 
-    shared_key = (priv_r + priv_u) * alice_pubkey.point_key
+    shared_key = (priv_r + priv_u) * alice_pubkey.point_key  # type: Any
 
     # Key to be used for symmetric encryption
     key = kdf(shared_key, key_length)
@@ -361,7 +361,7 @@ def _decapsulate_original(priv_key: UmbralPrivateKey,
         # Check correctness of original ciphertext
         raise capsule.NotValid("Capsule verification failed.")
 
-    shared_key = priv_key.bn_key * (capsule._point_e + capsule._point_v)
+    shared_key = priv_key.bn_key * (capsule._point_e + capsule._point_v)  # type: Any
     key = kdf(shared_key, key_length)
     return key
 
@@ -415,7 +415,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     e, v, s = capsule.components()
     h = CurveBN.hash(e, v, params=params)
 
-    orig_pub_key = capsule.get_correctness_keys()['delegating'].point_key
+    orig_pub_key = capsule.get_correctness_keys()['delegating'].point_key  # type: ignore
 
     if not (s / d) * orig_pub_key == (h * e_prime) + v_prime:
         raise GenericUmbralError()

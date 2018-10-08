@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
@@ -36,7 +36,7 @@ class CurveBN(object):
     constant time operations.
     """
 
-    def __init__(self, bignum, curve: Curve):
+    def __init__(self, bignum, curve: Curve) -> None:
         on_curve = openssl._bn_is_on_curve(bignum, curve)
         if not on_curve:
             raise ValueError("The provided BIGNUM is not on the provided curve.")
@@ -146,7 +146,7 @@ class CurveBN(object):
         """
         return backend._bn_to_int(self.bignum)
 
-    def __eq__(self, other : Union[int, 'CurveBN']) -> bool:
+    def __eq__(self, other) -> bool:
         """
         Compares the two BIGNUMS or int.
         """
@@ -158,7 +158,7 @@ class CurveBN(object):
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self.bignum, other.bignum))
 
-    def __pow__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
+    def __pow__(self, other: Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_exp on two BIGNUMS.
 
@@ -168,6 +168,8 @@ class CurveBN(object):
         if type(other) == int:
             other = openssl._int_to_bn(other)
             other = CurveBN(other, self.curve)
+
+        other = cast('CurveBN', other)  # This is just for mypy
 
         power = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx, openssl._tmp_bn_mont_ctx(self.curve.order) as bn_mont_ctx:
@@ -194,7 +196,7 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-    def __truediv__(self, other : 'CurveBN') -> 'CurveBN':
+    def __truediv__(self, other: 'CurveBN') -> 'CurveBN':
         """
         Performs a BN_div on two BIGNUMs (modulo the order of the curve).
 
@@ -215,7 +217,6 @@ class CurveBN(object):
 
         return CurveBN(product, self.curve)
 
-
     def __add__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_mod_add on two BIGNUMs.
@@ -223,6 +224,8 @@ class CurveBN(object):
         if type(other) == int:
             other = openssl._int_to_bn(other)
             other = CurveBN(other, self.curve)
+
+        other = cast('CurveBN', other)  # This is just for mypy
             
         op_sum = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -240,6 +243,8 @@ class CurveBN(object):
         if type(other) == int:
             other = openssl._int_to_bn(other)
             other = CurveBN(other, self.curve)
+
+        other = cast('CurveBN', other)  # This is just for mypy
 
         diff = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:
@@ -283,13 +288,15 @@ class CurveBN(object):
 
         return CurveBN(the_opposite, self.curve)
 
-    def __mod__(self, other : Union[int, 'CurveBN']) -> 'CurveBN':
+    def __mod__(self, other: Union[int, 'CurveBN']) -> 'CurveBN':
         """
         Performs a BN_nnmod on two BIGNUMS.
         """
         if type(other) == int:
             other = openssl._int_to_bn(other)
             other = CurveBN(other, self.curve)
+
+        other = cast('CurveBN', other)  # This is just for mypy
 
         rem = openssl._get_new_BN()
         with backend._tmp_bn_ctx() as bn_ctx:

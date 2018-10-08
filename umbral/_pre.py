@@ -55,9 +55,9 @@ def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
     v2 = t * v
     u2 = t * u
 
-    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if metadata is not None:
-        hash_input += (metadata,)
+        hash_input.append(metadata)
     h = CurveBN.hash(*hash_input, params=params)
     ########
 
@@ -98,9 +98,9 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
         else:
             raise
 
-    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if cfrag.proof.metadata is not None:
-        hash_input += (cfrag.proof.metadata,)
+        hash_input.append(cfrag.proof.metadata)
     h = CurveBN.hash(*hash_input, params=params)
     ########
 

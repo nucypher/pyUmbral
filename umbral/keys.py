@@ -18,7 +18,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Any
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
@@ -42,7 +42,7 @@ class UmbralPrivateKey(object):
         """
         self.params = params
         self.bn_key = bn_key
-        self.pubkey = UmbralPublicKey(self.bn_key * params.g, params=params)
+        self.pubkey = UmbralPublicKey(self.bn_key * params.g, params=params)  # type: ignore
 
     @classmethod
     def gen_key(cls, params: Optional[UmbralParameters] = None) -> 'UmbralPrivateKey':
@@ -269,17 +269,17 @@ class UmbralPublicKey(object):
     def __repr__(self):
         return "{}:{}".format(self.__class__.__name__, self.point_key.to_bytes().hex()[:15])
 
-    def __eq__(self, other: Optional[Union[bytes, 'UmbralPublicKey', int]]) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if type(other) == bytes:
             is_eq = bytes(other) == bytes(self)
-        elif hasattr(other, "point_key"):
-            is_eq = self.point_key == other.point_key
+        elif hasattr(other, "point_key") and hasattr(other, "params"):
+            is_eq = (self.point_key, self.params) == (other.point_key, other.params)
         else:
             is_eq = False
         return is_eq
 
     def __hash__(self) -> int:
-        return int.from_bytes(self, byteorder="big")
+        return int.from_bytes(self.to_bytes(), byteorder="big")
 
 
 class UmbralKeyingMaterial(object):

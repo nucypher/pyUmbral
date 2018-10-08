@@ -21,7 +21,6 @@ import hmac
 from typing import Optional
 
 from bytestring_splitter import BytestringSplitter
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 
 from umbral._pre import assess_cfrag_correctness, verify_kfrag
 from umbral.config import default_curve, default_params
@@ -30,6 +29,7 @@ from umbral.keys import UmbralPublicKey
 from umbral.point import Point
 from umbral.signing import Signature
 from umbral.params import UmbralParameters
+from umbral.curve import Curve
 
 from constant_sorrow.constants import NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
 
@@ -64,7 +64,7 @@ class KFrag(object):
         """
 
     @classmethod
-    def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None) -> int:
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a KFrag given the curve.
         If no curve is provided, it will use the default curve.
@@ -84,7 +84,7 @@ class KFrag(object):
         return bn_size * 6 + point_size * 2 + 1
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'KFrag':
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'KFrag':
         """
         Instantiate a KFrag object from the serialized data.
         """
@@ -184,7 +184,7 @@ class CorrectnessProof(object):
         self.kfrag_signature = kfrag_signature
 
     @classmethod
-    def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None):
+    def expected_bytes_length(cls, curve: Optional[Curve] = None):
         """
         Returns the size (in bytes) of a CorrectnessProof without the metadata.
         If no curve is given, it will use the default curve.
@@ -196,7 +196,7 @@ class CorrectnessProof(object):
         return (bn_size * 3) + (point_size * 4)
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'CorrectnessProof':
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CorrectnessProof':
         """
         Instantiate CorrectnessProof from serialized data.
         """
@@ -213,9 +213,9 @@ class CorrectnessProof(object):
             (Signature, Signature.expected_bytes_length(curve), arguments),  # kfrag_signature
         )
         components = splitter(data, return_remainder=True)
-        metadata = components.pop(-1) or None
+        components.append(components.pop() or None)
 
-        return cls(*components, metadata=metadata)
+        return cls(*components)
 
     def to_bytes(self) -> bytes:
         """
@@ -260,7 +260,7 @@ class CapsuleFrag(object):
         """
 
     @classmethod
-    def expected_bytes_length(cls, curve: Optional[EllipticCurve] = None) -> int:
+    def expected_bytes_length(cls, curve: Optional[Curve] = None) -> int:
         """
         Returns the size (in bytes) of a CapsuleFrag given the curve without
         the CorrectnessProof.
@@ -273,7 +273,7 @@ class CapsuleFrag(object):
         return (bn_size * 1) + (point_size * 3)
 
     @classmethod
-    def from_bytes(cls, data: bytes, curve: Optional[EllipticCurve] = None) -> 'CapsuleFrag':
+    def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CapsuleFrag':
         """
         Instantiates a CapsuleFrag object from the serialized data.
         """
@@ -291,9 +291,10 @@ class CapsuleFrag(object):
         )
         components = splitter(data, return_remainder=True)
 
-        proof = components.pop(-1) or None
-        proof = CorrectnessProof.from_bytes(proof, curve) if proof else None
-        return cls(*components, proof=proof)
+        proof = components.pop() or None
+        components.append(CorrectnessProof.from_bytes(proof, curve) if proof else None)
+
+        return cls(*components)
 
     def to_bytes(self) -> bytes:
         """

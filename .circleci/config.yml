@@ -55,10 +55,9 @@ workflows:
             tags:
               only: /.*/
           requires:
-            - bundle_dependencies-36
-          #- run_tests-35
-          #- run_tests-36
-          #- run_tests-37
+            - run_tests-35
+            - run_tests-36
+            - run_tests-37
       - reencryption_memory_profile-36:
           filters:
             tags:
@@ -75,10 +74,21 @@ workflows:
             - run_tests-35
             - run_tests-36
             - run_tests-37
-      - deploy:
+      - test_deploy:
+          context: "NuCypher PyPI"
           requires:
             - mypy_type_check-36
             - doctests-36
+          filters:
+            tags:
+              only: /v[0-9]+.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          type: approval
+          context: "NuCypher PyPI"
+          requires:
+            - test_deploy
           filters:
             tags:
               only: /v[0-9]+.*/
@@ -150,8 +160,6 @@ jobs:
     <<: *python_35_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
       - run:
           name: Install dependencies
           command: |
@@ -159,7 +167,7 @@ jobs:
               pipenv install --dev pytest
       - run:
           name: pyUmbral Tests (Python 3.5)
-          command: pipenv run pytest --cov=. --cov-report=html  --junitxml=./reports/pytest/python35-results.xml
+          command: pipenv run pytest --junitxml=./reports/pytest/python35-results.xml
       - store_test_results:
           path: /reports/pytest
       - store_artifacts:
@@ -169,8 +177,6 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -186,8 +192,6 @@ jobs:
     <<: *python_37_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -204,8 +208,6 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -221,8 +223,6 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -239,8 +239,6 @@ jobs:
     <<: *python_36_base
     steps:
     - checkout
-    # - restore_cache:
-    #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
     - run:
         name: Install dependencies
         command: pipenv sync --three --dev
@@ -256,8 +254,6 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      # - restore_cache:
-      #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -278,10 +274,6 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
-      # - restore_cache:
-      #     keys:
-      #       - v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
-      #       - v2-benchmarks-py36
       - run:
           name: Install dependencies
           command: pipenv sync --three --dev
@@ -299,6 +291,38 @@ jobs:
       - store_test_results:
           path: ./reports/pytest
 
+  test_deploy:
+    <<: *python_36_base
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies (Test Deploy)
+          command: |
+              pipenv sync --three --dev
+              pipenv install --dev --skip-lock twine
+      - run:
+          name: Verify git tag == __version__ (Test Deploy)
+          command: pipenv run python setup.py verify
+      - run:
+          name: Initialize .pypirc (Test Deploy)
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+      - run:
+          name: Build Python Wheel (Test Deploy)
+          command: |
+            pipenv run python setup.py sdist
+            pipenv run python setup.py bdist_wheel
+      - run:
+          name: upload to TestPyPI
+          command: twine upload --repository-url https://test.pypi.org/legacy/ dist/* --verbose
+      - run:
+          name: pip install from TestPyPI
+          command: |
+            pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple umbral
+            python -c "import umbral; print(umbral.__version__)"
+
   deploy:
     <<: *python_36_base
     steps:
@@ -307,19 +331,24 @@ jobs:
           name: Install dependencies
           command: pipenv sync --three --dev
       - run:
-          name: verify git tag == version
+          name: Verify git tag == __version__
           command: pipenv run python setup.py verify
       - run:
-          name: init .pypirc
+          name: Initialize .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
       - run:
-          name: create packages
+          name: Build Python Wheel
           command: |
             pipenv run python setup.py sdist
             pipenv run python setup.py bdist_wheel
       - run:
-          name: upload to pypi
-          command: pipenv run twine upload dist/*
+          name: upload to PyPI
+          command: pipenv run twine upload dist/*  --verbose
+      - run:
+          name: pip install from PyPI
+          command: |
+            pip install umbral --verbose
+            python -c "import umbral; print(umbral.__version__)"

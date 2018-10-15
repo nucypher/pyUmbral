@@ -25,7 +25,7 @@ from umbral.point import Point
 
 
 def test_capsule_serialization(capsule):
-    params = capsule._umbral_params
+    params = capsule.params
     capsule_bytes = capsule.to_bytes()
     capsule_bytes_casted = bytes(capsule)
     assert capsule_bytes == capsule_bytes_casted
@@ -40,41 +40,15 @@ def test_capsule_serialization(capsule):
     assert new_capsule == capsule
 
     # Second, we show that the original components (which is all we have here since we haven't activated) are the same:
-    assert new_capsule.original_components() == capsule.original_components()
+    assert new_capsule.components() == capsule.components()
+
 
     # Third, we can directly compare the private original component attributes
     # (though this is not a supported approach):
+    # TODO: revisit if/when these attributes are made public
     assert new_capsule._point_e == capsule._point_e
     assert new_capsule._point_v == capsule._point_v
     assert new_capsule._bn_sig == capsule._bn_sig
-
-
-def test_activated_capsule_serialization(prepared_capsule, kfrags, bobs_keys):
-    capsule = prepared_capsule
-    params = capsule._umbral_params
-    receiving_privkey, _receiving_pubkey = bobs_keys
-
-    for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule)
-        
-        capsule.attach_cfrag(cfrag)
-
-
-        capsule._reconstruct_shamirs_secret(receiving_privkey)
-        rec_capsule_bytes = capsule.to_bytes()
-
-        assert len(rec_capsule_bytes) == pre.Capsule.expected_bytes_length(activated=True)
-
-        new_rec_capsule = pre.Capsule.from_bytes(rec_capsule_bytes, params)
-
-        # Again, the same three perspectives on equality.
-        assert new_rec_capsule == capsule
-
-        assert new_rec_capsule.activated_components() == capsule.activated_components()
-
-        assert new_rec_capsule._point_e_prime == capsule._point_e_prime
-        assert new_rec_capsule._point_v_prime == capsule._point_v_prime
-        assert new_rec_capsule._point_noninteractive == capsule._point_noninteractive
 
 
 def test_cannot_create_capsule_from_bogus_material(alices_keys):
@@ -91,15 +65,3 @@ def test_cannot_create_capsule_from_bogus_material(alices_keys):
                                                         point_e=Point.gen_rand(),
                                                         point_v=Point.gen_rand(),
                                                         bn_sig=42)
-
-    with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(params,
-                                                        point_e_prime=Point.gen_rand(),
-                                                        point_v_prime=42,
-                                                        point_noninteractive=Point.gen_rand())
-
-    with pytest.raises(TypeError):
-        capsule_of_questionable_parentage = pre.Capsule(params,
-                                                        point_e_prime=Point.gen_rand(),
-                                                        point_v_prime=Point.gen_rand(),
-                                                        point_noninteractive=42)

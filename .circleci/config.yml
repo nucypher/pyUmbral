@@ -50,6 +50,15 @@ workflows:
             - run_tests-35
             - run_tests-36
             - run_tests-37
+      - notebook_tests-36:
+          filters:
+            tags:
+              only: /.*/
+          requires:
+            - bundle_dependencies-36
+          #- run_tests-35
+          #- run_tests-36
+          #- run_tests-37
       - reencryption_memory_profile-36:
           filters:
             tags:
@@ -225,6 +234,23 @@ jobs:
               pipenv run make doctest
       - store_artifacts:
           path: ./docs/build/doctest/output.txt
+
+  notebook_tests-36:
+    <<: *python_36_base
+    steps:
+    - checkout
+    # - restore_cache:
+    #     key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
+    - run:
+        name: Install dependencies
+        command: pipenv sync --three --dev
+    - run:
+        name: Run py.test on Jupyter Notebook stored output
+        command: |
+            pipenv install -e . --dev --skip-lock
+            pipenv run pytest --nbval docs/notebooks/pyUmbral\ Simple\ API.ipynb --junitxml=./reports/pytest/nbval-results.xml
+    - store_test_results:
+        path: /reports/pytest
 
   reencryption_memory_profile-36:
     <<: *python_36_base

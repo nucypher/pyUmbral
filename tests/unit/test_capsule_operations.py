@@ -68,13 +68,6 @@ def test_capsule_equality():
 
     assert one_capsule != another_capsule
 
-    activated_capsule = Capsule(params,
-                                point_e_prime=Point.gen_rand(),
-                                point_v_prime=Point.gen_rand(),
-                                point_noninteractive=Point.gen_rand())
-
-    assert activated_capsule != one_capsule
-
 
 def test_decapsulation_by_alice(alices_keys):
     params = default_params()
@@ -113,25 +106,9 @@ def test_capsule_as_dict_key(alices_keys, bobs_keys):
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_pubkey)
-
     # We can use the capsule as a key, and successfully lookup using it.
     some_dict = {capsule: "Thing that Bob wants to try per-Capsule"}
     assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
-
-    kfrags = pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey , 1, 2)
-    cfrag = pre.reencrypt(kfrags[0], capsule)
-    capsule.attach_cfrag(cfrag)
-
-    cfrag = pre.reencrypt(kfrags[1], capsule)
-    capsule.attach_cfrag(cfrag)
-
-    # Even if we activate the capsule, it still serves as the same key.
-    cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
-    assert some_dict[capsule] == "Thing that Bob wants to try per-Capsule"
-    assert cleartext == plain_data
 
     # And if we change the value for this key, all is still well.
     some_dict[capsule] = "Bob has changed his mind."

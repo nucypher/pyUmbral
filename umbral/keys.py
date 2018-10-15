@@ -18,7 +18,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import os
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Any
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
@@ -32,6 +32,7 @@ from umbral.config import default_params
 from umbral.curvebn import CurveBN
 from umbral.params import UmbralParameters
 from umbral.point import Point
+from umbral.curve import Curve
 
 
 class UmbralPrivateKey(object):
@@ -41,7 +42,7 @@ class UmbralPrivateKey(object):
         """
         self.params = params
         self.bn_key = bn_key
-        self.pubkey = UmbralPublicKey(self.bn_key * params.g, params=params)
+        self.pubkey = UmbralPublicKey(self.bn_key * params.g, params=params)  # type: ignore
 
     @classmethod
     def gen_key(cls, params: Optional[UmbralParameters] = None) -> 'UmbralPrivateKey':
@@ -210,6 +211,16 @@ class UmbralPublicKey(object):
         point_key = Point.from_bytes(key_bytes, params.curve)
         return cls(point_key, params)
 
+    @classmethod
+    def expected_bytes_length(cls, curve: Optional[Curve] = None,
+                              is_compressed: bool = True):
+        """
+        Returns the size (in bytes) of an UmbralPublicKey given a curve.
+        If no curve is provided, it uses the default curve.
+        By default, it assumes compressed representation (is_compressed = True).
+        """
+        return Point.expected_bytes_length(curve=curve, is_compressed=is_compressed)
+
     def to_bytes(self, encoder: Callable = None, is_compressed: bool = True):
         """
         Returns an Umbral public key as bytes.
@@ -258,17 +269,17 @@ class UmbralPublicKey(object):
     def __repr__(self):
         return "{}:{}".format(self.__class__.__name__, self.point_key.to_bytes().hex()[:15])
 
-    def __eq__(self, other: Optional[Union[bytes, 'UmbralPublicKey', int]]) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if type(other) == bytes:
             is_eq = bytes(other) == bytes(self)
-        elif hasattr(other, "point_key"):
-            is_eq = self.point_key == other.point_key
+        elif hasattr(other, "point_key") and hasattr(other, "params"):
+            is_eq = (self.point_key, self.params) == (other.point_key, other.params)
         else:
             is_eq = False
         return is_eq
 
     def __hash__(self) -> int:
-        return int.from_bytes(self, byteorder="big")
+        return int.from_bytes(self.to_bytes(), byteorder="big")
 
 
 class UmbralKeyingMaterial(object):

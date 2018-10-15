@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from cryptography.hazmat.backends.openssl import backend
-
-from umbral import openssl
 from umbral.curve import Curve
 
 
@@ -36,7 +33,7 @@ class UmbralParameters(object):
         parameters_seed = b'NuCypher/UmbralParameters/'
         self.u = unsafe_hash_to_point(g_bytes, self, parameters_seed + b'u')
 
-    def __eq__(self, other: 'UmbralParameters') -> bool:
+    def __eq__(self, other) -> bool:
 
         # TODO: This is not comparing the order, which currently is an OpenSSL pointer
         self_attributes = self.curve, self.g, self.CURVE_KEY_SIZE_BYTES, self.u

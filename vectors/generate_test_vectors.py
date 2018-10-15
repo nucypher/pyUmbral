@@ -53,16 +53,16 @@ receiving_key = receiving_privkey.get_pubkey()
 
 signer = Signer(signing_privkey)
 
-kfrags = pre.split_rekey(delegating_privkey, signer, receiving_key, 6, 10)
+kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_key, 6, 10)
 
 plain_data = b'peace at dawn'
 
 ciphertext, capsule = pre.encrypt(delegating_key, plain_data)
 
 cfrag = pre.reencrypt(kfrags[0], capsule)
-points = [  capsule._point_e, cfrag._point_e1, cfrag.proof._point_e2, 
-            capsule._point_v, cfrag._point_v1, cfrag.proof._point_v2,
-            capsule._umbral_params.u, cfrag.proof._point_kfrag_commitment, cfrag.proof._point_kfrag_pok ]
+points = [capsule._point_e, cfrag._point_e1, cfrag.proof._point_e2,
+          capsule._point_v, cfrag._point_v1, cfrag.proof._point_v2,
+          capsule.params.u, cfrag.proof._point_kfrag_commitment, cfrag.proof._point_kfrag_pok]
 
 z = cfrag.proof.bn_sig
 

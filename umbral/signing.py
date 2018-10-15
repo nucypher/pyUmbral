@@ -105,7 +105,7 @@ class Signature:
     def __radd__(self, other: bytes) -> bytes:
         return other + bytes(self)
 
-    def __eq__(self, other: 'Signature') -> bool:
+    def __eq__(self, other) -> bool:
         simple_bytes_match = hmac.compare_digest(bytes(self), bytes(other))
         der_encoded_match = hmac.compare_digest(self._der_encoded_bytes(), bytes(other))
         return simple_bytes_match or der_encoded_match

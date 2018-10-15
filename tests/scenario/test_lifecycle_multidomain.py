@@ -18,8 +18,6 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pytest
-from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from umbral import pre
 from umbral.fragments import KFrag, CapsuleFrag
@@ -27,11 +25,12 @@ from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from ..conftest import parameters, wrong_parameters, other_supported_curves
+from ..conftest import parameters, other_supported_curves, kfrag_signing_modes
 
 
 @pytest.mark.parametrize("N, M", parameters)
-def test_lifecycle_with_serialization(N, M, curve=default_curve()):
+@pytest.mark.parametrize("signing_mode", kfrag_signing_modes)
+def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve()):
     """
     This test is a variant of test_simple_api, but with intermediate 
     serialization/deserialization steps, modeling how pyUmbral artifacts 
@@ -64,7 +63,17 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
     receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
 
     signer = Signer(signing_privkey)
-    kfrags = pre.split_rekey(delegating_privkey, signer, receiving_pubkey, M, N)
+
+    sign_delegating_key, sign_receiving_key = signing_mode
+
+    kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
+                                 receiving_pubkey=receiving_pubkey,
+                                 threshold=M,
+                                 N=N,
+                                 signer=signer,
+                                 sign_delegating_key=sign_delegating_key,
+                                 sign_receiving_key=sign_receiving_key)
+
     kfrags_bytes = tuple(map(bytes, kfrags))
 
     del kfrags
@@ -118,7 +127,7 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
         # TODO: use params instead of curve?
         kfrag = KFrag.from_bytes(kfrag_bytes, params.curve)
 
-        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey)
+        assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey, params)
 
         cfrag_bytes = bytes(pre.reencrypt(kfrag, capsule))
         cfrags_bytes.append(cfrag_bytes)
@@ -154,5 +163,6 @@ def test_lifecycle_with_serialization(N, M, curve=default_curve()):
 
 @pytest.mark.parametrize("curve", other_supported_curves)
 @pytest.mark.parametrize("N, M", parameters)
-def test_lifecycle_with_serialization_on_multiple_curves(N, M, curve):
-    test_lifecycle_with_serialization(N, M, curve)
+@pytest.mark.parametrize("signing_mode", kfrag_signing_modes)
+def test_lifecycle_with_serialization_on_multiple_curves(N, M, signing_mode, curve):
+    test_lifecycle_with_serialization(N, M, signing_mode, curve)

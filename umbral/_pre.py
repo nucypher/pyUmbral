@@ -21,15 +21,21 @@ from typing import Optional
 
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
+from umbral.params import UmbralParameters
+from umbral.config import default_params
 
 
 def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
                             kfrag: 'KFrag',
                             capsule: 'Capsule',
                             metadata: Optional[bytes] = None
-                            ) -> 'CorrectnessProof':
+                            ) -> None:
 
-    params = capsule._umbral_params
+    params = capsule.params
+
+    # Check correctness of original ciphertext
+    if not capsule.verify():
+        raise capsule.NotValid("Capsule verification failed.")
 
     rk = kfrag._bn_key
     t = CurveBN.gen_rand(params.curve)
@@ -49,20 +55,15 @@ def prove_cfrag_correctness(cfrag: 'CapsuleFrag',
     v2 = t * v
     u2 = t * u
 
-    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if metadata is not None:
-        hash_input += (metadata,)
+        hash_input.append(metadata)
     h = CurveBN.hash(*hash_input, params=params)
     ########
 
     z3 = t + h * rk
 
-    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature)
-
-    # Check correctness of original ciphertext (check nº 2) at the end
-    # to avoid timing oracles
-    if not capsule.verify():
-        raise capsule.NotValid("Capsule verification failed.")
+    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
 
 
 def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
@@ -73,13 +74,7 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
     signing_pubkey = correctness_keys['verifying']
     receiving_pubkey = correctness_keys['receiving']
 
-    if not all((delegating_pubkey, signing_pubkey, receiving_pubkey)):
-        raise TypeError("Need all three keys to verify correctness.")
-
-    delegating_point = delegating_pubkey.point_key
-    receiving_point = receiving_pubkey.point_key
-
-    params = capsule._umbral_params
+    params = capsule.params
 
     ####
     # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
@@ -103,18 +98,18 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
         else:
             raise
 
-    hash_input = (e, e1, e2, v, v1, v2, u, u1, u2)
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
     if cfrag.proof.metadata is not None:
-        hash_input += (cfrag.proof.metadata,)
+        hash_input.append(cfrag.proof.metadata)
     h = CurveBN.hash(*hash_input, params=params)
     ########
 
-    ni = cfrag._point_noninteractive
-    xcoord = cfrag._point_xcoord
+    precursor = cfrag._point_precursor
     kfrag_id = cfrag._kfrag_id
 
-    kfrag_validity_message = bytes().join(
-        bytes(material) for material in (kfrag_id, delegating_point, receiving_point, u1, ni, xcoord))
+    validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
+
+    kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
     valid_kfrag_signature = cfrag.proof.kfrag_signature.verify(kfrag_validity_message, signing_pubkey)
 
     z3 = cfrag.proof.bn_sig
@@ -131,32 +126,39 @@ def assess_cfrag_correctness(cfrag: 'CapsuleFrag', capsule: 'Capsule') -> bool:
 
 
 def verify_kfrag(kfrag: 'KFrag',
-                 delegating_pubkey: UmbralPublicKey,
-                 signing_pubkey: UmbralPublicKey,
-                 receiving_pubkey: UmbralPublicKey
+                 params: UmbralParameters,
+                 delegating_pubkey: Optional[UmbralPublicKey] = None,
+                 signing_pubkey: Optional[UmbralPublicKey] = None,
+                 receiving_pubkey: Optional[UmbralPublicKey] = None,
                  ) -> bool:
 
+    if params is None:
+        params = default_params()
 
-    params = delegating_pubkey.params
-    if not params == receiving_pubkey.params:
-        raise ValueError("The delegating and receiving keys must use the same UmbralParameters")
+    if delegating_pubkey and delegating_pubkey.params != params:
+            raise ValueError("The delegating key uses different UmbralParameters")
+
+    if receiving_pubkey and receiving_pubkey.params != params:
+            raise ValueError("The receiving key uses different UmbralParameters")
 
     u = params.u
 
-    delegating_point = delegating_pubkey.point_key
-    receiving_point = receiving_pubkey.point_key
-
-    id = kfrag._id
+    kfrag_id = kfrag.id
     key = kfrag._bn_key
-    u1 = kfrag._point_commitment
-    ni = kfrag._point_noninteractive
-    xcoord = kfrag._point_xcoord
+    commitment = kfrag._point_commitment
+    precursor = kfrag._point_precursor
 
-    #  We check that the commitment u1 is well-formed
-    correct_commitment = u1 == key * u
+    #  We check that the commitment is well-formed
+    correct_commitment = commitment == key * u
+    validity_input = [kfrag_id, commitment, precursor, kfrag.keys_in_signature]
 
-    kfrag_validity_message = bytes().join(
-        bytes(material) for material in (id, delegating_point, receiving_point, u1, ni, xcoord))
-    valid_kfrag_signature = kfrag.signature.verify(kfrag_validity_message, signing_pubkey)
+    if kfrag.delegating_key_in_signature():
+        validity_input.append(delegating_pubkey)
+
+    if kfrag.receiving_key_in_signature():
+        validity_input.append(receiving_pubkey)
+
+    kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
+    valid_kfrag_signature = kfrag.signature_for_proxy.verify(kfrag_validity_message, signing_pubkey)
 
     return correct_commitment & valid_kfrag_signature

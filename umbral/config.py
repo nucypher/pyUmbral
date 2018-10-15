@@ -28,7 +28,11 @@ class _CONFIG:
     __curve = None
     __params = None
     __CURVE_TO_USE_IF_NO_DEFAULT_IS_SET_BY_USER = SECP256K1
-    __WARNING_IF_NO_DEFAULT_SET = "No default curve has been set.  Using SECP256K1.  A slight performance penalty has been incurred for only this call.  Set a default curve with umbral.config.set_default_curve()."
+    __WARNING_IF_NO_DEFAULT_SET = "No default curve has been set.  " \
+                                  "Using SECP256K1.  " \
+                                  "A slight performance penalty has been " \
+                                  "incurred for only this call.  Set a default " \
+                                  "curve with umbral.config.set_default_curve()."
 
     class UmbralConfigurationError(RuntimeError):
         """Raised when somebody does something dumb re: configuration."""
@@ -42,13 +46,13 @@ class _CONFIG:
     def params(cls) -> UmbralParameters:
         if not cls.__params:
             cls.__set_curve_by_default()
-        return cls.__params
+        return cls.__params  # type: ignore
 
     @classmethod
-    def curve(cls) -> Type[Curve]:
+    def curve(cls) -> Curve:
         if not cls.__curve:
             cls.__set_curve_by_default()
-        return cls.__curve
+        return cls.__curve  # type: ignore
 
     @classmethod
     def set_curve(cls, curve: Optional[Curve] = None) -> None:
@@ -67,7 +71,7 @@ def set_default_curve(curve: Optional[Curve] = None) -> None:
     return _CONFIG.set_curve(curve)
 
 
-def default_curve() -> Type[Curve]:
+def default_curve() -> Curve:
     return _CONFIG.curve()
 
 

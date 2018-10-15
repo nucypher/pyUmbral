@@ -54,6 +54,10 @@ other_supported_curves = (
     SECP256R1
 )
 
+kfrag_signing_modes = (
+    (True, True), (True, False), (False, True), (False, False)
+)
+
 @pytest.fixture(scope='function')
 def alices_keys():
     delegating_priv = keys.UmbralPrivateKey.gen_key()
@@ -108,13 +112,11 @@ def prepared_capsule(alices_keys, bobs_keys):
 @pytest.fixture(scope='function')
 def kfrags(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
     signer_alice = Signer(signing_privkey)
 
     receiving_privkey, receiving_pubkey = bobs_keys
 
-    yield pre.split_rekey(delegating_privkey, signer_alice, receiving_pubkey, 6, 10)
-
-
-
-
+    yield pre.generate_kfrags(delegating_privkey=delegating_privkey,
+                              signer=signer_alice,
+                              receiving_pubkey=receiving_pubkey,
+                              threshold=6, N=10)

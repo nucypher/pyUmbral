@@ -41,10 +41,11 @@ class Point(object):
 
     @classmethod
     def expected_bytes_length(cls, curve: Optional[Curve] = None,
-                              is_compressed: bool=True):
+                              is_compressed: bool = True):
         """
-        Returns the size (in bytes) of a compressed Point given a curve.
+        Returns the size (in bytes) of a Point given a curve.
         If no curve is provided, it uses the default curve.
+        By default, it assumes compressed representation (is_compressed = True).
         """
         curve = curve if curve is not None else default_curve()
 
@@ -160,7 +161,7 @@ class Point(object):
         # 1 is not-equal, 0 is equal, -1 is error
         return not bool(is_equal)
 
-    def __mul__(self, other) -> 'Point':
+    def __mul__(self, other: CurveBN) -> 'Point':
         """
         Performs an EC_POINT_mul on an EC_POINT and a BIGNUM.
         """

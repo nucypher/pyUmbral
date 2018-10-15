@@ -55,11 +55,10 @@ print(ciphertext)
 # Since data was encrypted with Alice's public key,
 # Alice can open the capsule and decrypt the ciphertext with her private key.
 
-cleartext = pre.decrypt(ciphertext=ciphertext, 
-						capsule=capsule, 
-						decrypting_key=alices_private_key)
+cleartext = pre.decrypt(ciphertext=ciphertext,
+                        capsule=capsule,
+                        decrypting_key=alices_private_key)
 print(cleartext)
-
 
 #5
 # Bob Exists
@@ -75,9 +74,9 @@ bob_capsule = capsule
 #7
 # Attempt Bob's decryption (fail)
 try:
-    fail_decrypted_data = pre.decrypt(ciphertext=ciphertext, 
-    								  capsule=bob_capsule, 
-    								  decrypting_key=bobs_private_key)
+    fail_decrypted_data = pre.decrypt(ciphertext=ciphertext,
+                                      capsule=bob_capsule,
+                                      decrypting_key=bobs_private_key)
 except:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
@@ -90,12 +89,11 @@ except:
 # She uses her private key, and Bob's public key, and she sets a minimum 
 # threshold of 10, for 20 total shares
 
-kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
-                         signer=alices_signer,
-                         receiving_pubkey=bobs_public_key,
-                         threshold=10,
-                         N=20)
-
+kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
+                             signer=alices_signer,
+                             receiving_pubkey=bobs_public_key,
+                             threshold=10,
+                             N=20)
 
 #9
 # Ursulas perform re-encryption
@@ -107,6 +105,7 @@ kfrags = pre.split_rekey(delegating_privkey=alices_private_key,
 # one for each required Ursula.
 
 import random
+
 kfrags = random.sample(kfrags,  # All kfrags from above
                        10)      # M - Threshold
 
@@ -117,13 +116,12 @@ bob_capsule.set_correctness_keys(delegating=alices_public_key,
                                  receiving=bobs_public_key,
                                  verifying=alices_verifying_key)
 
-cfrags = list()                 # Bob's cfrag collection
+cfrags = list()  # Bob's cfrag collection
 for kfrag in kfrags:
-	cfrag = pre.reencrypt(kfrag=kfrag, capsule=bob_capsule)
-	cfrags.append(cfrag)        # Bob collects a cfrag
+    cfrag = pre.reencrypt(kfrag=kfrag, capsule=bob_capsule)
+    cfrags.append(cfrag)  # Bob collects a cfrag
 
 assert len(cfrags) == 10
-
 
 #10
 # Bob attaches cfrags to the capsule
@@ -132,14 +130,13 @@ assert len(cfrags) == 10
 # then it can become *activated*.
 
 for cfrag in cfrags:
-	bob_capsule.attach_cfrag(cfrag)
+    bob_capsule.attach_cfrag(cfrag)
 
 #11
 # Bob activates and opens the capsule
 # ------------------------------------
 # Finally, Bob activates and opens the capsule,
 # then decrypts the re-encrypted ciphertext.
-
 
 bob_cleartext = pre.decrypt(ciphertext=ciphertext, capsule=bob_capsule, decrypting_key=bobs_private_key)
 print(bob_cleartext)

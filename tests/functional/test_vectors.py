@@ -27,10 +27,6 @@ from umbral.config import default_params
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral import pre
 
-import pytest
-
-pytestmark = pytest.mark.xfail(reason="Test vectors are outdated")
-
 def test_curvebn_operations():
 
     vector_file = os.path.join('vectors', 'vectors_curvebn_operations.json')
@@ -188,6 +184,5 @@ def test_cfrags():
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
         assert new_cfrag._point_precursor == cfrag._point_precursor
-        assert new_cfrag._point_xcoord == cfrag._point_xcoord
         assert new_cfrag.proof is None
         assert cfrag.to_bytes() == new_cfrag.to_bytes()

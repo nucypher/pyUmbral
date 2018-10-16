@@ -54,11 +54,20 @@ receiving_key = receiving_privkey.get_pubkey()
 
 signer = Signer(signing_privkey)
 
-kfrags = pre.generate_kfrags(delegating_privkey, signer, receiving_key, 6, 10)
+kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
+                             receiving_pubkey=receiving_key,
+                             threshold=6,
+                             N=10,
+                             signer=signer,
+                             )
 
 plain_data = b'peace at dawn'
 
 ciphertext, capsule = pre.encrypt(delegating_key, plain_data)
+
+capsule.set_correctness_keys(delegating=delegating_key,
+                             receiving=receiving_key,
+                             verifying=verifying_key)
 
 cfrag = pre.reencrypt(kfrags[0], capsule)
 points = [capsule._point_e, cfrag._point_e1, cfrag.proof._point_e2,

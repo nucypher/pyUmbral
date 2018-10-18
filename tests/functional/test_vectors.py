@@ -27,10 +27,6 @@ from umbral.config import default_params
 from umbral.fragments import KFrag, CapsuleFrag
 from umbral import pre
 
-import pytest
-
-pytestmark = pytest.mark.xfail(reason="Test vectors are outdated")
-
 def test_curvebn_operations():
 
     vector_file = os.path.join('vectors', 'vectors_curvebn_operations.json')
@@ -48,14 +44,14 @@ def test_curvebn_operations():
         result = bytes.fromhex(op_result['result'])
         expected[op_result['operation']] = CurveBN.from_bytes(result)
 
-    test = [  ('Addition', bn1 + bn2),
-              ('Subtraction', bn1 - bn2),
-              ('Multiplication', bn1 * bn2),
-              ('Division', bn1 / bn2), 
-              ('Pow', bn1 ** bn2),
-              ('Mod', bn1 % bn2),
-              ('Inverse', ~bn1),    
-              ('Neg', -bn1),
+    test = [('Addition', bn1 + bn2),
+            ('Subtraction', bn1 - bn2),
+            ('Multiplication', bn1 * bn2),
+            ('Division', bn1 / bn2),
+            ('Pow', bn1 ** bn2),
+            ('Mod', bn1 % bn2),
+            ('Inverse', ~bn1),
+            ('Neg', -bn1),
             ]
 
     for (operation, result) in test:
@@ -95,18 +91,18 @@ def test_point_operations():
     for op_result in vector_suite['vectors']:
         expected[op_result['operation']] = bytes.fromhex(op_result['result'])
 
-    test = [  ('Addition', point1 + point2),
-              ('Subtraction', point1 - point2),
-              ('Multiplication', bn1 * point1),
-              ('Inversion', -point1), 
-           ]
+    test = [('Addition', point1 + point2),
+            ('Subtraction', point1 - point2),
+            ('Multiplication', bn1 * point1),
+            ('Inversion', -point1),
+            ]
 
     for (operation, result) in test:
         assert result == Point.from_bytes(expected[operation]), 'Error in {}'.format(operation)
 
-    test = [ ('To_affine.X', point1.to_affine()[0]),
-             ('To_affine.Y', point1.to_affine()[1]),
-           ]
+    test = [('To_affine.X', point1.to_affine()[0]),
+            ('To_affine.Y', point1.to_affine()[1]),
+            ]
 
     for (operation, result) in test:
         assert result == int.from_bytes(expected[operation], 'big'), 'Error in {}'.format(operation)
@@ -139,16 +135,12 @@ def test_kfrags():
     except OSError:
         raise 
 
-
     verifying_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['verifying_key']))
     delegating_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['delegating_key']))
     receiving_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['receiving_key']))
 
-    kfrags = [ KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag']))
-                    for json_kfrag in vector_suite['vectors']]
-
-
-    for kfrag in kfrags:
+    for json_kfrag in vector_suite['vectors']:
+        kfrag = KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag']))
         assert kfrag.verify(signing_pubkey=verifying_key,
                             delegating_pubkey=delegating_key,
                             receiving_pubkey=receiving_key), \
@@ -173,9 +165,9 @@ def test_cfrags():
     delegating_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['delegating_key']))
     receiving_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['receiving_key']))
 
-    kfrags_n_cfrags = [ ( KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag'])),
-                          CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
-                            for json_kfrag in vector_suite['vectors']]
+    kfrags_n_cfrags = [(KFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag'])),
+                        CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
+                       for json_kfrag in vector_suite['vectors']]
 
     capsule.set_correctness_keys(delegating=delegating_key,
                                  receiving=receiving_key,
@@ -192,6 +184,5 @@ def test_cfrags():
         assert new_cfrag._point_v1 == cfrag._point_v1
         assert new_cfrag._kfrag_id == cfrag._kfrag_id
         assert new_cfrag._point_precursor == cfrag._point_precursor
-        assert new_cfrag._point_xcoord == cfrag._point_xcoord
         assert new_cfrag.proof is None
         assert cfrag.to_bytes() == new_cfrag.to_bytes()

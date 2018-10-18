@@ -84,11 +84,19 @@ workflows:
               only: /v[0-9]+.*/
             branches:
               ignore: /.*/
-      - deploy:
+      - request_publication_approval:
           type: approval
-          context: "NuCypher PyPI"
           requires:
             - test_deploy
+          filters:
+            tags:
+              only: /v[0-9]+.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          context: "NuCypher PyPI"
+          requires:
+            - request_publication_approval
           filters:
             tags:
               only: /v[0-9]+.*/

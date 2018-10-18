@@ -36,6 +36,8 @@ from umbral.curve import Curve
 from umbral.utils import poly_eval, lambda_coeff
 from umbral.random_oracles import kdf, hash_to_curvebn
 
+from constant_sorrow import constants
+
 
 class GenericUmbralError(Exception):
     pass
@@ -230,8 +232,6 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
 
     dh_point = private_precursor * bob_pubkey_point
 
-    from constant_sorrow import constants
-
     # Secret value 'd' allows to make Umbral non-interactive
     d = hash_to_curvebn(precursor,
                         bob_pubkey_point,
@@ -379,33 +379,25 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     precursor = capsule._attached_cfrags[0]._point_precursor
     dh_point = priv_key * precursor
 
-    from constant_sorrow import constants
-
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
-    if len(capsule._attached_cfrags) > 1:
-        xs = [hash_to_curvebn(precursor,
-                              pub_key,
-                              dh_point,
-                              bytes(constants.X_COORDINATE),
-                              cfrag._kfrag_id,
-                              params=params)
-              for cfrag in capsule._attached_cfrags]
+    xs = [hash_to_curvebn(precursor,
+                          pub_key,
+                          dh_point,
+                          bytes(constants.X_COORDINATE),
+                          cfrag._kfrag_id,
+                          params=params)
+          for cfrag in capsule._attached_cfrags]
 
-        e_summands, v_summands = list(), list()
-        for cfrag, x in zip(capsule._attached_cfrags, xs):
-            if precursor != cfrag._point_precursor:
-                raise ValueError("Attached CFrags are not pairwise consistent")
+    e_summands, v_summands = list(), list()
+    for cfrag, x in zip(capsule._attached_cfrags, xs):
+        if precursor != cfrag._point_precursor:
+            raise ValueError("Attached CFrags are not pairwise consistent")
+        lambda_i = lambda_coeff(x, xs)
+        e_summands.append(lambda_i * cfrag._point_e1)
+        v_summands.append(lambda_i * cfrag._point_v1)
 
-
-            lambda_i = lambda_coeff(x, xs)
-            e_summands.append(lambda_i * cfrag._point_e1)
-            v_summands.append(lambda_i * cfrag._point_v1)
-
-        e_prime = sum(e_summands[1:], e_summands[0])
-        v_prime = sum(v_summands[1:], v_summands[0])
-    else:
-        e_prime = capsule._attached_cfrags[0]._point_e1
-        v_prime = capsule._attached_cfrags[0]._point_v1
+    e_prime = sum(e_summands[1:], e_summands[0])
+    v_prime = sum(v_summands[1:], v_summands[0])
 
     # Secret value 'd' allows to make Umbral non-interactive
     d = hash_to_curvebn(precursor,

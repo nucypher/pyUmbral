@@ -20,14 +20,13 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 from typing import List
 
 from umbral.curvebn import CurveBN
-from umbral.point import Point
 
 
 def lambda_coeff(id_i: CurveBN, selected_ids: List[CurveBN]) -> CurveBN:
     ids = [x for x in selected_ids if x != id_i]
 
     if not ids:
-        CurveBN.from_int(1, id_i.curve)
+        return CurveBN.from_int(1, id_i.curve)
 
     result = ids[0] / (ids[0] - id_i)
     for id_j in ids[1:]:

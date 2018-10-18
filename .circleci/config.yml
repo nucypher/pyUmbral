@@ -343,13 +343,19 @@ jobs:
       - checkout
       - run:
           name: Install dependencies
-          command: pipenv sync --three --dev
+          command: |
+              pipenv sync --three --dev
+              pipenv install --dev --skip-lock twine
       - run:
           name: Verify git tag == __version__
           command: pipenv run python setup.py verify
       - run:
           name: Initialize .pypirc
           command: |
+            echo -e "[distutils]" >> ~/.pypirc
+            echo -e "index-servers = " >> ~/.pypirc
+            echo -e "    pypi" >> ~/.pypirc
+            echo -e "" >> ~/.pypirc
             echo -e "[pypi]" >> ~/.pypirc
             echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc

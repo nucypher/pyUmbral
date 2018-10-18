@@ -306,9 +306,15 @@ jobs:
       - run:
           name: Initialize .pypirc (Test Deploy)
           command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            echo -e "[distutils]" >> ~/.pypirc
+            echo -e "index-servers = " >> ~/.pypirc
+            echo -e "    pypi" >> ~/.pypirc
+            echo -e "    testpypi" >> ~/.pypirc
+            echo -e "" >> ~/.pypirc
+            echo -e "[testpypi]" >> ~/.pypirc
+            echo -e "repository: https://test.pypi.org/legacy/" >> ~/.pypirc
+            echo -e "username: $TEST_PYPI_USERNAME" >> ~/.pypirc
+            echo -e "password: $TEST_PYPI_PASSWORD" >> ~/.pypirc
       - run:
           name: Build Python Wheel (Test Deploy)
           command: |
@@ -316,7 +322,7 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to TestPyPI
-          command: twine upload --repository-url https://test.pypi.org/legacy/ dist/* --verbose
+          command: pipenv run twine upload --repository testpypi dist/*
       - run:
           name: pip install from TestPyPI
           command: |

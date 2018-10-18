@@ -44,10 +44,16 @@ class VerifyVersionCommand(install):
 
     def run(self):
         tag = os.getenv('CIRCLE_TAG')
+        if tag.startswith('v'):
+            tag = tag[1:]
 
-        if tag != ABOUT['__version__']:
+        version = ABOUT['__version__']
+        if version.startswith('v'):
+            version = version[1:]
+
+        if tag != version:
             info = "Git tag: {0} does not match the version of this app: {1}".format(
-                tag, ABOUT['__version__']
+                os.getenv('CIRCLE_TAG'), ABOUT['__version__']
             )
             sys.exit(info)
 
@@ -55,7 +61,9 @@ class VerifyVersionCommand(install):
 INSTALL_REQUIRES = ['setuptools',
                     'cryptography>=2.3',
                     'pynacl',
-                    'byteStringSplitter']
+                    'byteStringSplitter',
+                    'constant-sorrow',
+                    ]
 
 EXTRAS_REQUIRE = {'testing': ['bumpversion',
                               'hypothesis',
@@ -66,7 +74,10 @@ EXTRAS_REQUIRE = {'testing': ['bumpversion',
                               'mock',
                               'coverage',
                               'codecov',
-                              'monkeytype==18.2.0'],
+                              'monkeytype==18.2.0',
+                              'nbval',
+                              'mypy',
+                              ],
 
                   'docs': ['sphinx', 'sphinx-autobuild'],
 

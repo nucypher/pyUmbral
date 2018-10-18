@@ -322,11 +322,11 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to TestPyPI
-          command: pipenv run twine upload --repository testpypi dist/*
+          command: pipenv run twine upload --repository testpypi dist/* --verbose
       - run:
           name: pip install from TestPyPI
           command: |
-            pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple umbral
+            pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple umbral --verbose
             python -c "import umbral; print(umbral.__version__)"
 
   deploy:
@@ -356,5 +356,5 @@ jobs:
       - run:
           name: pip install from PyPI
           command: |
-            pip install umbral --verbose
+            pip install --user umbral --verbose
             python -c "import umbral; print(umbral.__version__)"

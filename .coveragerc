@@ -2,3 +2,4 @@
 omit =
     setup.py,
     *__init__.py
+parallel=True

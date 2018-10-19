@@ -17,17 +17,16 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import hmac
 from typing import Optional
 
 from bytestring_splitter import BytestringSplitter
 
-from umbral._pre import assess_cfrag_correctness
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.signing import Signature
 from umbral.curve import Curve
+from umbral.random_oracles import hash_to_curvebn
 
 
 class CorrectnessProof(object):
@@ -170,8 +169,60 @@ class CapsuleFrag(object):
 
         return serialized_cfrag
 
-    def verify_correctness(self, capsule: 'Capsule') -> bool:
-        return assess_cfrag_correctness(self, capsule)
+    def verify_correctness(self, capsule) -> bool:
+        if self.proof is None:
+            raise CapsuleFrag.NoProofProvided
+
+        correctness_keys = capsule.get_correctness_keys()
+
+        delegating_pubkey = correctness_keys['delegating']
+        signing_pubkey = correctness_keys['verifying']
+        receiving_pubkey = correctness_keys['receiving']
+
+        params = capsule.params
+
+        ####
+        # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
+        ####
+        e = capsule._point_e
+        v = capsule._point_v
+
+        e1 = self._point_e1
+        v1 = self._point_v1
+
+        u = params.u
+        u1 = self.proof._point_kfrag_commitment
+
+        e2 = self.proof._point_e2
+        v2 = self.proof._point_v2
+        u2 = self.proof._point_kfrag_pok
+
+        hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+        if self.proof.metadata is not None:
+            hash_input.append(self.proof.metadata)
+
+        h = hash_to_curvebn(*hash_input, params=params)
+        ########
+
+        precursor = self._point_precursor
+        kfrag_id = self._kfrag_id
+
+        validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
+
+        kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
+        valid_kfrag_signature = self.proof.kfrag_signature.verify(kfrag_validity_message, signing_pubkey)
+
+        z3 = self.proof.bn_sig
+        correct_reencryption_of_e = z3 * e == e2 + (h * e1)
+
+        correct_reencryption_of_v = z3 * v == v2 + (h * v1)
+
+        correct_rk_commitment = z3 * u == u2 + (h * u1)
+
+        return valid_kfrag_signature \
+               & correct_reencryption_of_e \
+               & correct_reencryption_of_v \
+               & correct_rk_commitment
 
     def attach_proof(self,
                      e2: Point,

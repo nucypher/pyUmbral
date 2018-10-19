@@ -22,7 +22,6 @@ from typing import Optional
 
 from bytestring_splitter import BytestringSplitter
 
-from umbral._pre import verify_kfrag
 from umbral.config import default_curve, default_params
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey
@@ -136,13 +135,35 @@ class KFrag(object):
                ) -> bool:
         if params is None:
             params = default_params()
-        return verify_kfrag(kfrag=self,
-                            params=params,
-                            delegating_pubkey=delegating_pubkey,
-                            signing_pubkey=signing_pubkey,
-                            receiving_pubkey=receiving_pubkey)
 
-    def verify_for_capsule(self, capsule: 'Capsule') -> bool:
+        if delegating_pubkey and delegating_pubkey.params != params:
+            raise ValueError("The delegating key uses different UmbralParameters")
+        if receiving_pubkey and receiving_pubkey.params != params:
+            raise ValueError("The receiving key uses different UmbralParameters")
+
+        u = params.u
+
+        kfrag_id = self.id
+        key = self._bn_key
+        commitment = self._point_commitment
+        precursor = self._point_precursor
+
+        #  We check that the commitment is well-formed
+        correct_commitment = commitment == key * u
+        validity_input = [kfrag_id, commitment, precursor, self.keys_in_signature]
+
+        if self.delegating_key_in_signature():
+            validity_input.append(delegating_pubkey)
+
+        if self.receiving_key_in_signature():
+            validity_input.append(receiving_pubkey)
+
+        kfrag_validity_message = bytes().join(bytes(item) for item in validity_input)
+        valid_kfrag_signature = self.signature_for_proxy.verify(kfrag_validity_message, signing_pubkey)
+
+        return correct_commitment & valid_kfrag_signature
+
+    def verify_for_capsule(self, capsule) -> bool:
         correctness_keys = capsule.get_correctness_keys()
 
         return self.verify(params=capsule.params,

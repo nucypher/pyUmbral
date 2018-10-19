@@ -22,7 +22,6 @@ import typing
 from typing import Dict, List, Optional, Tuple, Union, Any
 
 from bytestring_splitter import BytestringSplitter
-from umbral._pre import prove_cfrag_correctness
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
@@ -327,6 +326,48 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
         prove_cfrag_correctness(cfrag, kfrag, capsule, metadata)
 
     return cfrag
+
+
+def prove_cfrag_correctness(cfrag: CapsuleFrag,
+                            kfrag: KFrag,
+                            capsule: Capsule,
+                            metadata: Optional[bytes] = None
+                            ) -> None:
+
+    params = capsule.params
+
+    # Check correctness of original ciphertext
+    if not capsule.verify():
+        raise capsule.NotValid("Capsule verification failed.")
+
+    rk = kfrag._bn_key
+    t = CurveBN.gen_rand(params.curve)
+    ####
+    # Here are the formulaic constituents shared with `assess_cfrag_correctness`.
+    ####
+    e = capsule._point_e
+    v = capsule._point_v
+
+    e1 = cfrag._point_e1
+    v1 = cfrag._point_v1
+
+    u = params.u
+    u1 = kfrag._point_commitment
+
+    e2 = t * e  # type: Any
+    v2 = t * v  # type: Any
+    u2 = t * u  # type: Any
+
+    hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+    if metadata is not None:
+        hash_input.append(metadata)
+
+    h = hash_to_curvebn(*hash_input, params=params)
+    ########
+
+    z3 = t + h * rk
+
+    cfrag.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
 
 
 def _encapsulate(alice_pubkey: UmbralPublicKey, 

@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from umbral.fragments import KFrag
+from umbral.kfrags import KFrag
 
 
 def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):

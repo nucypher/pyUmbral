@@ -18,7 +18,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from umbral import pre
-from umbral.fragments import CapsuleFrag, CorrectnessProof
+from umbral.cfrags import CapsuleFrag, CorrectnessProof
 
 
 def test_cfrag_serialization_with_proof_and_metadata(prepared_capsule, kfrags):

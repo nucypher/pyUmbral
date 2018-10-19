@@ -24,7 +24,8 @@ from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.keys import UmbralPublicKey
 from umbral.config import default_params
-from umbral.fragments import KFrag, CapsuleFrag
+from umbral.kfrags import KFrag
+from umbral.cfrags import CapsuleFrag
 from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
 from umbral import pre
 

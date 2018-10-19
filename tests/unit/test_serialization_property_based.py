@@ -22,7 +22,8 @@ from hypothesis import HealthCheck, given, settings, unlimited
 from hypothesis.strategies import binary, booleans, integers, tuples
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
-from umbral.fragments import CorrectnessProof, KFrag
+from umbral.cfrags import CorrectnessProof
+from umbral.kfrags import KFrag
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point

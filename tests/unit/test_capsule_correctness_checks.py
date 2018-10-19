@@ -22,7 +22,7 @@ import os
 import pytest
 
 from umbral.curvebn import CurveBN
-from umbral.fragments import CapsuleFrag
+from umbral.cfrags import CapsuleFrag
 from umbral.keys import UmbralPrivateKey
 from umbral.point import Point
 from umbral.pre import Capsule

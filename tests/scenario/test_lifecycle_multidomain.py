@@ -20,7 +20,8 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
 from umbral import pre
-from umbral.fragments import KFrag, CapsuleFrag
+from umbral.cfrags import CapsuleFrag
+from umbral.kfrags import KFrag
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
 from umbral.signing import Signer

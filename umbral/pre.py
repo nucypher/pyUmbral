@@ -26,8 +26,8 @@ from umbral._pre import prove_cfrag_correctness
 from umbral.config import default_curve
 from umbral.curvebn import CurveBN
 from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
-from umbral.fragments import (KFrag, CapsuleFrag, NO_KEY, DELEGATING_ONLY,
-                              RECEIVING_ONLY, DELEGATING_AND_RECEIVING)
+from umbral.cfrags import CapsuleFrag
+from umbral.kfrags import KFrag, NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point

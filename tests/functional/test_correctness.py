@@ -22,7 +22,7 @@ import pytest
 from umbral import pre
 from umbral.point import Point
 from umbral.signing import Signer
-from umbral.fragments import CapsuleFrag
+from umbral.cfrags import CapsuleFrag
 
 
 def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,

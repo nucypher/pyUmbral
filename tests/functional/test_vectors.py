@@ -182,9 +182,9 @@ def test_cfrags():
             'Invalid KFrag {}'.format(kfrag.to_bytes().hex())
 
         new_cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
-        assert new_cfrag._point_e1 == cfrag._point_e1
-        assert new_cfrag._point_v1 == cfrag._point_v1
-        assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_precursor == cfrag._point_precursor
+        assert new_cfrag.point_e1 == cfrag.point_e1
+        assert new_cfrag.point_v1 == cfrag.point_v1
+        assert new_cfrag.kfrag_id == cfrag.kfrag_id
+        assert new_cfrag.point_precursor == cfrag.point_precursor
         assert new_cfrag.proof is None
         assert cfrag.to_bytes() == new_cfrag.to_bytes()

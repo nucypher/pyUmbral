@@ -89,8 +89,8 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
         cfrags.append(cfrag)
 
     # Let's put random garbage in one of the cfrags
-    cfrags[0]._point_e1 = Point.gen_rand()
-    cfrags[0]._point_v1 = Point.gen_rand()
+    cfrags[0].point_e1 = Point.gen_rand()
+    cfrags[0].point_v1 = Point.gen_rand()
 
     #  Of course, this CFrag is not valid ...
     assert not cfrags[0].verify_correctness(capsule_alice)

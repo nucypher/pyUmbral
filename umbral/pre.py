@@ -63,9 +63,9 @@ class Capsule(object):
                     isinstance(bn_sig, CurveBN))):
             raise TypeError("Need valid point_e, point_v, and bn_sig to make a Capsule.")
 
-        self._point_e = point_e
-        self._point_v = point_v
-        self._bn_sig = bn_sig
+        self.point_e = point_e
+        self.point_v = point_v
+        self.bn_sig = bn_sig
 
         self._attached_cfrags = list()    # type: list
         self._cfrag_correctness_keys = {
@@ -170,7 +170,7 @@ class Capsule(object):
             raise UmbralCorrectnessError(error_msg, [cfrag])
 
     def components(self) -> Tuple[Point, Point, CurveBN]:
-        return self._point_e, self._point_v, self._bn_sig
+        return self.point_e, self.point_v, self.bn_sig
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
@@ -191,7 +191,7 @@ class Capsule(object):
         return len(self._attached_cfrags)
 
     def __repr__(self):
-        return "{}:{}".format(self.__class__.__name__, hex(int(self._bn_sig))[2:17])
+        return "{}:{}".format(self.__class__.__name__, hex(int(self.bn_sig))[2:17])
 
 
 def generate_kfrags(delegating_privkey: UmbralPrivateKey,
@@ -315,12 +315,12 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
     elif not isinstance(kfrag, KFrag) or not kfrag.verify_for_capsule(capsule):
         raise KFrag.NotValid
 
-    rk = kfrag._bn_key
-    e1 = rk * capsule._point_e  # type: Any
-    v1 = rk * capsule._point_v  # type: Any
+    rk = kfrag.bn_key
+    e1 = rk * capsule.point_e  # type: Any
+    v1 = rk * capsule.point_v  # type: Any
 
     cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag.id,
-                        point_precursor=kfrag._point_precursor)
+                        point_precursor=kfrag.point_precursor)
 
     if provide_proof:
         prove_cfrag_correctness(cfrag, kfrag, capsule, metadata)
@@ -340,19 +340,19 @@ def prove_cfrag_correctness(cfrag: CapsuleFrag,
     if not capsule.verify():
         raise capsule.NotValid("Capsule verification failed.")
 
-    rk = kfrag._bn_key
+    rk = kfrag.bn_key
     t = CurveBN.gen_rand(params.curve)
     ####
     # Here are the formulaic constituents shared with `assess_cfrag_correctness`.
     ####
-    e = capsule._point_e
-    v = capsule._point_v
+    e = capsule.point_e
+    v = capsule.point_v
 
-    e1 = cfrag._point_e1
-    v1 = cfrag._point_v1
+    e1 = cfrag.point_e1
+    v1 = cfrag.point_v1
 
     u = params.u
-    u1 = kfrag._point_commitment
+    u1 = kfrag.point_commitment
 
     e2 = t * e  # type: Any
     v2 = t * v  # type: Any
@@ -394,7 +394,7 @@ def _encapsulate(alice_pubkey: UmbralPublicKey,
     return key, Capsule(point_e=pub_r, point_v=pub_u, bn_sig=s, params=params)
 
 
-def _decapsulate_original(priv_key: UmbralPrivateKey,
+def _decapsulate_original(private_key: UmbralPrivateKey,
                           capsule: Capsule,
                           key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
@@ -403,7 +403,7 @@ def _decapsulate_original(priv_key: UmbralPrivateKey,
         # Check correctness of original ciphertext
         raise capsule.NotValid("Capsule verification failed.")
 
-    shared_key = priv_key.bn_key * (capsule._point_e + capsule._point_v)  # type: Any
+    shared_key = private_key.bn_key * (capsule.point_e + capsule.point_v)  # type: Any
     key = kdf(shared_key, key_length)
     return key
 
@@ -417,7 +417,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    precursor = capsule._attached_cfrags[0]._point_precursor
+    precursor = capsule._attached_cfrags[0].point_precursor
     dh_point = priv_key * precursor
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
@@ -425,17 +425,17 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
                           pub_key,
                           dh_point,
                           bytes(constants.X_COORDINATE),
-                          cfrag._kfrag_id,
+                          cfrag.kfrag_id,
                           params=params)
           for cfrag in capsule._attached_cfrags]
 
     e_summands, v_summands = list(), list()
     for cfrag, x in zip(capsule._attached_cfrags, xs):
-        if precursor != cfrag._point_precursor:
+        if precursor != cfrag.point_precursor:
             raise ValueError("Attached CFrags are not pairwise consistent")
         lambda_i = lambda_coeff(x, xs)
-        e_summands.append(lambda_i * cfrag._point_e1)
-        v_summands.append(lambda_i * cfrag._point_v1)
+        e_summands.append(lambda_i * cfrag.point_e1)
+        v_summands.append(lambda_i * cfrag.point_v1)
 
     e_prime = sum(e_summands[1:], e_summands[0])
     v_prime = sum(v_summands[1:], v_summands[0])

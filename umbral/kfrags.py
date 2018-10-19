@@ -50,9 +50,9 @@ class KFrag(object):
                  keys_in_signature=DELEGATING_AND_RECEIVING,
                  ) -> None:
         self.id = identifier
-        self._bn_key = bn_key
-        self._point_commitment = point_commitment
-        self._point_precursor = point_precursor
+        self.bn_key = bn_key
+        self.point_commitment = point_commitment
+        self.point_precursor = point_precursor
         self.signature_for_proxy = signature_for_proxy
         self.signature_for_bob = signature_for_bob
         self.keys_in_signature = keys_in_signature
@@ -73,9 +73,9 @@ class KFrag(object):
         point_size = Point.expected_bytes_length(curve)
 
         # self.id --> 1 bn_size
-        # self._bn_key --> 1 bn_size
-        # self._point_commitment --> 1 point_size
-        # self._point_precursor --> 1 point_size
+        # self.bn_key --> 1 bn_size
+        # self.point_commitment --> 1 point_size
+        # self.point_precursor --> 1 point_size
         # self.signature_for_proxy --> 2 bn_size
         # self.signature_for_bob --> 2 bn_size
         # self.keys_in_signature --> 1
@@ -117,9 +117,9 @@ class KFrag(object):
         """
         Serialize the KFrag into a bytestring.
         """
-        key = self._bn_key.to_bytes()
-        commitment = self._point_commitment.to_bytes()
-        precursor = self._point_precursor.to_bytes()
+        key = self.bn_key.to_bytes()
+        commitment = self.point_commitment.to_bytes()
+        precursor = self.point_precursor.to_bytes()
         signature_for_proxy = bytes(self.signature_for_proxy)
         signature_for_bob = bytes(self.signature_for_bob)
         mode = bytes(self.keys_in_signature)
@@ -144,9 +144,9 @@ class KFrag(object):
         u = params.u
 
         kfrag_id = self.id
-        key = self._bn_key
-        commitment = self._point_commitment
-        precursor = self._point_precursor
+        key = self.bn_key
+        commitment = self.point_commitment
+        precursor = self.point_precursor
 
         #  We check that the commitment is well-formed
         correct_commitment = commitment == key * u

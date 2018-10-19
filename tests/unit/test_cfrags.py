@@ -34,17 +34,17 @@ def test_cfrag_serialization_with_proof_and_metadata(prepared_capsule, kfrags):
         assert proof.metadata is not None
 
         new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
-        assert new_cfrag._point_e1 == cfrag._point_e1
-        assert new_cfrag._point_v1 == cfrag._point_v1
-        assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_precursor == cfrag._point_precursor
+        assert new_cfrag.point_e1 == cfrag.point_e1
+        assert new_cfrag.point_v1 == cfrag.point_v1
+        assert new_cfrag.kfrag_id == cfrag.kfrag_id
+        assert new_cfrag.point_precursor == cfrag.point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is not None
-        assert new_proof._point_e2 == proof._point_e2
-        assert new_proof._point_v2 == proof._point_v2
-        assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
-        assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
+        assert new_proof.point_e2 == proof.point_e2
+        assert new_proof.point_v2 == proof.point_v2
+        assert new_proof.point_kfrag_commitment == proof.point_kfrag_commitment
+        assert new_proof.point_kfrag_pok == proof.point_kfrag_pok
         assert new_proof.bn_sig == proof.bn_sig
         assert new_proof.metadata == metadata
         assert new_proof.metadata == proof.metadata
@@ -65,17 +65,17 @@ def test_cfrag_serialization_with_proof_but_no_metadata(prepared_capsule, kfrags
         # assert len(cfrag_bytes) == 33 + 33 + 33 + 32 == 131
 
         new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
-        assert new_cfrag._point_e1 == cfrag._point_e1
-        assert new_cfrag._point_v1 == cfrag._point_v1
-        assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_precursor == cfrag._point_precursor
+        assert new_cfrag.point_e1 == cfrag.point_e1
+        assert new_cfrag.point_v1 == cfrag.point_v1
+        assert new_cfrag.kfrag_id == cfrag.kfrag_id
+        assert new_cfrag.point_precursor == cfrag.point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is not None
-        assert new_proof._point_e2 == proof._point_e2
-        assert new_proof._point_v2 == proof._point_v2
-        assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
-        assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
+        assert new_proof.point_e2 == proof.point_e2
+        assert new_proof.point_v2 == proof.point_v2
+        assert new_proof.point_kfrag_commitment == proof.point_kfrag_commitment
+        assert new_proof.point_kfrag_pok == proof.point_kfrag_pok
         assert new_proof.bn_sig == proof.bn_sig
         assert new_proof.metadata is None
 
@@ -92,10 +92,10 @@ def test_cfrag_serialization_no_proof_no_metadata(prepared_capsule, kfrags):
         assert len(cfrag_bytes) == CapsuleFrag.expected_bytes_length()
 
         new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
-        assert new_cfrag._point_e1 == cfrag._point_e1
-        assert new_cfrag._point_v1 == cfrag._point_v1
-        assert new_cfrag._kfrag_id == cfrag._kfrag_id
-        assert new_cfrag._point_precursor == cfrag._point_precursor
+        assert new_cfrag.point_e1 == cfrag.point_e1
+        assert new_cfrag.point_v1 == cfrag.point_v1
+        assert new_cfrag.kfrag_id == cfrag.kfrag_id
+        assert new_cfrag.point_precursor == cfrag.point_precursor
 
         new_proof = new_cfrag.proof
         assert new_proof is None
@@ -117,10 +117,10 @@ def test_correctness_proof_serialization(prepared_capsule, kfrags):
         # assert len(proof_bytes) == (33 * 4) + (32 * 3) == 228
 
         new_proof = CorrectnessProof.from_bytes(proof_bytes)
-        assert new_proof._point_e2 == proof._point_e2
-        assert new_proof._point_v2 == proof._point_v2
-        assert new_proof._point_kfrag_commitment == proof._point_kfrag_commitment
-        assert new_proof._point_kfrag_pok == proof._point_kfrag_pok
+        assert new_proof.point_e2 == proof.point_e2
+        assert new_proof.point_v2 == proof.point_v2
+        assert new_proof.point_kfrag_commitment == proof.point_kfrag_commitment
+        assert new_proof.point_kfrag_pok == proof.point_kfrag_pok
         assert new_proof.bn_sig == proof.bn_sig
         assert new_proof.kfrag_signature == proof.kfrag_signature
         assert new_proof.metadata == proof.metadata

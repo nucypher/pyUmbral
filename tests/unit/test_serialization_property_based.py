@@ -51,22 +51,22 @@ signatures = tuples(integers(min_value=1, max_value=backend._bn_to_int(curve.ord
 
 # # utility
 def assert_kfrag_eq(k0, k1):
-    assert(all([ k0.id                == k1.id
-               , k0._bn_key           == k1._bn_key
-               , k0._point_precursor  == k1._point_precursor
-               , k0._point_commitment == k1._point_commitment
-               , k0.signature_for_bob == k1.signature_for_bob
+    assert(all([ k0.id                  == k1.id
+               , k0.bn_key              == k1.bn_key
+               , k0.point_precursor     == k1.point_precursor
+               , k0.point_commitment    == k1.point_commitment
+               , k0.signature_for_bob   == k1.signature_for_bob
                , k0.signature_for_proxy == k1.signature_for_proxy
                ]))
 
 def assert_cp_eq(c0, c1):
-    assert(all([ c0._point_e2               == c1._point_e2
-               , c0._point_v2               == c1._point_v2
-               , c0._point_kfrag_commitment == c1._point_kfrag_commitment
-               , c0._point_kfrag_pok        == c1._point_kfrag_pok
-               , c0.kfrag_signature         == c1.kfrag_signature
-               , c0.bn_sig                  == c1.bn_sig
-               , c0.metadata                == c1.metadata
+    assert(all([ c0.point_e2               == c1.point_e2
+               , c0.point_v2               == c1.point_v2
+               , c0.point_kfrag_commitment == c1.point_kfrag_commitment
+               , c0.point_kfrag_pok        == c1.point_kfrag_pok
+               , c0.kfrag_signature        == c1.kfrag_signature
+               , c0.bn_sig                 == c1.bn_sig
+               , c0.metadata               == c1.metadata
                ]))
   
 # tests

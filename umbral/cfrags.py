@@ -33,10 +33,10 @@ class CorrectnessProof(object):
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
                  point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: Signature,
                  metadata: Optional[bytes] = None) -> None:
-        self._point_e2 = point_e2
-        self._point_v2 = point_v2
-        self._point_kfrag_commitment = point_kfrag_commitment
-        self._point_kfrag_pok = point_kfrag_pok
+        self.point_e2 = point_e2
+        self.point_v2 = point_v2
+        self.point_kfrag_commitment = point_kfrag_commitment
+        self.point_kfrag_pok = point_kfrag_pok
         self.bn_sig = bn_sig
         self.metadata = metadata
         self.kfrag_signature = kfrag_signature
@@ -79,10 +79,10 @@ class CorrectnessProof(object):
         """
         Serialize the CorrectnessProof to a bytestring.
         """
-        e2 = self._point_e2.to_bytes()
-        v2 = self._point_v2.to_bytes()
-        kfrag_commitment = self._point_kfrag_commitment.to_bytes()
-        kfrag_pok = self._point_kfrag_pok.to_bytes()
+        e2 = self.point_e2.to_bytes()
+        v2 = self.point_v2.to_bytes()
+        kfrag_commitment = self.point_kfrag_commitment.to_bytes()
+        kfrag_pok = self.point_kfrag_pok.to_bytes()
 
         result = e2 \
                  + v2 \
@@ -106,10 +106,10 @@ class CapsuleFrag(object):
                  kfrag_id: bytes,
                  point_precursor: Point,
                  proof: Optional[CorrectnessProof] = None) -> None:
-        self._point_e1 = point_e1
-        self._point_v1 = point_v1
-        self._kfrag_id = kfrag_id
-        self._point_precursor = point_precursor
+        self.point_e1 = point_e1
+        self.point_v1 = point_v1
+        self.kfrag_id = kfrag_id
+        self.point_precursor = point_precursor
         self.proof = proof
 
     class NoProofProvided(TypeError):
@@ -158,11 +158,11 @@ class CapsuleFrag(object):
         """
         Serialize the CapsuleFrag into a bytestring.
         """
-        e1 = self._point_e1.to_bytes()
-        v1 = self._point_v1.to_bytes()
-        precursor = self._point_precursor.to_bytes()
+        e1 = self.point_e1.to_bytes()
+        v1 = self.point_v1.to_bytes()
+        precursor = self.point_precursor.to_bytes()
 
-        serialized_cfrag = e1 + v1 + self._kfrag_id + precursor
+        serialized_cfrag = e1 + v1 + self.kfrag_id + precursor
 
         if self.proof is not None:
             serialized_cfrag += self.proof.to_bytes()
@@ -184,18 +184,18 @@ class CapsuleFrag(object):
         ####
         # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
         ####
-        e = capsule._point_e
-        v = capsule._point_v
+        e = capsule.point_e
+        v = capsule.point_v
 
-        e1 = self._point_e1
-        v1 = self._point_v1
+        e1 = self.point_e1
+        v1 = self.point_v1
 
         u = params.u
-        u1 = self.proof._point_kfrag_commitment
+        u1 = self.proof.point_kfrag_commitment
 
-        e2 = self.proof._point_e2
-        v2 = self.proof._point_v2
-        u2 = self.proof._point_kfrag_pok
+        e2 = self.proof.point_e2
+        v2 = self.proof.point_v2
+        u2 = self.proof.point_kfrag_pok
 
         hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
         if self.proof.metadata is not None:
@@ -204,8 +204,8 @@ class CapsuleFrag(object):
         h = hash_to_curvebn(*hash_input, params=params)
         ########
 
-        precursor = self._point_precursor
-        kfrag_id = self._kfrag_id
+        precursor = self.point_precursor
+        kfrag_id = self.kfrag_id
 
         validity_input = (kfrag_id, delegating_pubkey, receiving_pubkey, u1, precursor)
 
@@ -246,4 +246,4 @@ class CapsuleFrag(object):
         return self.to_bytes()
 
     def __repr__(self):
-        return "CFrag:{}".format(self._point_e1.to_bytes().hex()[2:17])
+        return "CFrag:{}".format(self.point_e1.to_bytes().hex()[2:17])

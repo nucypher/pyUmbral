@@ -18,7 +18,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import base64
-
+import os
 import pytest
 
 from umbral.config import default_params
@@ -151,24 +151,29 @@ def test_umbral_key_to_cryptography_keys():
 def test_keying_material_serialization():
     umbral_keying_material = UmbralKeyingMaterial()
 
-    encoded_key = umbral_keying_material.to_bytes()
+    encoded_keying_material = umbral_keying_material.to_bytes()
 
-    decoded_key = UmbralKeyingMaterial.from_bytes(encoded_key)
-    assert umbral_keying_material.keying_material == decoded_key.keying_material
+    decoded_keying_material = UmbralKeyingMaterial.from_bytes(encoded_keying_material)
+
+    label = os.urandom(32)
+    privkey_bytes = umbral_keying_material.derive_privkey_by_label(label).to_bytes()
+    assert privkey_bytes == decoded_keying_material.derive_privkey_by_label(label).to_bytes()
 
 
 def test_keying_material_serialization_with_encryption():
     umbral_keying_material = UmbralKeyingMaterial()
 
     insecure_cost = 15  # This is deliberately insecure, just to make the tests faster
-    encoded_key = umbral_keying_material.to_bytes(password=b'test',
+    encoded_keying_material = umbral_keying_material.to_bytes(password=b'test',
                                                   _scrypt_cost=insecure_cost)
 
-    decoded_key = UmbralKeyingMaterial.from_bytes(encoded_key, 
+    decoded_keying_material = UmbralKeyingMaterial.from_bytes(encoded_keying_material,
                                                   password=b'test',
                                                   _scrypt_cost=insecure_cost)
 
-    assert umbral_keying_material.keying_material == decoded_key.keying_material
+    label = os.urandom(32)
+    privkey_bytes = umbral_keying_material.derive_privkey_by_label(label).to_bytes()
+    assert privkey_bytes == decoded_keying_material.derive_privkey_by_label(label).to_bytes()
 
 
 def test_umbral_public_key_equality():

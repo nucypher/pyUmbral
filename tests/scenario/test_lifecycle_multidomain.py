@@ -59,9 +59,9 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
     ## Alice delegates decryption rights to some Bob by generating a set of 
     ## KFrags, using her delegating private key and Bob's receiving public key
 
-    delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params)
-    signing_privkey = UmbralPrivateKey.from_bytes(signing_privkey_bytes, params)
-    receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
+    delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params=params)
+    signing_privkey = UmbralPrivateKey.from_bytes(signing_privkey_bytes, params=params)
+    receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params=params)
 
     signer = Signer(signing_privkey)
 
@@ -102,7 +102,7 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
 
     params = UmbralParameters(curve=curve)
 
-    delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params)
+    delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params=params)
     capsule = pre.Capsule.from_bytes(capsule_bytes, params)
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
@@ -146,7 +146,7 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
     capsule = pre.Capsule.from_bytes(capsule_bytes, params)
     delegating_pubkey = UmbralPublicKey.from_bytes(delegating_pubkey_bytes, params)
     signing_pubkey = UmbralPublicKey.from_bytes(signing_pubkey_bytes, params)
-    receiving_privkey = UmbralPrivateKey.from_bytes(receiving_privkey_bytes, params)
+    receiving_privkey = UmbralPrivateKey.from_bytes(receiving_privkey_bytes, params=params)
     receiving_pubkey = receiving_privkey.get_pubkey()
 
     capsule.set_correctness_keys(delegating=delegating_pubkey,

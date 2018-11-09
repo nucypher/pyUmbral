@@ -126,10 +126,10 @@ def hash_to_curvebn(*crypto_items,
 
     hash_digest = openssl._bytes_to_bn(hash_function.finalize())
 
-    _1 = backend._lib.BN_value_one()
+    one = backend._lib.BN_value_one()
 
     order_minus_1 = openssl._get_new_BN()
-    res = backend._lib.BN_sub(order_minus_1, params.curve.order, _1)
+    res = backend._lib.BN_sub(order_minus_1, params.curve.order, one)
     backend.openssl_assert(res == 1)
 
     bignum = openssl._get_new_BN()
@@ -137,7 +137,7 @@ def hash_to_curvebn(*crypto_items,
         res = backend._lib.BN_mod(bignum, hash_digest, order_minus_1, bn_ctx)
         backend.openssl_assert(res == 1)
 
-    res = backend._lib.BN_add(bignum, bignum, _1)
+    res = backend._lib.BN_add(bignum, bignum, one)
     backend.openssl_assert(res == 1)
 
     return CurveBN(bignum, params.curve)

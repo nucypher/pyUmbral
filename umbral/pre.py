@@ -33,7 +33,7 @@ from umbral.point import Point
 from umbral.signing import Signer
 from umbral.curve import Curve
 from umbral.utils import poly_eval, lambda_coeff
-from umbral.random_oracles import kdf, hash_to_curvebn
+from umbral.random_oracles import kdf, hash_to_curvebn, ExtendedKeccak
 
 from constant_sorrow import constants
 
@@ -362,7 +362,7 @@ def prove_cfrag_correctness(cfrag: CapsuleFrag,
     if metadata is not None:
         hash_input.append(metadata)
 
-    h = hash_to_curvebn(*hash_input, params=params)
+    h = hash_to_curvebn(*hash_input, params=params, hash_class=ExtendedKeccak)
     ########
 
     z3 = t + h * rk

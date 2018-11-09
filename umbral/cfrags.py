@@ -26,7 +26,7 @@ from umbral.curvebn import CurveBN
 from umbral.point import Point
 from umbral.signing import Signature
 from umbral.curve import Curve
-from umbral.random_oracles import hash_to_curvebn
+from umbral.random_oracles import hash_to_curvebn, ExtendedKeccak
 
 
 class CorrectnessProof(object):
@@ -201,7 +201,7 @@ class CapsuleFrag(object):
         if self.proof.metadata is not None:
             hash_input.append(self.proof.metadata)
 
-        h = hash_to_curvebn(*hash_input, params=params)
+        h = hash_to_curvebn(*hash_input, params=params, hash_class=ExtendedKeccak)
         ########
 
         precursor = self.point_precursor

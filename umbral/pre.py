@@ -323,16 +323,16 @@ def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True,
                         point_precursor=kfrag.point_precursor)
 
     if provide_proof:
-        prove_cfrag_correctness(cfrag, kfrag, capsule, metadata)
+        _prove_cfrag_correctness(cfrag, kfrag, capsule, metadata)
 
     return cfrag
 
 
-def prove_cfrag_correctness(cfrag: CapsuleFrag,
-                            kfrag: KFrag,
-                            capsule: Capsule,
-                            metadata: Optional[bytes] = None
-                            ) -> None:
+def _prove_cfrag_correctness(cfrag: CapsuleFrag,
+                             kfrag: KFrag,
+                             capsule: Capsule,
+                             metadata: Optional[bytes] = None
+                             ) -> None:
 
     params = capsule.params
 

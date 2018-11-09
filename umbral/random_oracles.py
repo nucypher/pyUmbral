@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 from abc import abstractmethod, ABC
-from typing import Optional
+from typing import Optional, Type
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.backends import default_backend
@@ -36,6 +36,22 @@ from umbral.config import default_params
 
 class Hash(ABC):
 
+    CUSTOMIZATION_STRING_LENGTH = 64
+    CUSTOMIZATION_STRING_PAD = b'\x00'
+
+    @abstractmethod
+    def __init__(self, customization_string: bytes = b''):
+
+        if len(customization_string) > Hash.CUSTOMIZATION_STRING_LENGTH:
+            raise ValueError("The maximum length of the customization string is "
+                             "{} bytes".format(Hash.CUSTOMIZATION_STRING_LENGTH))
+
+        self.customization_string = customization_string.ljust(
+            Hash.CUSTOMIZATION_STRING_LENGTH,
+            Hash.CUSTOMIZATION_STRING_PAD
+        )
+        self.update(self.customization_string)
+
     @abstractmethod
     def update(self, data: bytes) -> None:
         raise NotImplementedError
@@ -50,8 +66,10 @@ class Hash(ABC):
 
 
 class Blake2b(Hash):
-    def __init__(self):
+    def __init__(self, customization_string: bytes = b''):
+        # TODO: use a Blake2b implementation that supports personalization (see #155)
         self._blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        super().__init__(customization_string)
 
     def update(self, data: bytes) -> None:
         self._blake2b.update(data)
@@ -70,12 +88,14 @@ class ExtendedKeccak(Hash):
     _UPPER_PREFIX = b'\x00'
     _LOWER_PREFIX = b'\x01'
 
-    def __init__(self):
+    def __init__(self, customization_string: bytes = b''):
         self._upper = sha3.keccak_256()
         self._lower = sha3.keccak_256()
 
         self._upper.update(self._UPPER_PREFIX)
         self._lower.update(self._LOWER_PREFIX)
+
+        super().__init__(customization_string)
 
     def update(self, data: bytes) -> None:
         self._upper.update(data)
@@ -107,13 +127,15 @@ def kdf(ecpoint: Point,
 
 
 # TODO: Common API for all hash_to_curvebn functions.
-# Should check the correct number and type args, instead of current approach.
-
+# TODO: ^ It should check the correct number and type args, instead of current approach.
 def hash_to_curvebn(*crypto_items,
                     params: UmbralParameters,
-                    use_blake2b=True) -> CurveBN:
+                    customization_string: bytes = b'',
+                    hash_class: Type[Hash] = Blake2b) -> CurveBN:
 
-    hash_function = Blake2b() if use_blake2b else ExtendedKeccak()
+    customization_string = b'hash_to_curvebn' + customization_string
+    hash_function = hash_class(customization_string=customization_string)
+
     for item in crypto_items:
         try:
             item_bytes = item.to_bytes()
@@ -121,7 +143,7 @@ def hash_to_curvebn(*crypto_items,
             if isinstance(item, bytes):
                 item_bytes = item
             else:
-                raise TypeError("{} is not acceptable type, received {}".format(item, type(item)))
+                raise TypeError("Input with type {} not accepted".format(type(item)))
         hash_function.update(item_bytes)
 
     hash_digest = openssl._bytes_to_bn(hash_function.finalize())
@@ -143,9 +165,11 @@ def hash_to_curvebn(*crypto_items,
     return CurveBN(bignum, params.curve)
 
 
-def unsafe_hash_to_point(data : bytes = b'',
+def unsafe_hash_to_point(data: bytes = b'',
                          params: UmbralParameters = None,
-                         label : bytes = b'') -> 'Point':
+                         label: bytes = b'',
+                         hash_class = Blake2b,
+                         ) -> 'Point':
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.
@@ -167,9 +191,9 @@ def unsafe_hash_to_point(data : bytes = b'',
     i = 0
     while i < 2**32:
         ibytes = i.to_bytes(4, byteorder='big')
-        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        blake2b.update(label_data + ibytes)
-        hash_digest = blake2b.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
+        hash_function = hash_class()
+        hash_function.update(label_data + ibytes)
+        hash_digest = hash_function.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
 
         sign = b'\x02' if hash_digest[0] & 1 == 0 else b'\x03'
         compressed_point = sign + hash_digest[1:]
@@ -186,7 +210,6 @@ def unsafe_hash_to_point(data : bytes = b'',
             else:
                 # Any other exception, we raise it
                 raise e
-
         i += 1
 
     # Only happens with probability 2^(-32)

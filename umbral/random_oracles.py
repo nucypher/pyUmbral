@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
-
+from abc import abstractmethod, ABC
 from typing import Optional
 
 from cryptography.hazmat.backends.openssl import backend
@@ -34,28 +34,34 @@ from umbral.params import UmbralParameters
 from umbral.config import default_params
 
 
-class Hash:
+class Hash(ABC):
 
-    def update(self, data: bytes): pass
+    @abstractmethod
+    def update(self, data: bytes) -> None:
+        raise NotImplementedError
 
-    def copy(self): pass
+    @abstractmethod
+    def copy(self) -> 'Hash':
+        raise NotImplementedError
 
-    def finalize(self): pass
+    @abstractmethod
+    def finalize(self) -> bytes:
+        raise NotImplementedError
 
 
 class Blake2b(Hash):
     def __init__(self):
         self._blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
 
-    def update(self, data: bytes):
+    def update(self, data: bytes) -> None:
         self._blake2b.update(data)
 
-    def copy(self):
+    def copy(self) -> 'Blake2b':
         replica = type(self)()
         replica._blake2b = self._blake2b.copy()
         return replica
 
-    def finalize(self):
+    def finalize(self) -> bytes:
         return self._blake2b.finalize()
 
 
@@ -71,17 +77,17 @@ class ExtendedKeccak(Hash):
         self._upper.update(self._UPPER_PREFIX)
         self._lower.update(self._LOWER_PREFIX)
 
-    def update(self, data: bytes):
+    def update(self, data: bytes) -> None:
         self._upper.update(data)
         self._lower.update(data)
 
-    def copy(self):
+    def copy(self) -> 'ExtendedKeccak':
         replica = type(self)()
         replica._upper = self._upper.copy()
         replica._lower = self._lower.copy()
         return replica
 
-    def finalize(self):
+    def finalize(self) -> bytes:
         return self._upper.digest() + self._lower.digest()
 
 

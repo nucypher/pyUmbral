@@ -24,7 +24,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt as CryptographyScrypt
 from nacl.secret import SecretBox
 
 from umbral import openssl
@@ -35,61 +35,74 @@ from umbral.point import Point
 from umbral.curve import Curve
 from umbral.random_oracles import hash_to_curvebn
 
-__DEFAULT_SCRIPT_COST = 20
+
 __SALT_SIZE = 32
 
 
-def _derive_key_from_password(password: bytes, salt: bytes,
-                              _scrypt_cost: int = __DEFAULT_SCRIPT_COST) -> bytes:
+class Scrypt:
+    __DEFAULT_SCRYPT_COST = 20
+
+    def __call__(self,
+                 password: bytes,
+                 salt: bytes,
+                 **kwargs) -> bytes:
+        """
+        Derives a symmetric encryption key from a pair of password and salt.
+        It also accepts an additional _scrypt_cost argument.
+        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
+        files. It is NOT recommended to change the `_scrypt_cost` value unless
+        you know what you are doing.
+        :param password: byte-encoded password used to derive a symmetric key
+        :param salt: cryptographic salt added during key derivation
+        :return:
+        """
+
+        _scrypt_cost = kwargs.get('_scrypt_cost', Scrypt.__DEFAULT_SCRYPT_COST)
+        derived_key = CryptographyScrypt(
+            salt=salt,
+            length=SecretBox.KEY_SIZE,
+            n=2 ** _scrypt_cost,
+            r=8,
+            p=1,
+            backend=default_backend()
+        ).derive(password)
+        return derived_key
+
+
+def derive_key_from_password(password: bytes,
+                             salt: bytes,
+                             **kwargs) -> bytes:
     """
     Derives a symmetric encryption key from a pair of password and salt.
-    WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-    files. It is NOT recommended to change the `_scrypt_cost` value unless
-    you know what you are doing.
-    :param password: byte-encoded password used to derive a symmetric key
-    :param salt: cryptographic salt added during key derivation
-    :param _scrypt_cost:
-    :return:
+    It uses Scrypt by default.
     """
-    derived_key = Scrypt(
-        salt=salt,
-        length=SecretBox.KEY_SIZE,
-        n=2 ** _scrypt_cost,
-        r=8,
-        p=1,
-        backend=default_backend()
-    ).derive(password)
+    kdf = kwargs.get('kdf', Scrypt)()
+    derived_key = kdf(password, salt, **kwargs)
     return derived_key
 
 
 def wrap_key(key_to_wrap: bytes,
              wrapping_key: Optional[bytes] = None,
              password: Optional[bytes] = None,
-             _scrypt_cost: int = __DEFAULT_SCRIPT_COST,
-             ) -> bytes:
+             **kwargs) -> bytes:
     """
     Wraps a key using a provided wrapping key. Alternatively, it can derive
     the wrapping key from a password.
-    WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-    files. It is NOT recommended to change the `_scrypt_cost` value unless
-    you know what you are doing.
     :param key_to_wrap:
     :param wrapping_key:
     :param password:
-    :param _scrypt_cost:
     :return:
     """
     if all((password, wrapping_key)) or not any((password, wrapping_key)):
         raise ValueError("Either password or wrapping_key must be passed")
 
+    wrapped_key = b''
     if password:
         salt = os.urandom(__SALT_SIZE)
-        wrapping_key = _derive_key_from_password(password=password,
-                                                 salt=salt,
-                                                 _scrypt_cost=_scrypt_cost)
+        wrapping_key = derive_key_from_password(password=password,
+                                                salt=salt,
+                                                **kwargs)
         wrapped_key = salt
-    elif wrapping_key:
-        wrapped_key = b''
 
     wrapped_key += SecretBox(wrapping_key).encrypt(key_to_wrap)
     return wrapped_key
@@ -98,18 +111,13 @@ def wrap_key(key_to_wrap: bytes,
 def unwrap_key(wrapped_key: bytes,
                wrapping_key: Optional[bytes] = None,
                password: Optional[bytes] = None,
-               _scrypt_cost: int = __DEFAULT_SCRIPT_COST,
-               ) -> bytes:
+               **kwargs) -> bytes:
     """
     Unwraps a key using a provided wrapping key. Alternatively, it can derive
     the wrapping key from a password.
-    WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-    files. It is NOT recommended to change the `_scrypt_cost` value unless
-    you know what you are doing.
     :param wrapped_key:
     :param wrapping_key:
     :param password:
-    :param _scrypt_cost:
     :return:
     """
     if all((password, wrapping_key)) or not any((password, wrapping_key)):
@@ -118,15 +126,15 @@ def unwrap_key(wrapped_key: bytes,
     if password:
         salt = wrapped_key[:__SALT_SIZE]
         wrapped_key = wrapped_key[__SALT_SIZE:]
-        wrapping_key = _derive_key_from_password(password=password,
-                                                 salt=salt,
-                                                 _scrypt_cost=_scrypt_cost)
+        wrapping_key = derive_key_from_password(password=password,
+                                                salt=salt,
+                                                **kwargs)
 
     key = SecretBox(wrapping_key).decrypt(wrapped_key)
     return key
 
 
-class UmbralPrivateKey():
+class UmbralPrivateKey:
     def __init__(self, bn_key: CurveBN, params: UmbralParameters) -> None:
         """
         Initializes an Umbral private key.
@@ -151,9 +159,9 @@ class UmbralPrivateKey():
                    key_bytes: bytes,
                    wrapping_key: Optional[bytes] = None,
                    password: Optional[bytes] = None,
-                   _scrypt_cost: int = 20,
                    params: Optional[UmbralParameters] = None,
-                   decoder: Optional[Callable] = None) -> 'UmbralPrivateKey':
+                   decoder: Optional[Callable] = None,
+                   **kwargs) -> 'UmbralPrivateKey':
         """
         Loads an Umbral private key from bytes.
         Optionally, allows a decoder function to be passed as a param to decode
@@ -161,10 +169,6 @@ class UmbralPrivateKey():
         Optionally, uses a wrapping key to unwrap an encrypted Umbral private key.
         Alternatively, if a password is provided it will derive the wrapping key
         from it.
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. Unless you changed this when you called `to_bytes`, you should
-        not change it here. It is NOT recommended to change the `_scrypt_cost`
-        value unless you know what you're doing.
         """
         if params is None:
             params = default_params()
@@ -176,7 +180,7 @@ class UmbralPrivateKey():
             key_bytes = unwrap_key(wrapped_key=key_bytes,
                                    wrapping_key=wrapping_key,
                                    password=password,
-                                   _scrypt_cost=_scrypt_cost)
+                                   **kwargs)
 
         bn_key = CurveBN.from_bytes(key_bytes, params.curve)
         return cls(bn_key, params)
@@ -184,9 +188,8 @@ class UmbralPrivateKey():
     def to_bytes(self,
                  wrapping_key: Optional[bytes] = None,
                  password: Optional[bytes] = None,
-                 _scrypt_cost: int = 20,
                  encoder: Optional[Callable] = None,
-                 ) -> bytes:
+                 **kwargs) -> bytes:
         """
         Returns an UmbralPrivateKey as bytes with optional symmetric
         encryption via nacl's Salsa20-Poly1305.
@@ -194,9 +197,6 @@ class UmbralPrivateKey():
         Scrypt for key derivation.
         Optionally, allows an encoder to be passed in as a param to encode the
         data before returning it.
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. It is NOT recommended to change the `_scrypt_cost` value unless
-        you know what you are doing.
         """
 
         key_bytes = self.bn_key.to_bytes()
@@ -205,7 +205,7 @@ class UmbralPrivateKey():
             key_bytes = wrap_key(key_to_wrap=key_bytes,
                                  wrapping_key=wrapping_key,
                                  password=password,
-                                 _scrypt_cost=_scrypt_cost)
+                                 **kwargs)
 
         if encoder:
             key_bytes = encoder(key_bytes)
@@ -403,8 +403,8 @@ class UmbralKeyingMaterial:
                    key_bytes: bytes,
                    wrapping_key: Optional[bytes] = None,
                    password: Optional[bytes] = None,
-                   _scrypt_cost: int = 20,
-                   decoder: Optional[Callable] = None) -> 'UmbralKeyingMaterial':
+                   decoder: Optional[Callable] = None,
+                   **kwargs) -> 'UmbralKeyingMaterial':
         """
         Loads an UmbralKeyingMaterial from bytes.
         Optionally, allows a decoder function to be passed as a param to decode
@@ -412,10 +412,6 @@ class UmbralKeyingMaterial:
         Optionally, uses a wrapping key to unwrap an encrypted UmbralKeyingMaterial.
         Alternatively, if a password is provided it will derive the wrapping key
         from it.
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. Unless you changed this when you called `to_bytes`, you should
-        not change it here. It is NOT recommended to change the `_scrypt_cost`
-        value unless you know what you're doing.
         """
         if decoder:
             key_bytes = decoder(key_bytes)
@@ -424,15 +420,15 @@ class UmbralKeyingMaterial:
             key_bytes = unwrap_key(wrapped_key=key_bytes,
                                    wrapping_key=wrapping_key,
                                    password=password,
-                                   _scrypt_cost=_scrypt_cost)
+                                   **kwargs)
 
         return cls(keying_material=key_bytes)
 
     def to_bytes(self,
                  wrapping_key: Optional[bytes] = None,
                  password: Optional[bytes] = None,
-                 _scrypt_cost: int = 20,
-                 encoder: Optional[Callable] = None) -> bytes:
+                 encoder: Optional[Callable] = None,
+                 **kwargs) -> bytes:
         """
         Returns an UmbralKeyingMaterial as bytes with optional symmetric
         encryption via nacl's Salsa20-Poly1305.
@@ -440,9 +436,6 @@ class UmbralKeyingMaterial:
         Scrypt for key derivation.
         Optionally, allows an encoder to be passed in as a param to encode the
         data before returning it.
-        WARNING: RFC7914 recommends that you use a 2^20 cost value for sensitive
-        files. It is NOT recommended to change the `_scrypt_cost` value unless
-        you know what you are doing.
         """
 
         key_bytes = self.__keying_material
@@ -451,7 +444,7 @@ class UmbralKeyingMaterial:
             key_bytes = wrap_key(key_to_wrap=key_bytes,
                                  wrapping_key=wrapping_key,
                                  password=password,
-                                 _scrypt_cost=_scrypt_cost)
+                                 **kwargs)
 
         if encoder:
             key_bytes = encoder(key_bytes)

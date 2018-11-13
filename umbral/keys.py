@@ -22,6 +22,7 @@ from typing import Callable, Optional, Any
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
+from cryptography.exceptions import InternalError
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt as CryptographyScrypt
@@ -58,15 +59,26 @@ class Scrypt:
         """
 
         _scrypt_cost = kwargs.get('_scrypt_cost', Scrypt.__DEFAULT_SCRYPT_COST)
-        derived_key = CryptographyScrypt(
-            salt=salt,
-            length=SecretBox.KEY_SIZE,
-            n=2 ** _scrypt_cost,
-            r=8,
-            p=1,
-            backend=default_backend()
-        ).derive(password)
-        return derived_key
+        try:
+            derived_key = CryptographyScrypt(
+                salt=salt,
+                length=SecretBox.KEY_SIZE,
+                n=2 ** _scrypt_cost,
+                r=8,
+                p=1,
+                backend=default_backend()
+            ).derive(password)
+        except InternalError as e:
+            required_memory = 128 * 2**_scrypt_cost * 8 // (1024**1024)
+            if e.err_code[0].reason == 65:
+                raise MemoryError(
+                    "Scrypt key derivation requires at least {} MB of memory. "
+                    "Please free up some memory and try again.".format(required_memory)
+                )
+            else:
+                raise e
+        else:
+            return derived_key
 
 
 def derive_key_from_password(password: bytes,

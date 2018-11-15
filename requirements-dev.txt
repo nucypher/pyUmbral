@@ -1,53 +1,77 @@
 -i https://pypi.python.org/simple
-alabaster==0.7.11
+alabaster==0.7.12
+appnope==0.1.0; sys_platform == 'darwin'
 argh==0.26.2
-atomicwrites==1.1.5
-attrs==18.1.0
+atomicwrites==1.2.1; python_version != '3.0.*'
+attrs==18.2.0
 babel==2.6.0
+backcall==0.1.0
 bumpversion==0.5.3
-certifi==2018.8.13
+certifi==2018.10.15
 chardet==3.0.4
-click==6.7
+click==7.0; python_version != '3.0.*'
 codecov==2.0.15
-coverage==5.0a1
+coverage==5.0a3
+decorator==4.3.0
 docutils==0.14
-hypothesis==3.68.1
+hypothesis==3.82.1
 idna==2.7
-imagesize==1.0.0
+imagesize==1.1.0; python_version != '3.0.*'
+ipykernel==5.1.0
+ipython-genutils==0.2.0
+ipython==7.1.1
+jedi==0.13.1
 jinja2==2.10
-livereload==2.5.2
-markupsafe==1.0
+jsonschema==3.0.0a3
+jupyter-client==5.2.3
+jupyter-core==4.4.0
+livereload==2.5.2; python_version != '3.0.*'
+markupsafe==1.1.0; python_version != '3.3.*'
 mock==2.0.0
 monkeytype==18.2.0
 more-itertools==4.3.0
-mypy==0.620
-packaging==17.1
+mypy-extensions==0.4.1
+mypy==0.641
+nbformat==4.4.0
+nbval==0.9.1
+packaging==18.0; python_version >= '2.6'
+parso==0.3.1
 pathlib2==2.3.2; python_version < '3.6'
 pathtools==0.1.2
-pbr==4.2.0
-pluggy==0.7.1; python_version != '3.1.*'
+pbr==5.1.1
+pexpect==4.6.0; sys_platform != 'win32'
+pickleshare==0.7.5
+pluggy==0.8.0; python_version != '3.0.*'
 port-for==0.3.1
+prompt-toolkit==2.0.7
+ptyprocess==0.6.0
 py-cpuinfo==4.0.0
-py==1.5.4; python_version != '3.1.*'
+py==1.7.0; python_version != '3.0.*'
 pygal==2.4.0
 pygaljs==1.0.1
 pygments==2.2.0
-pyparsing==2.2.0
+pyparsing==2.3.0; python_version != '3.1.*'
+pyrsistent==0.14.5
 pytest-benchmark==3.1.1
-pytest-cov==2.5.1
+pytest-cov==2.6.0
 pytest-mock==1.10.0
 pytest-mypy==0.3.2
-pytest==3.7.2
-pytz==2018.5
+pytest==4.0.0
+python-dateutil==2.7.5
+pytz==2018.7
 pyyaml==4.2b4
-requests==2.19.1
-retype==17.12.0
+pyzmq==17.1.2; python_version != '3.1*'
+requests==2.20.1
+retype==17.12.0; python_version != '3.0.*'
+simplegeneric==0.8.1
 six==1.11.0
 snowballstemmer==1.2.1
 sphinx-autobuild==0.7.1
-sphinx==1.7.6
-sphinxcontrib-websupport==1.1.0; python_version != '3.1.*'
-tornado==5.1; python_version != '3.1.*'
+sphinx==1.8.2
+sphinxcontrib-websupport==1.1.0; python_version != '3.0.*'
+tornado==5.1.1; python_version != '3.0.*'
+traitlets==4.3.2
 typed-ast==1.1.0
-urllib3==1.23; python_version >= '2.6'
-watchdog==0.8.3
+urllib3==1.24.1; python_version != '3.3.*'
+watchdog==0.9.0
+wcwidth==0.1.7

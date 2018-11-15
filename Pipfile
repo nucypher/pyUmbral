@@ -12,6 +12,7 @@ pynacl="*"
 bytestringsplitter = "*"
 constant-sorrow = "*"
 
+
 [dev-packages]
 bumpversion = "*"
 # Pytest Plugins
@@ -32,6 +33,8 @@ sphinx-autobuild = "*"
 # Testing libraries
 hypothesis = "*"
 nbval = "*"
+# Overrides vulnerable versions allowed by codecov and sphinx
+requests = ">=2.20.0"
 
 [pipenv]
 allow_prereleases = true

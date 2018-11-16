@@ -69,7 +69,7 @@ class Scrypt:
                 backend=default_backend()
             ).derive(password)
         except InternalError as e:
-            required_memory = 128 * 2**_scrypt_cost * 8 // (1024**1024)
+            required_memory = 128 * 2**_scrypt_cost * 8 // (10**6)
             if e.err_code[0].reason == 65:
                 raise MemoryError(
                     "Scrypt key derivation requires at least {} MB of memory. "
@@ -401,7 +401,7 @@ class UmbralKeyingMaterial:
 
         key_material = HKDF(
             algorithm=hashes.BLAKE2b(64),
-            length=64,  # TODO: Generalize for multicurve
+            length=64,
             salt=salt,
             info=b"NuCypher/KeyDerivation/"+label,
             backend=default_backend()

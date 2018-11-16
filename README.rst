@@ -105,6 +105,14 @@ See more detailed usage examples in the docs_ directory.
 Quick Installation
 ==================
 
+To install pyUmbral, simply use `pip`:
+
+.. code-block:: bash
+
+  $ pip3 install umbral
+
+
+Alternatively, you can checkout the repo and install it from there. 
 The NuCypher team uses pipenv for managing pyUmbral's dependencies.
 The recommended installation procedure is as follows:
 

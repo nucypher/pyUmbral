@@ -16,7 +16,7 @@ constant-sorrow = "*"
 [dev-packages]
 bumpversion = "*"
 # Pytest Plugins
-pytest = "*"
+pytest = "<4"
 pytest-mypy = "*"
 pytest-mock = "*"
 pytest-cov = "*"

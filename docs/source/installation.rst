@@ -3,8 +3,17 @@ Installing pyUmbral
 ====================
 v0.1.1-alpha.3
 
+Using pip
+-------------------------
 
-Acquire the source code
+The easiest way to install pyUmbral is using pip:
+
+.. code-block:: bash
+
+   $ pip3 install umbral
+
+
+Build from source code
 -------------------------
 
 pyUmbral is maintained on GitHub https://github.com/nucypher/pyUmbral.
@@ -27,13 +36,13 @@ Once you have acquired the source code, you can...
 
 .. code-block:: bash
 
-   $ pipenv install pyUmbral
+   $ pipenv install .
 
-*...or install pyUmbral with python-pip...*
+*...or install it with python-pip...*
 
 .. code-block:: bash
 
-   $ pip3 install pyUmbral
+   $ pip3 install .
 
 
 Install dependencies

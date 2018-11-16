@@ -175,7 +175,7 @@ jobs:
               pipenv install --dev pytest
       - run:
           name: pyUmbral Tests (Python 3.5)
-          command: pipenv run pytest --junitxml=./reports/pytest/python35-results.xml
+          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python35-results.xml
       - store_test_results:
           path: /reports/pytest
       - store_artifacts:

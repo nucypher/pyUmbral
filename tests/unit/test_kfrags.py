@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from umbral.fragments import KFrag
+from umbral.kfrags import KFrag
 
 
 def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
@@ -31,9 +31,9 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
 
         new_kfrag = KFrag.from_bytes(kfrag_bytes)
         assert new_kfrag.id == kfrag.id
-        assert new_kfrag._bn_key == kfrag._bn_key
-        assert new_kfrag._point_precursor == kfrag._point_precursor
-        assert new_kfrag._point_commitment == kfrag._point_commitment
+        assert new_kfrag.bn_key == kfrag.bn_key
+        assert new_kfrag.point_precursor == kfrag.point_precursor
+        assert new_kfrag.point_commitment == kfrag.point_commitment
         assert new_kfrag.keys_in_signature == kfrag.keys_in_signature
         assert new_kfrag.signature_for_proxy == kfrag.signature_for_proxy
         assert new_kfrag.signature_for_bob == kfrag.signature_for_bob
@@ -55,7 +55,7 @@ def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
 
         # Let's restore the KFrag, and alter the re-encryption key instead
         kfrag.id = previous_id
-        kfrag._bn_key += kfrag._bn_key
+        kfrag.bn_key += kfrag.bn_key
         assert not kfrag.verify_for_capsule(prepared_capsule)    
 
 

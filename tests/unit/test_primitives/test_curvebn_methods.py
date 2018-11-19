@@ -18,6 +18,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from umbral.curvebn import CurveBN
+from umbral.random_oracles import hash_to_curvebn
 import pytest
 
 
@@ -36,4 +37,5 @@ def test_cast_curvebn_to_int():
 def test_cant_hash_arbitrary_object_into_bignum():
     whatever = object()
     with pytest.raises(TypeError):
-        CurveBN.hash(whatever)
+        hash_to_curvebn(whatever)
+

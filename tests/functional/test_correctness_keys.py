@@ -21,7 +21,7 @@ import pytest
 
 from umbral import pre
 from umbral.keys import UmbralPrivateKey
-from umbral.fragments import KFrag
+from umbral.kfrags import KFrag
 
 
 def test_set_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):

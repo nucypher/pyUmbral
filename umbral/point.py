@@ -19,15 +19,12 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Optional, Tuple
 
-from cryptography.exceptions import InternalError
 from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives import hashes
 
 from umbral import openssl
-from umbral.config import default_curve, default_params
+from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
-from umbral.params import UmbralParameters
 
 
 class Point(object):
@@ -214,53 +211,3 @@ class Point(object):
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
-
-
-def unsafe_hash_to_point(data : bytes = b'', 
-                         params: UmbralParameters = None, 
-                         label : bytes = b'') -> 'Point':
-    """
-    Hashes arbitrary data into a valid EC point of the specified curve,
-    using the try-and-increment method.
-    It admits an optional label as an additional input to the hash function.
-    It uses BLAKE2b (with a digest size of 64 bytes) as the internal hash function.
-
-    WARNING: Do not use when the input data is secret, as this implementation is not
-    in constant time, and hence, it is not safe with respect to timing attacks.
-    """
-
-    params = params if params is not None else default_params()
-
-    len_data = len(data).to_bytes(4, byteorder='big')
-    len_label = len(label).to_bytes(4, byteorder='big')
-
-    label_data = len_label + label + len_data + data
-
-    # We use an internal 32-bit counter as additional input
-    i = 0
-    while i < 2**32:
-        ibytes = i.to_bytes(4, byteorder='big')
-        blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
-        blake2b.update(label_data + ibytes)
-        hash_digest = blake2b.finalize()[:1 + params.CURVE_KEY_SIZE_BYTES]
-
-        sign = b'\x02' if hash_digest[0] & 1 == 0 else b'\x03' 
-        compressed_point = sign + hash_digest[1:]
-
-        try:
-            return Point.from_bytes(compressed_point, params.curve)
-        except InternalError as e:
-            # We want to catch specific InternalExceptions:
-            # - Point not in the curve (code 107)
-            # - Invalid compressed point (code 110)
-            # https://github.com/openssl/openssl/blob/master/include/openssl/ecerr.h#L228
-            if e.err_code[0].reason in (107, 110):
-                pass
-            else:
-                # Any other exception, we raise it
-                raise e
-
-        i += 1
-
-    # Only happens with probability 2^(-32)
-    raise ValueError('Could not hash input into the curve')

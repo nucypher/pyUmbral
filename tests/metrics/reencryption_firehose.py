@@ -23,7 +23,7 @@ from typing import Tuple, List
 
 sys.path.append(os.path.abspath(os.getcwd()))
 
-from umbral.fragments import KFrag
+from umbral.kfrags import KFrag
 from umbral.pre import Capsule
 from umbral import keys, pre
 from umbral.config import default_curve

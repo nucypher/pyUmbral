@@ -5,7 +5,8 @@ from umbral import pre
 from umbral.keys import UmbralPrivateKey
 from umbral.signing import Signer
 from umbral.curvebn import CurveBN
-from umbral.point import Point, unsafe_hash_to_point
+from umbral.point import Point
+from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
 from umbral.config import set_default_curve, default_params
 
 
@@ -70,14 +71,11 @@ capsule.set_correctness_keys(delegating=delegating_key,
                              verifying=verifying_key)
 
 cfrag = pre.reencrypt(kfrags[0], capsule)
-points = [capsule._point_e, cfrag._point_e1, cfrag.proof._point_e2,
-          capsule._point_v, cfrag._point_v1, cfrag.proof._point_v2,
-          capsule.params.u, cfrag.proof._point_kfrag_commitment, cfrag.proof._point_kfrag_pok]
+points = [capsule.point_e, cfrag.point_e1, cfrag.proof.point_e2,
+          capsule.point_v, cfrag.point_v1, cfrag.proof.point_v2,
+          capsule.params.u, cfrag.proof.point_kfrag_commitment, cfrag.proof.point_kfrag_pok]
 
 z = cfrag.proof.bn_sig
-
-# h = CurveBN.hash(*points, params=params)
-
 
 
 #######################
@@ -116,22 +114,22 @@ create_test_vector_file(vector_suite, json_file, generate_again=generate_again)
 
 
 
-##################
-# CurveBN.hash() #
-##################
+###################
+# hash_to_curvebn #
+###################
 
 # Test vectors for different kinds of inputs (bytes, Points, CurveBNs, etc.)
 inputs = ([b''],
           [b'abc'],
-          [capsule._point_e],
+          [capsule.point_e],
           [z],
-          [capsule._point_e, z],
+          [capsule.point_e, z],
           points,
           )
 
 vectors = list()
 for input_to_hash in inputs:
-    bn_output = CurveBN.hash(*input_to_hash, params=params)
+    bn_output = hash_to_curvebn(*input_to_hash, params=params)
     json_input = [{'class': data.__class__.__name__,
                    'bytes': hexlify(data),
                    } for data in input_to_hash]

@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Optional
+from typing import Optional, Any
 
 from bytestring_splitter import BytestringSplitter
 
@@ -169,6 +169,46 @@ class CapsuleFrag(object):
 
         return serialized_cfrag
 
+    def prove_correctness(self,
+                          capsule,
+                          kfrag,
+                          metadata: Optional[bytes] = None):
+
+        params = capsule.params
+
+        # Check correctness of original ciphertext
+        if not capsule.verify():
+            raise capsule.NotValid("Capsule verification failed.")
+
+        rk = kfrag.bn_key
+        t = CurveBN.gen_rand(params.curve)
+        ####
+        # Here are the formulaic constituents shared with `verify_correctness`.
+        ####
+        e = capsule.point_e
+        v = capsule.point_v
+
+        e1 = self.point_e1
+        v1 = self.point_v1
+
+        u = params.u
+        u1 = kfrag.point_commitment
+
+        e2 = t * e  # type: Any
+        v2 = t * v  # type: Any
+        u2 = t * u  # type: Any
+
+        hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+        if metadata is not None:
+            hash_input.append(metadata)
+
+        h = hash_to_curvebn(*hash_input, params=params, hash_class=ExtendedKeccak)
+        ########
+
+        z3 = t + h * rk
+
+        self.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
+
     def verify_correctness(self, capsule) -> bool:
         if self.proof is None:
             raise CapsuleFrag.NoProofProvided
@@ -182,7 +222,7 @@ class CapsuleFrag(object):
         params = capsule.params
 
         ####
-        # Here are the formulaic constituents shared with `prove_cfrag_correctness`.
+        # Here are the formulaic constituents shared with `prove_correctness`.
         ####
         e = capsule.point_e
         v = capsule.point_v

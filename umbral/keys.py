@@ -105,7 +105,7 @@ def wrap_key(key_to_wrap: bytes,
     :param password:
     :return:
     """
-    if all((password, wrapping_key)) or not any((password, wrapping_key)):
+    if not(bool(password) ^ bool(wrapping_key)):
         raise ValueError("Either password or wrapping_key must be passed")
 
     wrapped_key = b''
@@ -213,7 +213,7 @@ class UmbralPrivateKey:
 
         key_bytes = self.bn_key.to_bytes()
 
-        if any((wrapping_key, password)):
+        if wrapping_key or password:
             key_bytes = wrap_key(key_to_wrap=key_bytes,
                                  wrapping_key=wrapping_key,
                                  password=password,

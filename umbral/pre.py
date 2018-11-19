@@ -421,13 +421,15 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     dh_point = priv_key * precursor
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
-    xs = [hash_to_curvebn(precursor,
-                          pub_key,
-                          dh_point,
-                          bytes(constants.X_COORDINATE),
-                          cfrag.kfrag_id,
-                          params=params)
-          for cfrag in capsule._attached_cfrags]
+    xs = list()
+    for cfrag in capsule._attached_cfrags:
+        x = hash_to_curvebn(precursor,
+                            pub_key,
+                            dh_point,
+                            bytes(constants.X_COORDINATE),
+                            cfrag.kfrag_id,
+                            params=params)
+        xs.append(x)
 
     e_summands, v_summands = list(), list()
     for cfrag, x in zip(capsule._attached_cfrags, xs):

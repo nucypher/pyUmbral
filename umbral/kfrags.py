@@ -30,12 +30,10 @@ from umbral.signing import Signature
 from umbral.params import UmbralParameters
 from umbral.curve import Curve
 
-from constant_sorrow.constants import NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
-
-NO_KEY(b'\x00')
-DELEGATING_ONLY(b'\x01')
-RECEIVING_ONLY(b'\x02')
-DELEGATING_AND_RECEIVING(b'\x03')
+NO_KEY = b'\x00'
+DELEGATING_ONLY = b'\x01'
+RECEIVING_ONLY = b'\x02'
+DELEGATING_AND_RECEIVING = b'\x03'
 
 
 class KFrag(object):

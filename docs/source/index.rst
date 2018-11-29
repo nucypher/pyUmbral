@@ -4,7 +4,7 @@
 ========
 pyUmbral
 ========
-v0.1.1-alpha.3
+v0.1.2-alpha.0
 
 .. image:: https://circleci.com/gh/nucypher/pyUmbral/tree/master.svg?style=svg
     :target: https://circleci.com/gh/nucypher/pyUmbral/tree/master

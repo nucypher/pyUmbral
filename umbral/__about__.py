@@ -10,7 +10,7 @@ __url__ = "https://github.com/nucypher/pyUmbral"
 
 __summary__ = 'NuCypher\'s Umbral Proxy Re-Encryption Implementation',
 
-__version__ = "0.1.1-alpha.3"
+__version__ = "0.1.2-alpha.0"
 
 __author__ = "NuCypher"
 

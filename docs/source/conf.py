@@ -26,7 +26,7 @@ author = 'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kiera
 # The short X.Y version
 version = '0.1'
 # The full version, including alpha/beta/rc tags
-release = '0.1.1-alpha.3'
+release = '0.1.2-alpha.0'
 
 
 # -- General configuration ---------------------------------------------------

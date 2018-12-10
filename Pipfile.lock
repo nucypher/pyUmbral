@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "eb841678d4a9ce7d7a7c08ac80d26e5aa949371b5a980067126b7bf7d28478c5"
+            "sha256": "af0ab7cea3eeea93fee14c6f5dc49694467b7394ee2c6be9f8f9e9c016091ece"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -185,6 +185,14 @@
                 "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"
             ],
             "version": "==0.7.12"
+        },
+        "appnope": {
+            "hashes": [
+                "sha256:5b26757dc6f79a3b7dc9fab95359328d5747fcb2409d331ea66d0272b90ab2a0",
+                "sha256:8b995ffe925347a2138d7ac0fe77155e4311a0ea6d6da4f5128fe4b3cbe5ed71"
+            ],
+            "markers": "sys_platform == 'darwin'",
+            "version": "==0.1.0"
         },
         "argh": {
             "hashes": [
@@ -495,6 +503,14 @@
             ],
             "version": "==0.3.1"
         },
+        "pathlib2": {
+            "hashes": [
+                "sha256:25199318e8cc3c25dcb45cbe084cc061051336d5a9ea2a12448d3d8cb748f742",
+                "sha256:5887121d7f7df3603bca2f710e7219f3eca0eb69e0b7cc6e0a022e155ac931a7"
+            ],
+            "markers": "python_version < '3.6'",
+            "version": "==2.3.3"
+        },
         "pathtools": {
             "hashes": [
                 "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"
@@ -569,7 +585,6 @@
                 "sha256:27abab93cbc31e21f3c6bdecc05bda6cd3570cbdbd8297b7caa6904051b50d72",
                 "sha256:9204f05380b02a8a32f9bf99d310b51aa2a932cba5b369f7a4dc3705f0a4ce83"
             ],
-            "markers": "extra == 'histogram'",
             "version": "==2.4.0"
         },
         "pygaljs": {
@@ -577,7 +592,6 @@
                 "sha256:bd778749bc387a71520dde99f36a75ea776b3dcde5f3b59b4bd079c5723b1eb8",
                 "sha256:be757bc75f52b46669472f6cc7eac95935092495bef153b8810a46c0c59f88a1"
             ],
-            "markers": "extra == 'histogram'",
             "version": "==1.0.1"
         },
         "pygments": {

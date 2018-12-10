@@ -11,7 +11,7 @@ pynacl = "*"
 pysha3 = "*"
 # NuCypher
 bytestring-splitter = "*"
-constant-sorrow = "*"
+constant-sorrow = ">=0.1.0a7"
 
 
 [dev-packages]
@@ -25,7 +25,7 @@ pytest-benchmark = {version = "*", extras = ["histogram"]}
 # Pytest Plugin Subdeps
 mock = "*"
 mypy = "*"
-monkeytype = "==18.2.0"
+monkeytype = "*"
 coverage = "*"
 codecov = "*"
 # Docs
@@ -34,7 +34,7 @@ sphinx-autobuild = "*"
 # Testing libraries
 hypothesis = "*"
 nbval = "*"
-# Overrides vulnerable versions allowed by codecov and sphinx
+# Overrides vulnerable versions allowed by codecov and sphinx:
 requests = ">=2.20.0"
 
 [pipenv]

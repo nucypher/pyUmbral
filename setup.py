@@ -58,18 +58,35 @@ class VerifyVersionCommand(install):
             sys.exit(info)
 
 
-with open(os.path.join(BASE_DIR, "requirements.txt")) as f:
-    INSTALL_REQUIRES = f.read().split('\n')
+INSTALL_REQUIRES = [
+    'setuptools',
+    'cryptography>=2.3',
+    'pynacl',
+    'pysha3',
+    'constant-sorrow>=0.1.0a7',
+    'bytestring-splitter',
+]
 
+DEV_INSTALL_REQUIRES = [
+    'pytest',
+    'pytest-mypy',
+    'pytest-mock',
+    'pytest-cov',
+    'mock',
+    'hypothesis',
+    'coverage',
+    'codecov',
+    'monkeytype',
+    'nbval',
+    'mypy',
+    'bumpversion',
+]
 
-with open(os.path.join(BASE_DIR, "dev-requirements.txt")) as f:
-    DEV_INSTALL_REQUIRES = f.read().split('\n')
-
-
-EXTRAS_REQUIRE = {'testing': DEV_INSTALL_REQUIRES,
-                  'docs': ['sphinx', 'sphinx-autobuild'],
-                  'benchmarks': ['pytest-benchmark'],
-                  }
+EXTRAS_REQUIRE = {
+    'testing': DEV_INSTALL_REQUIRES,
+    'docs': ['sphinx', 'sphinx-autobuild'],
+    'benchmarks': ['pytest-benchmark'],
+}
 
 
 setup(name=ABOUT['__title__'],

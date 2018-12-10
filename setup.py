@@ -61,7 +61,7 @@ class VerifyVersionCommand(install):
 INSTALL_REQUIRES = ['setuptools',
                     'cryptography>=2.3',
                     'pynacl',
-                    'byteStringSplitter',
+                    'bytestring-splitter',
                     'constant-sorrow',
                     ]
 

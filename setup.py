@@ -23,7 +23,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 import os
 import sys
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 
@@ -58,29 +58,16 @@ class VerifyVersionCommand(install):
             sys.exit(info)
 
 
-INSTALL_REQUIRES = ['setuptools',
-                    'cryptography>=2.3',
-                    'pynacl',
-                    'bytestring-splitter',
-                    'constant-sorrow',
-                    ]
+with open(os.path.join(BASE_DIR, "requirements.txt")) as f:
+    INSTALL_REQUIRES = f.read().split('\n')
 
-EXTRAS_REQUIRE = {'testing': ['bumpversion',
-                              'hypothesis',
-                              'pytest',
-                              'pytest-mypy',
-                              'pytest-mock',
-                              'pytest-cov',
-                              'mock',
-                              'coverage',
-                              'codecov',
-                              'monkeytype==18.2.0',
-                              'nbval',
-                              'mypy',
-                              ],
 
+with open(os.path.join(BASE_DIR, "dev-requirements.txt")) as f:
+    DEV_INSTALL_REQUIRES = f.read().split('\n')
+
+
+EXTRAS_REQUIRE = {'testing': DEV_INSTALL_REQUIRES,
                   'docs': ['sphinx', 'sphinx-autobuild'],
-
                   'benchmarks': ['pytest-benchmark'],
                   }
 
@@ -94,7 +81,8 @@ setup(name=ABOUT['__title__'],
       long_description=long_description,
       extras_require=EXTRAS_REQUIRE,
       install_requires=INSTALL_REQUIRES,
-      packages=['umbral'],
+      setup_requires=['pytest-runner'],  # required for setup.py test
+      packages=find_packages(exclude=['tests']),
       classifiers=[
           "Development Status :: 2 - Pre-Alpha",
           "Intended Audience :: Science/Research",

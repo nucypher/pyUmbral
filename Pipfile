@@ -10,7 +10,7 @@ cryptography = ">=2.3"
 pynacl = "*"
 pysha3 = "*"
 # NuCypher
-bytestringsplitter = "*"
+bytestring-splitter = "*"
 constant-sorrow = "*"
 
 

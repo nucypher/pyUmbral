@@ -21,7 +21,7 @@ import hmac
 from typing import Optional
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.hashes import HashAlgorithm, SHA256
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 
@@ -30,8 +30,8 @@ from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey, UmbralPrivateKey
 
-
-_BLAKE2B = hashes.BLAKE2b(64)
+# TODO: Fix this
+DEFAULT_HASH_ALGORITHM = SHA256()
 
 
 class Signature:
@@ -40,9 +40,13 @@ class Signature:
     between (r, s) and DER formatting.
     """
 
-    def __init__(self, r: CurveBN, s: CurveBN) -> None:
+    def __init__(self,
+                 r: CurveBN,
+                 s: CurveBN,
+                 hash_algorithm: HashAlgorithm = DEFAULT_HASH_ALGORITHM) -> None:
         self.r = r
         self.s = s
+        self.hash_algorithm = hash_algorithm
 
     def __repr__(self):
         return "ECDSA Signature: {}".format(bytes(self).hex()[:15])
@@ -68,7 +72,7 @@ class Signature:
             cryptography_pub_key.verify(
                 self._der_encoded_bytes(),
                 message,
-                ECDSA(_BLAKE2B)
+                ECDSA(self.hash_algorithm)
             )
         except InvalidSignature:
             return False
@@ -113,9 +117,12 @@ class Signature:
 
 class Signer:
 
-    def __init__(self, private_key: UmbralPrivateKey) -> None:
+    def __init__(self,
+                 private_key: UmbralPrivateKey,
+                 hash_algorithm: HashAlgorithm = DEFAULT_HASH_ALGORITHM) -> None:
         self.__cryptography_private_key = private_key.to_cryptography_privkey()
-        self._curve = private_key.params.curve
+        self.curve = private_key.params.curve
+        self.hash_algorithm = hash_algorithm
 
     def __call__(self, message: bytes) -> Signature:
         """
@@ -124,5 +131,6 @@ class Signer:
          :param message: Message to hash and sign
          :return: signature
          """
-        signature_der_bytes = self.__cryptography_private_key.sign(message, ECDSA(_BLAKE2B))
-        return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self._curve)
+        signature_algorithm = ECDSA(self.hash_algorithm)
+        signature_der_bytes = self.__cryptography_private_key.sign(message, signature_algorithm)
+        return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self.curve)

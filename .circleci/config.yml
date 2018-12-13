@@ -125,9 +125,7 @@ commands:
       - checkout
       - run:
           name: Install Python dependencies with Pipenv
-          command: |
-            pip3 install --user pip==18.0
-            pipenv install --three --dev --skip-lock --pre
+          command: pipenv install --three --dev --skip-lock --pre
       - run:
           name: Check PEP 508 Requirements
           command: pipenv check
@@ -338,7 +336,7 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to PyPI
-          command: pipenv run twine upload dist/*  --verbose
+          command: pipenv run twine upload dist/* --verbose
       - run:
           name: pip install from PyPI
           command: |

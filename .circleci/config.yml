@@ -16,24 +16,39 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - pip_install_35:
+          filters:
+            tags:
+              only: /.*/
+      - pip_install_36:
+          filters:
+            tags:
+              only: /.*/
+      - pip_install_37:
+          filters:
+            tags:
+              only: /.*/
       - run_tests_35:
           filters:
             tags:
               only: /.*/
           requires:
             - pipenv_install_35
+            - pip_install_35
       - run_tests_36:
           filters:
             tags:
               only: /.*/
           requires:
             - pipenv_install_36
+            - pip_install_36
       - run_tests_37:
           filters:
             tags:
               only: /.*/
           requires:
             - pipenv_install_37
+            - pip_install_37
       - mypy_type_check_36:
           filters:
             tags:
@@ -134,6 +149,22 @@ commands:
           paths:
           - pyUmbral-*
 
+  pip_install:
+    description: "Install Umbral with pip"
+    steps:
+      - checkout
+      - run:
+          name: Install Python Dependencies with Pip
+          command: |
+            pip3 install --user .
+      - run:
+          name: Install Python Development Dependencies with Pip
+          command: |
+            pip3 install --user .[testing]
+      - run:
+          name: Check Python Entrypoint
+          command: python3 -c "import umbral; print(umbral.__version__)"
+
   run_tests:
     description: "Run pyUmbral Tests"
     parameters:
@@ -168,6 +199,21 @@ jobs:
     <<: *python_37_base
     steps:
       - pipenv_install
+
+  pip_install_35:
+    <<: *python_35_base
+    steps:
+    - pip_install
+
+  pip_install_36:
+    <<: *python_36_base
+    steps:
+    - pip_install
+
+  pip_install_37:
+    <<: *python_37_base
+    steps:
+    - pip_install
 
   run_tests_35:
     <<: *python_35_base

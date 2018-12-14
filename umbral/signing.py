@@ -18,10 +18,10 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import hmac
-from typing import Optional
+from typing import Optional, Type
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.hashes import HashAlgorithm, SHA256
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 
@@ -31,18 +31,23 @@ from umbral.curvebn import CurveBN
 from umbral.keys import UmbralPublicKey, UmbralPrivateKey
 
 
-_BLAKE2B = hashes.BLAKE2b(64)
+DEFAULT_HASH_ALGORITHM = SHA256
 
 
 class Signature:
     """
+    Wrapper for ECDSA signatures.
     We store signatures as r and s; this class allows interoperation
     between (r, s) and DER formatting.
     """
 
-    def __init__(self, r: CurveBN, s: CurveBN) -> None:
+    def __init__(self,
+                 r: CurveBN,
+                 s: CurveBN,
+                 hash_algorithm: Type[HashAlgorithm] = DEFAULT_HASH_ALGORITHM) -> None:
         self.r = r
         self.s = s
+        self.hash_algorithm = hash_algorithm
 
     def __repr__(self):
         return "ECDSA Signature: {}".format(bytes(self).hex()[:15])
@@ -57,7 +62,7 @@ class Signature:
         Verifies that a message's signature was valid.
 
         :param message: The message to verify
-        :param pubkey: UmbralPublicKey of the signer
+        :param verifying_key: UmbralPublicKey of the signer
 
         :return: True if valid, False if invalid
         """
@@ -68,14 +73,17 @@ class Signature:
             cryptography_pub_key.verify(
                 self._der_encoded_bytes(),
                 message,
-                ECDSA(_BLAKE2B)
+                ECDSA(self.hash_algorithm())
             )
         except InvalidSignature:
             return False
         return True
 
     @classmethod
-    def from_bytes(cls, signature_as_bytes: bytes, der_encoded: bool = False, curve: Optional[Curve] = None) -> 'Signature':
+    def from_bytes(cls,
+                   signature_as_bytes: bytes,
+                   der_encoded: bool = False,
+                   curve: Optional[Curve] = None) -> 'Signature':
         curve = curve if curve is not None else default_curve()
         if der_encoded:
             r, s = decode_dss_signature(signature_as_bytes)
@@ -87,7 +95,7 @@ class Signature:
             else:
                 r = int.from_bytes(signature_as_bytes[:(expected_len//2)], "big")
                 s = int.from_bytes(signature_as_bytes[(expected_len//2):], "big")
-        
+
         return cls(CurveBN.from_int(r, curve), CurveBN.from_int(s, curve))
 
     def _der_encoded_bytes(self) -> bytes:
@@ -112,10 +120,14 @@ class Signature:
 
 
 class Signer:
+    """Callable wrapping ECDSA signing with UmbralPrivateKeys"""
 
-    def __init__(self, private_key: UmbralPrivateKey) -> None:
+    def __init__(self,
+                 private_key: UmbralPrivateKey,
+                 hash_algorithm: Type[HashAlgorithm] = DEFAULT_HASH_ALGORITHM) -> None:
         self.__cryptography_private_key = private_key.to_cryptography_privkey()
-        self._curve = private_key.params.curve
+        self.curve = private_key.params.curve
+        self.hash_algorithm = hash_algorithm
 
     def __call__(self, message: bytes) -> Signature:
         """
@@ -124,5 +136,6 @@ class Signer:
          :param message: Message to hash and sign
          :return: signature
          """
-        signature_der_bytes = self.__cryptography_private_key.sign(message, ECDSA(_BLAKE2B))
-        return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self._curve)
+        signature_algorithm = ECDSA(self.hash_algorithm())
+        signature_der_bytes = self.__cryptography_private_key.sign(message, signature_algorithm)
+        return Signature.from_bytes(signature_der_bytes, der_encoded=True, curve=self.curve)

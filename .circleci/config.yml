@@ -1,84 +1,99 @@
-version: 2.0
+version: 2.1
 
 workflows:
   version: 2
   build_test_deploy:
     jobs:
-      - bundle_dependencies-35:
+      - pipenv_install_35:
           filters:
             tags:
               only: /.*/
-      - bundle_dependencies-36:
+      - pipenv_install_36:
           filters:
             tags:
               only: /.*/
-      - bundle_dependencies-37:
+      - pipenv_install_37:
           filters:
             tags:
               only: /.*/
-      - run_tests-35:
+      - pip_install_35:
           filters:
             tags:
               only: /.*/
-          requires:
-            - bundle_dependencies-35
-      - run_tests-36:
+      - pip_install_36:
           filters:
             tags:
               only: /.*/
-          requires:
-            - bundle_dependencies-36
-      - run_tests-37:
+      - pip_install_37:
           filters:
             tags:
               only: /.*/
-          requires:
-            - bundle_dependencies-37
-      - mypy_type_check-36:
+      - run_tests_35:
           filters:
             tags:
               only: /.*/
           requires:
-            - run_tests-35
-            - run_tests-36
-            - run_tests-37
-      - doctests-36:
+            - pipenv_install_35
+            - pip_install_35
+      - run_tests_36:
           filters:
             tags:
               only: /.*/
           requires:
-            - run_tests-35
-            - run_tests-36
-            - run_tests-37
-      - notebook_tests-36:
+            - pipenv_install_36
+            - pip_install_36
+      - run_tests_37:
           filters:
             tags:
               only: /.*/
           requires:
-            - run_tests-35
-            - run_tests-36
-            - run_tests-37
-      - reencryption_memory_profile-36:
+            - pipenv_install_37
+            - pip_install_37
+      - mypy_type_check_36:
           filters:
             tags:
               only: /.*/
           requires:
-            - run_tests-35
-            - run_tests-36
-            - run_tests-37
-      - reencryption_benchmark-36:
+            - run_tests_35
+            - run_tests_36
+            - run_tests_37
+      - doctests_36:
           filters:
             tags:
               only: /.*/
           requires:
-            - run_tests-35
-            - run_tests-36
-            - run_tests-37
+            - run_tests_35
+            - run_tests_36
+            - run_tests_37
+      - notebook_tests_36:
+          filters:
+            tags:
+              only: /.*/
+          requires:
+            - run_tests_35
+            - run_tests_36
+            - run_tests_37
+      - reencryption_memory_profile_36:
+          filters:
+            tags:
+              only: /.*/
+          requires:
+            - run_tests_35
+            - run_tests_36
+            - run_tests_37
+      - reencryption_benchmark_36:
+          filters:
+            tags:
+              only: /.*/
+          requires:
+            - run_tests_35
+            - run_tests_36
+            - run_tests_37
       - test_deploy:
           context: "NuCypher PyPI"
           requires:
-            - mypy_type_check-36
-            - doctests-36
+            - mypy_type_check_36
+            - doctests_36
           filters:
             tags:
               only: /v[0-9]+.*/
@@ -118,107 +133,112 @@ python_37_base: &python_37_base
     docker:
       - image: circleci/python:3.7
 
-jobs:
-  bundle_dependencies-35:
-    <<: *python_35_base
+commands:
+  pipenv_install:
+    description: "Install Python dependencies with Pipenv"
     steps:
       - checkout
       - run:
           name: Install Python dependencies with Pipenv
-          command: pipenv sync --three --dev
+          command: pipenv install --three --dev --skip-lock --pre
       - run:
           name: Check PEP 508 Requirements
           command: pipenv check
-      - save_cache:
+      - persist_to_workspace:
+          root: ~/.local/share/virtualenvs/
           paths:
-            - "~/.local/share/virtualenvs/"
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py35
+          - pyUmbral-*
 
-  bundle_dependencies-36:
-    <<: *python_36_base
+  pip_install:
+    description: "Install Umbral with pip"
     steps:
       - checkout
       - run:
-          name: Install Python dependencies with Pipenv
-          command: pipenv sync --three --dev
-      - run:
-          name: Check PEP 508 Requirements
-          command: pipenv check
-      - save_cache:
-          paths:
-            - "~/.local/share/virtualenvs/"
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py36
-
-  bundle_dependencies-37:
-    <<: *python_37_base
-    steps:
-      - checkout
-      - run:
-          name: Install Python dependencies with Pipenv
-          command: pipenv sync --three --dev
-      - run:
-          name: Check PEP 508 Requirements
-          command: pipenv check
-      - save_cache:
-          paths:
-            - "~/.local/share/virtualenvs/"
-          key: v2-deps-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ checksum "Pipfile.lock" }}-py37
-
-  run_tests-35:
-    <<: *python_35_base
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
+          name: Install Python Dependencies with Pip
           command: |
-              pipenv sync --three --dev
-              pipenv install --dev pytest
+            pip3 install --user .
       - run:
-          name: pyUmbral Tests (Python 3.5)
-          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python35-results.xml
-      - store_test_results:
-          path: /reports/pytest
-      - store_artifacts:
-          path: ./htmlcov
+          name: Install Python Development Dependencies with Pip
+          command: |
+            pip3 install --user .[testing]
+      - run:
+          name: Check Python Entrypoint
+          command: python3 -c "import umbral; print(umbral.__version__)"
 
-  run_tests-36:
+  run_tests:
+    description: "Run pyUmbral Tests"
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
+    steps:
+    - checkout
+    - attach_workspace:
+        at: ~/.local/share/virtualenvs/
+    - run:
+        name: pyUmbral Tests (Python << parameters.python_version >>)
+        command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python<< parameters.python_version >>-results.xml
+    - store_test_results:
+        path: reports/pytest
+    - store_artifacts:
+        path: htmlcov
+
+jobs:
+
+  pipenv_install_35:
+    <<: *python_35_base
+    steps:
+      - pipenv_install
+
+  pipenv_install_36:
     <<: *python_36_base
     steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
-      - run:
-          name: pyUmbral Tests (Python 3.6)
-          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python36-results.xml
-      - store_test_results:
-          path: /reports/pytest
-      - store_artifacts:
-          path: ./htmlcov
+      - pipenv_install
 
-  run_tests-37:
+  pipenv_install_37:
     <<: *python_37_base
     steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
-      - run:
-          name: pyUmbral Tests (Python 3.7)
-          command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python37-results.xml
-      - store_test_results:
-          path: /reports/pytest
-      - store_artifacts:
-          path: ./htmlcov
+      - pipenv_install
 
+  pip_install_35:
+    <<: *python_35_base
+    steps:
+    - pip_install
 
-  mypy_type_check-36:
+  pip_install_36:
+    <<: *python_36_base
+    steps:
+    - pip_install
+
+  pip_install_37:
+    <<: *python_37_base
+    steps:
+    - pip_install
+
+  run_tests_35:
+    <<: *python_35_base
+    steps:
+    - run_tests:
+        python_version: "3.5"
+
+  run_tests_36:
+    <<: *python_36_base
+    steps:
+    - run_tests:
+        python_version: "3.6"
+
+  run_tests_37:
+    <<: *python_37_base
+    steps:
+    - run_tests:
+        python_version: "3.7"
+
+  mypy_type_check_36:
     <<: *python_36_base
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
           name: Run Mypy Static Type Checks
           command: |
@@ -227,13 +247,12 @@ jobs:
       - store_artifacts:
           path: ./mypy_report
 
-  doctests-36:
+  doctests_36:
     <<: *python_36_base
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
           name: Run Documentation Tests
           command: |
@@ -243,13 +262,12 @@ jobs:
       - store_artifacts:
           path: ./docs/build/doctest/output.txt
 
-  notebook_tests-36:
+  notebook_tests_36:
     <<: *python_36_base
     steps:
     - checkout
-    - run:
-        name: Install dependencies
-        command: pipenv sync --three --dev
+    - attach_workspace:
+        at: ~/.local/share/virtualenvs/
     - run:
         name: Run py.test on Jupyter Notebook stored output
         command: |
@@ -258,13 +276,12 @@ jobs:
     - store_test_results:
         path: /reports/pytest
 
-  reencryption_memory_profile-36:
+  reencryption_memory_profile_36:
     <<: *python_36_base
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
           name: Install Profiling Tools
           command: |
@@ -278,13 +295,12 @@ jobs:
       - store_artifacts:
           path: ./reencryption_memory_profile.massif.out
 
-  reencryption_benchmark-36:
+  reencryption_benchmark_36:
     <<: *python_36_base
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: pipenv sync --three --dev
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
           name: Benchmark Key Splitting and Reencryption
           command: |
@@ -303,11 +319,11 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
-          name: Install Dependencies (Test Deploy)
-          command: |
-              pipenv sync --three --dev
-              pipenv install --dev --skip-lock twine
+          name: Install twine (Test Deploy)
+          command: pipenv install --dev --skip-lock twine
       - run:
           name: Verify git tag == __version__ (Test Deploy)
           command: pipenv run python setup.py verify
@@ -341,11 +357,11 @@ jobs:
     <<: *python_36_base
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/.local/share/virtualenvs/
       - run:
-          name: Install dependencies
-          command: |
-              pipenv sync --three --dev
-              pipenv install --dev --skip-lock twine
+          name: Install twine
+          command: pipenv install --dev --skip-lock twine
       - run:
           name: Verify git tag == __version__
           command: pipenv run python setup.py verify
@@ -366,7 +382,7 @@ jobs:
             pipenv run python setup.py bdist_wheel
       - run:
           name: upload to PyPI
-          command: pipenv run twine upload dist/*  --verbose
+          command: pipenv run twine upload dist/* --verbose
       - run:
           name: pip install from PyPI
           command: |

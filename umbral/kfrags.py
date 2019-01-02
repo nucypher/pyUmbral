@@ -134,10 +134,20 @@ class KFrag():
         if params is None:
             params = default_params()
 
-        if delegating_pubkey and delegating_pubkey.params != params:
-            raise ValueError("The delegating key uses different UmbralParameters")
-        if receiving_pubkey and receiving_pubkey.params != params:
-            raise ValueError("The receiving key uses different UmbralParameters")
+        if signing_pubkey is None:
+            raise ValueError("The verifying pubkey is required to verify this KFrag.")
+
+        if self.delegating_key_in_signature():
+            if delegating_pubkey is None:
+                raise ValueError("The delegating pubkey is required to verify this KFrag.")
+            elif delegating_pubkey.params != params:
+                raise ValueError("The delegating pubkey has different UmbralParameters.")
+
+        if self.receiving_key_in_signature():
+            if receiving_pubkey is None:
+                raise ValueError("The receiving pubkey is required to verify this KFrag.")
+            elif receiving_pubkey.params != params:
+                raise ValueError("The receiving pubkey has different UmbralParameters.")
 
         u = params.u
 
@@ -148,6 +158,7 @@ class KFrag():
 
         #  We check that the commitment is well-formed
         correct_commitment = commitment == key * u
+
         validity_input = [kfrag_id, commitment, precursor, self.keys_in_signature]
 
         if self.delegating_key_in_signature():

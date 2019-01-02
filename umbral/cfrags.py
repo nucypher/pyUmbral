@@ -29,7 +29,7 @@ from umbral.curve import Curve
 from umbral.random_oracles import hash_to_curvebn, ExtendedKeccak
 
 
-class CorrectnessProof(object):
+class CorrectnessProof():
     def __init__(self, point_e2: Point, point_v2: Point, point_kfrag_commitment: Point,
                  point_kfrag_pok: Point, bn_sig: CurveBN, kfrag_signature: Signature,
                  metadata: Optional[bytes] = None) -> None:
@@ -99,7 +99,7 @@ class CorrectnessProof(object):
         return self.to_bytes()
 
 
-class CapsuleFrag(object):
+class CapsuleFrag():
     def __init__(self,
                  point_e1: Point,
                  point_v1: Point,

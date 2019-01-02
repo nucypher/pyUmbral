@@ -36,7 +36,7 @@ RECEIVING_ONLY = b'\x02'
 DELEGATING_AND_RECEIVING = b'\x03'
 
 
-class KFrag(object):
+class KFrag():
 
     def __init__(self,
                  identifier: bytes,

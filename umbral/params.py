@@ -20,7 +20,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 from umbral.curve import Curve
 
 
-class UmbralParameters(object):
+class UmbralParameters():
     def __init__(self, curve: Curve) -> None:
         from umbral.point import Point
         from umbral.random_oracles import unsafe_hash_to_point

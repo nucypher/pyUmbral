@@ -307,13 +307,18 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
     return kfrags
 
 
-def reencrypt(kfrag: KFrag, capsule: Capsule, provide_proof: bool = True, 
-              metadata: Optional[bytes] = None) -> CapsuleFrag:
+def reencrypt(kfrag: KFrag,
+              capsule: Capsule,
+              provide_proof: bool = True,
+              metadata: Optional[bytes] = None,
+              verify_kfrag: bool = True) -> CapsuleFrag:
 
     if not isinstance(capsule, Capsule) or not capsule.verify():
         raise Capsule.NotValid
-    elif not isinstance(kfrag, KFrag) or not kfrag.verify_for_capsule(capsule):
-        raise KFrag.NotValid
+
+    if verify_kfrag:
+        if not isinstance(kfrag, KFrag) or not kfrag.verify_for_capsule(capsule):
+            raise KFrag.NotValid
 
     rk = kfrag.bn_key
     e1 = rk * capsule.point_e  # type: Any

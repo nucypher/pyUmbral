@@ -6,8 +6,39 @@ pyUmbral
 =========
 v0.1.3-alpha.0
 
-.. image:: https://circleci.com/gh/nucypher/pyUmbral/tree/master.svg?style=svg
+.. start-badges
+
+.. list-table::
+    :stub-columns: 1
+
+    * - info
+      - |docs| |discord|
+    * - tests
+      - | |circleci|
+    * - package
+      - | |version| |commits-since|
+
+.. |docs| image:: https://readthedocs.org/projects/pyumbral/badge/?style=flat
+    :target: https://readthedocs.org/projects/pyumbral
+    :alt: Documentation Status
+
+.. |discord| image:: https://img.shields.io/discord/411401661714792449.svg?logo=discord
+    :target: https://discord.gg/xYqyEby
+    :alt: Discord
+
+.. |circleci| image:: https://img.shields.io/circleci/project/github/nucypher/pyUmbral.svg?logo=circleci
     :target: https://circleci.com/gh/nucypher/pyUmbral/tree/master
+    :alt: CircleCI build status
+
+.. |version| image:: https://img.shields.io/pypi/v/umbral.svg
+    :alt: PyPI Package latest release
+    :target: https://pypi.org/project/umbral
+
+.. |commits-since| image:: https://img.shields.io/github/commits-since/nucypher/pyumbral/v0.1.3-alpha.0.svg
+    :alt: Commits since latest release
+    :target: https://github.com/nucypher/pyUmbral/compare/v0.1.3-alpha.0...master
+
+.. end-badges
 
 pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
 Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library

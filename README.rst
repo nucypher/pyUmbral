@@ -45,9 +45,13 @@ Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and op
 extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
 *Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
 
+pyUmbral is the cryptographic engine behind nucypher_,
+a proxy re-encryption network to empower privacy in decentralized systems.
+
 .. _Umbral: https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 .. _Cryptography.io: https://cryptography.io/en/latest/
 .. _OpenSSL: https://www.openssl.org/
+.. _nucypher: https://github.com/nucypher/nucypher
 
 Usage
 =====

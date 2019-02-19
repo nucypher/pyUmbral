@@ -4,7 +4,6 @@
 =========
 pyUmbral
 =========
-v0.1.3-alpha.0
 
 .. start-badges
 
@@ -40,10 +39,11 @@ v0.1.3-alpha.0
 
 .. end-badges
 
-pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
+pyUmbral is a Python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
 Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
 extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
-*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
+*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob,
+without being able to learn any information about the original secret.
 
 pyUmbral is the cryptographic engine behind nucypher_,
 a proxy re-encryption network to empower privacy in decentralized systems.
@@ -57,6 +57,9 @@ Usage
 =====
 
 **Key Generation**
+
+As in any public-key cryptosystem, users need a pair of public and private keys.
+Additionally, users that delegate access to their data (like Alice, in this example) need a signing keypair.
 
 .. code-block:: python
 
@@ -77,10 +80,18 @@ Usage
 
 **Encryption**
 
+Now let's encrypt data with Alice's public key.
+Invocation of ``pre.encrypt`` returns both the ``ciphertext`` and a ``capsule``.
+Note that anyone with Alice's public key can perform this operation.
+
+Since data was encrypted with Alice's public key,
+Alice can open the capsule and decrypt the ciphertext with her private key.
+
+
 .. code-block:: python
 
     # Encrypt data with Alice's public key.
-    plaintext = b'Proxy Re-encryption is cool!'
+    plaintext = b'Proxy Re-Encryption is cool!'
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
@@ -90,6 +101,10 @@ Usage
 
 
 **Re-Encryption Key Fragments**
+
+When Alice wants to grant Bob access to open her encrypted messages,
+she creates *re-encryption key fragments*, or *"kfrags"*,
+which are next sent to N proxies or *Ursulas*.
 
 .. code-block:: python
 
@@ -103,6 +118,13 @@ Usage
 
 
 **Re-Encryption**
+
+Bob asks several Ursulas to re-encrypt the capsule so he can open it.
+Each Ursula performs re-encryption on the capsule using the ``kfrag``
+provided by Alice, obtaining this way a "capsule fragment", or ``cfrag``.
+
+Bob collects the resulting cfrags from several Ursulas.
+Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 
 .. code-block:: python
 
@@ -120,6 +142,9 @@ Usage
 
 
 **Decryption by Bob**
+
+Finally, Bob activates the capsule by attaching at least ``threshold`` cfrags,
+and then decrypts the re-encrypted ciphertext.
 
 .. code-block:: python
 
@@ -140,7 +165,7 @@ See more detailed usage examples in the docs_ directory.
 Quick Installation
 ==================
 
-To install pyUmbral, simply use `pip`:
+To install pyUmbral, simply use ``pip``:
 
 .. code-block:: bash
 
@@ -148,7 +173,7 @@ To install pyUmbral, simply use `pip`:
 
 
 Alternatively, you can checkout the repo and install it from there. 
-The NuCypher team uses pipenv for managing pyUmbral's dependencies.
+The NuCypher team uses ``pipenv`` for managing pyUmbral's dependencies.
 The recommended installation procedure is as follows:
 
 .. code-block:: bash
@@ -157,9 +182,9 @@ The recommended installation procedure is as follows:
     $ pipenv install
 
 Post-installation, you can activate the project virtual environment
-in your current terminal session by running :bash:`pipenv shell`.
+in your current terminal session by running ``pipenv shell``.
 
-For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
+For more information on ``pipenv``, find the official documentation here: https://docs.pipenv.org/.
 
 
 Academic Whitepaper

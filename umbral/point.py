@@ -27,7 +27,7 @@ from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 
 
-class Point():
+class Point:
     """
     Represents an OpenSSL EC_POINT except more Pythonic
     """

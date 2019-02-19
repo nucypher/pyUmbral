@@ -48,7 +48,7 @@ class UmbralCorrectnessError(GenericUmbralError):
         self.offending_cfrags = offending_cfrags
 
 
-class Capsule():
+class Capsule:
     def __init__(self,
                  params: UmbralParameters,
                  point_e: Point,

@@ -6,8 +6,10 @@ Choosing and Using Curves
 The matter of which curve to use is the subject of some debate.  If you aren't sure, you might start here:
 https://safecurves.cr.yp.to/
 
-A number of curves are available in the python cryptography library, on which pyumbral depends.
-You can find them in cryptography.hazmat.primitives.asymmetric.ec.
+A number of curves are available in the Cryptography.io_ library, on which pyUmbral depends.
+You can find them in the ``cryptography.hazmat.primitives.asymmetric.ec`` module.
+
+.. _Cryptography.io: https://cryptography.io/en/latest/
 
 Be careful when choosing a curve - the security of your application depends on it.
 
@@ -39,7 +41,7 @@ operation.  This causes a small one-time performance penalty.
     Set a default curve with umbral.config.set_default_curve().
 
 
-To use SECP256K1 and avoid this penalty, you can simply call `set_default_curve()` with no argument:
+To use SECP256K1 and avoid this penalty, you can simply call ``set_default_curve()`` with no argument:
 
 
 .. code-block:: python
@@ -47,7 +49,7 @@ To use SECP256K1 and avoid this penalty, you can simply call `set_default_curve(
     >>> config.set_default_curve()
 
 Attempting to set the default curve twice in the same runtime will raise
-a `UmbralConfigurationError`.
+a ``UmbralConfigurationError``.
 
 
 .. code-block:: python

@@ -6,7 +6,7 @@ v0.1.3-alpha.0
 Using pip
 -------------------------
 
-The easiest way to install pyUmbral is using pip:
+The easiest way to install pyUmbral is using ``pip``:
 
 .. code-block:: bash
 
@@ -48,15 +48,15 @@ Once you have acquired the source code, you can...
 Install dependencies
 ---------------------
 
-| The NuCypher team uses pipenv for managing pyUmbral's dependencies.
-| The recommended installation procedure is as follows:
+The NuCypher team uses pipenv for managing pyUmbral's dependencies.
+The recommended installation procedure is as follows:
 
 .. code-block:: bash
 
    $ sudo pip3 install pipenv
    $ pipenv install
 
-Post-installation, you can activate the pyUmbral's virtual enviorment
+Post-installation, you can activate the pyUmbral's virtual environment
 in your current terminal session by running :code:`pipenv shell`.
 
 If your installation is successful, the following command will succeed without error.

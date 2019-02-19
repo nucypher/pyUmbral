@@ -46,8 +46,8 @@ Encryption
 
 Generate an Umbral key pair
 -----------------------------
-First, Let's generate two asymmetric key pairs for Alice:
-A delegating key pair and a Signing key pair.
+First, let's generate two asymmetric key pairs for Alice:
+A delegating key pair and a signing key pair.
 
 .. doctest:: capsule_story
 
@@ -64,9 +64,8 @@ A delegating key pair and a Signing key pair.
 Encrypt with a public key
 --------------------------
 Now let's encrypt data with Alice's public key.
-Invocation of `pre.encrypt` returns both the `ciphertext`,
-and a `capsule`, Anyone with Alice's public key can perform
-this operation.
+Invocation of ``pre.encrypt`` returns both the ``ciphertext`` and a ``capsule``.
+Note that anyone with Alice's public key can perform this operation.
 
 
 .. doctest:: capsule_story
@@ -86,7 +85,7 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
     >>> cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=alices_private_key)
 
 
-Threshold split-key re-encryption
+Threshold Re-encryption
 ==================================
 
 Bob Exists
@@ -102,12 +101,13 @@ Bob Exists
 Alice grants access to Bob by generating kfrags 
 -----------------------------------------------
 When Alice wants to grant Bob access to open her encrypted messages, 
-she creates *threshold split re-encryption keys*, or *"kfrags"*, 
-which are next sent to N proxies or *Ursulas*. 
+she creates *re-encryption key fragments*, or *"kfrags"*,
+which are next sent to N proxies or *Ursulas*.
 
-| Generate re-encryption key fragments with "`M`(threshold) of `N`":
-| `threshold` - Minimum threshold of key fragments needed to activate a capsule.
-| `N` - Total number of key fragments to generate.
+Alice must specify ``N`` (the total number of kfrags),
+and a ``threshold`` (the minimum number of kfrags needed to activate a capsule).
+In the following example, Alice creates 20 kfrags,
+but Bob needs to get only 10 re-encryptions to activate the capsule.
 
 .. doctest:: capsule_story
 
@@ -148,14 +148,14 @@ or re-encrypted for him by Ursula, he will not be able to open it.
 Ursulas perform re-encryption
 ------------------------------
 Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
-Each Ursula performs re-encryption on the capsule using the `kfrag` 
-provided by Alice, obtaining this way a "capsule fragment", or `cfrag`,
-Let's mock a network or transport layer by sampling `threshold` random `kfrags`,
+Each Ursula performs re-encryption on the capsule using the ``kfrag``
+provided by Alice, obtaining this way a "capsule fragment", or ``cfrag``.
+Let's mock a network or transport layer by sampling ``threshold`` random kfrags,
 one for each required Ursula. Note that each Ursula must prepare the received 
 capsule before re-encryption by setting the proper correctness keys.
 
-Bob collects the resulting `cfrags` from several Ursulas. 
-Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
+Bob collects the resulting cfrags from several Ursulas.
+Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 
 
 .. doctest:: capsule_story
@@ -182,7 +182,7 @@ Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
 Bob attaches cfrags to the capsule
 ----------------------------------
-Bob attaches at least `threshold` `cfrags` to the capsule, 
+Bob attaches at least ``threshold`` cfrags to the capsule,
 which has to be prepared in advance with the necessary correctness keys. 
 Only then it can become *activated*.
 
@@ -199,8 +199,7 @@ Only then it can become *activated*.
 
 Bob activates and opens the capsule
 ------------------------------------
-Finally, Bob activates and opens the capsule,
-then decrypts the re-encrypted ciphertext.
+Finally, Bob decrypts the re-encrypted ciphertext using the activated capsule.
 
 .. doctest:: capsule_story
 

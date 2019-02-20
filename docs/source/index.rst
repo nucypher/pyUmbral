@@ -6,15 +6,7 @@ pyUmbral
 ========
 .. start-badges
 
-.. list-table::
-    :stub-columns: 1
-
-    * - info
-      - |docs| |discord|
-    * - tests
-      - | |circleci|
-    * - package
-      - | |version| |commits-since|
+|version|  |circleci| |commits-since| |docs| |discord|
 
 .. |docs| image:: https://readthedocs.org/projects/pyumbral/badge/?style=flat
     :target: https://readthedocs.org/projects/pyumbral

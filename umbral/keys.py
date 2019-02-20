@@ -302,7 +302,7 @@ class UmbralPublicKey:
 
     @classmethod
     def expected_bytes_length(cls, curve: Optional[Curve] = None,
-                              is_compressed: bool = True):
+                              is_compressed: bool = True) -> int:
         """
         Returns the size (in bytes) of an UmbralPublicKey given a curve.
         If no curve is provided, it uses the default curve.
@@ -310,7 +310,7 @@ class UmbralPublicKey:
         """
         return Point.expected_bytes_length(curve=curve, is_compressed=is_compressed)
 
-    def to_bytes(self, encoder: Callable = None, is_compressed: bool = True):
+    def to_bytes(self, encoder: Callable = None, is_compressed: bool = True) -> bytes:
         """
         Returns an Umbral public key as bytes.
         Optionally, if an encoder function is provided it will be used to encode

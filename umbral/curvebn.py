@@ -26,7 +26,7 @@ from umbral.config import default_curve
 from umbral.curve import Curve
 
 
-class CurveBN(object):
+class CurveBN:
     """
     Represents an OpenSSL Bignum modulo the order of a curve. Some of these
     operations will only work with prime numbers

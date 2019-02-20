@@ -85,10 +85,10 @@ workflows:
           filters:
             tags:
               only: /.*/
-          requires:
-            - run_tests_35
-            - run_tests_36
-            - run_tests_37
+#          requires:  # Commented this section to speed up the build
+#            - run_tests_35
+#            - run_tests_36
+#            - run_tests_37
       - test_deploy:
           context: "NuCypher PyPI"
           requires:
@@ -177,7 +177,7 @@ commands:
         at: ~/.local/share/virtualenvs/
     - run:
         name: pyUmbral Tests (Python << parameters.python_version >>)
-        command: pipenv run pytest --cov=. --cov-report=html --junitxml=./reports/pytest/python<< parameters.python_version >>-results.xml
+        command: pipenv run pytest $(circleci tests glob tests/**/test_*.py | circleci tests split --split-by=timings) --cov=. --cov-report=html --junitxml=./reports/pytest/python<< parameters.python_version >>-results.xml
     - store_test_results:
         path: reports/pytest
     - store_artifacts:
@@ -217,18 +217,21 @@ jobs:
 
   run_tests_35:
     <<: *python_35_base
+    parallelism: 4
     steps:
     - run_tests:
         python_version: "3.5"
 
   run_tests_36:
     <<: *python_36_base
+    parallelism: 4
     steps:
     - run_tests:
         python_version: "3.6"
 
   run_tests_37:
     <<: *python_37_base
+    parallelism: 4
     steps:
     - run_tests:
         python_version: "3.7"

@@ -27,7 +27,7 @@ DEM_KEYSIZE = 32
 DEM_NONCE_SIZE = 12
 
 
-class UmbralDEM(object):
+class UmbralDEM:
     def __init__(self, symm_key: bytes) -> None:
         """
         Initializes an UmbralDEM object. Requires a key to perform

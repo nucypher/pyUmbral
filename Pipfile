@@ -13,15 +13,14 @@ pysha3 = "*"
 bytestring-splitter = "*"
 constant-sorrow = ">=0.1.0a7"
 
-
 [dev-packages]
 bumpversion = "*"
 # Pytest Plugins
-pytest = "<4"
+pytest = "*"
 pytest-mypy = "*"
 pytest-mock = "*"
 pytest-cov = "*"
-pytest-benchmark = {version = "*", extras = ["histogram"]}
+pytest-benchmark = {version = "*",extras = ["histogram"]}
 # Pytest Plugin Subdeps
 mock = "*"
 mypy = "*"

@@ -13,8 +13,9 @@ You can find them in the ``cryptography.hazmat.primitives.asymmetric.ec`` module
 
 Be careful when choosing a curve - the security of your application depends on it.
 
-We provide SECP256K1 as a default because it is the basis for a number of crypto-blockchain projects;
+We provide curve ``SECP256K1`` as a default because it is the basis for a number of crypto-blockchain projects;
 we don't otherwise endorse its security.
+We additionally support curves ``SECP256R1`` (also known as "NIST P-256") and ``SECP384R1`` ("NIST P-384").
 
 
 Setting a default curve

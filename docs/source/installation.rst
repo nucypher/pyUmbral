@@ -16,7 +16,7 @@ The easiest way to install pyUmbral is using ``pip``:
 Build from source code
 -------------------------
 
-pyUmbral is maintained on GitHub https://github.com/nucypher/pyUmbral.
+pyUmbral is maintained on GitHub: https://github.com/nucypher/pyUmbral.
 
 Clone the repository to download the source code.
 
@@ -63,7 +63,7 @@ If your installation is successful, the following command will succeed without e
 
 .. code-block:: bash
 
-   $ pipenv shell
+   $ pipenv run python
    >>> import umbral
 
 For more information on pipenv, The official documentation is located here: https://docs.pipenv.org/.

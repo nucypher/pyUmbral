@@ -5,8 +5,6 @@ Using pyUmbral
 .. image:: .static/PRE_image.png
 
 
-Import umbral modules
-
 .. testsetup:: capsule_story
 
     import sys
@@ -28,7 +26,7 @@ Configuration
 Setting the default curve
 --------------------------
 
-The best way to start using pyUmbral is to decide on a elliptic curve to use and set it as your default.
+The best way to start using pyUmbral is to decide on an elliptic curve to use and set it as your default.
 
 
 .. doctest:: capsule_story

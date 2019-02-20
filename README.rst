@@ -31,11 +31,18 @@ pyUmbral
 
 .. end-badges
 
-pyUmbral is a Python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
-Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
-extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
-*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob,
-without being able to learn any information about the original secret.
+pyUmbral is the reference implementation of the Umbral_ threshold proxy re-encryption scheme.
+It is open-source, built with Python, and uses OpenSSL_ and Cryptography.io_.
+
+Using Umbral, Alice (the data owner) can *delegate decryption rights* to Bob for
+any ciphertext intended to her, through a re-encryption process performed by a
+set of semi-trusted proxies or *Ursulas*. When a threshold of these proxies
+participate by performing re-encryption, Bob is able to combine these independent
+re-encryptions and decrypt the original message using his private key.
+
+.. image:: https://www.nucypher.com/_next/static/images/umbral-d60f22230f2ac92b56c6e7d84794e5c4.svg
+  :width: 400 px
+  :align: center
 
 pyUmbral is the cryptographic engine behind nucypher_,
 a proxy re-encryption network to empower privacy in decentralized systems.
@@ -186,7 +193,7 @@ The Umbral scheme academic whitepaper and cryptographic specifications
 are available on GitHub_.
 
   "Umbral: A Threshold Proxy Re-Encryption Scheme"
-  *by David Nuñez*
+  *by David Nuñez*.
   https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 
 .. _GitHub: https://github.com/nucypher/umbral-doc/

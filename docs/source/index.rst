@@ -54,6 +54,23 @@ Support & Contribute
 - Source Code: https://github.com/nucypher/pyUmbral
 
 
+Security
+========
+
+If you identify vulnerabilities with _any_ nucypher code,
+please email security@nucypher.com with relevant information to your findings.
+We will work with researchers to coordinate vulnerability disclosure between our partners
+and users to ensure successful mitigation of vulnerabilities.
+
+Throughout the reporting process,
+we expect researchers to honor an embargo period that may vary depending on the severity of the disclosure.
+This ensures that we have the opportunity to fix any issues, identify further issues (if any), and inform our users.
+
+Sometimes vulnerabilities are of a more sensitive nature and require extra precautions.
+We are happy to work together to use a more secure medium, such as Signal.
+Email security@nucypher.com and we will coordinate a communication channel that we're both comfortable with.
+
+
 Indices and Tables
 ==================
 

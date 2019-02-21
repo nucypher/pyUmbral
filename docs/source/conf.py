@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'pyUmbral'
-copyright = '2018, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
-author = 'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
+copyright = u'2018, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
+author = u'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
 
 # The short X.Y version
 version = '0.1'
@@ -133,7 +133,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'pyUmbral.tex', 'pyUmbral Documentation',
-     'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch', 'manual'),
+     u'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch', 'manual'),
 ]
 
 

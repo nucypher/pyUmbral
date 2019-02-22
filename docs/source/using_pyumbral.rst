@@ -80,10 +80,12 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=alices_private_key)
+    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
+    ...                         capsule=capsule,
+    ...                         decrypting_key=alices_private_key)
 
 
-Threshold Re-encryption
+Threshold Re-Encryption
 ==================================
 
 Bob Exists
@@ -178,6 +180,9 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
     >>> assert len(cfrags) == 10
 
 
+Decryption
+==================================
+
 Bob attaches cfrags to the capsule
 ----------------------------------
 Bob attaches at least ``threshold`` cfrags to the capsule,
@@ -201,7 +206,9 @@ Finally, Bob decrypts the re-encrypted ciphertext using the activated capsule.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext, capsule=capsule, decrypting_key=bobs_private_key)
+    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
+    ...                         capsule=capsule,
+    ...                         decrypting_key=bobs_private_key)
 
 .. doctest:: capsule_story
    :hide:

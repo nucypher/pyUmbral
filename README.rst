@@ -25,9 +25,9 @@ pyUmbral
     :alt: PyPI Package latest release
     :target: https://pypi.org/project/umbral
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/nucypher/pyumbral/v0.1.3-alpha.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/nucypher/pyumbral/v0.1.3-alpha.1.svg
     :alt: Commits since latest release
-    :target: https://github.com/nucypher/pyUmbral/compare/v0.1.3-alpha.0...master
+    :target: https://github.com/nucypher/pyUmbral/compare/v0.1.3-alpha.1...master
 
 .. end-badges
 

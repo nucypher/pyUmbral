@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'pyUmbral'
-copyright = u'2018, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
+copyright = u'2019, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
 author = u'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch'
 
 # The short X.Y version

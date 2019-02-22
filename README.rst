@@ -4,19 +4,10 @@
 =========
 pyUmbral
 =========
-v0.1.3-alpha.0
 
 .. start-badges
 
-.. list-table::
-    :stub-columns: 1
-
-    * - info
-      - |docs| |discord|
-    * - tests
-      - | |circleci|
-    * - package
-      - | |version| |commits-since|
+|version|  |circleci| |commits-since| |docs| |discord|
 
 .. |docs| image:: https://readthedocs.org/projects/pyumbral/badge/?style=flat
     :target: https://readthedocs.org/projects/pyumbral
@@ -40,19 +31,34 @@ v0.1.3-alpha.0
 
 .. end-badges
 
-pyUmbral is a python implementation of David Nuñez's threshold proxy re-encryption scheme: Umbral_.
-Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
-extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
-*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
+pyUmbral is the reference implementation of the Umbral_ threshold proxy re-encryption scheme.
+It is open-source, built with Python, and uses OpenSSL_ and Cryptography.io_.
+
+Using Umbral, Alice (the data owner) can *delegate decryption rights* to Bob for
+any ciphertext intended to her, through a re-encryption process performed by a
+set of semi-trusted proxies or *Ursulas*. When a threshold of these proxies
+participate by performing re-encryption, Bob is able to combine these independent
+re-encryptions and decrypt the original message using his private key.
+
+.. image:: https://www.nucypher.com/_next/static/images/umbral-d60f22230f2ac92b56c6e7d84794e5c4.svg
+  :width: 400 px
+  :align: center
+
+pyUmbral is the cryptographic engine behind nucypher_,
+a proxy re-encryption network to empower privacy in decentralized systems.
 
 .. _Umbral: https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 .. _Cryptography.io: https://cryptography.io/en/latest/
 .. _OpenSSL: https://www.openssl.org/
+.. _nucypher: https://github.com/nucypher/nucypher
 
 Usage
 =====
 
 **Key Generation**
+
+As in any public-key cryptosystem, users need a pair of public and private keys.
+Additionally, users that delegate access to their data (like Alice, in this example) need a signing keypair.
 
 .. code-block:: python
 
@@ -73,10 +79,18 @@ Usage
 
 **Encryption**
 
+Now let's encrypt data with Alice's public key.
+Invocation of ``pre.encrypt`` returns both the ``ciphertext`` and a ``capsule``.
+Note that anyone with Alice's public key can perform this operation.
+
+Since data was encrypted with Alice's public key,
+Alice can open the capsule and decrypt the ciphertext with her private key.
+
+
 .. code-block:: python
 
     # Encrypt data with Alice's public key.
-    plaintext = b'Proxy Re-encryption is cool!'
+    plaintext = b'Proxy Re-Encryption is cool!'
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
@@ -86,6 +100,10 @@ Usage
 
 
 **Re-Encryption Key Fragments**
+
+When Alice wants to grant Bob access to open her encrypted messages,
+she creates *re-encryption key fragments*, or *"kfrags"*,
+which are next sent to N proxies or *Ursulas*.
 
 .. code-block:: python
 
@@ -99,6 +117,13 @@ Usage
 
 
 **Re-Encryption**
+
+Bob asks several Ursulas to re-encrypt the capsule so he can open it.
+Each Ursula performs re-encryption on the capsule using the ``kfrag``
+provided by Alice, obtaining this way a "capsule fragment", or ``cfrag``.
+
+Bob collects the resulting cfrags from several Ursulas.
+Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 
 .. code-block:: python
 
@@ -116,6 +141,9 @@ Usage
 
 
 **Decryption by Bob**
+
+Finally, Bob activates the capsule by attaching at least ``threshold`` cfrags,
+and then decrypts the re-encrypted ciphertext.
 
 .. code-block:: python
 
@@ -136,7 +164,7 @@ See more detailed usage examples in the docs_ directory.
 Quick Installation
 ==================
 
-To install pyUmbral, simply use `pip`:
+To install pyUmbral, simply use ``pip``:
 
 .. code-block:: bash
 
@@ -144,7 +172,7 @@ To install pyUmbral, simply use `pip`:
 
 
 Alternatively, you can checkout the repo and install it from there. 
-The NuCypher team uses pipenv for managing pyUmbral's dependencies.
+The NuCypher team uses ``pipenv`` for managing pyUmbral's dependencies.
 The recommended installation procedure is as follows:
 
 .. code-block:: bash
@@ -153,9 +181,9 @@ The recommended installation procedure is as follows:
     $ pipenv install
 
 Post-installation, you can activate the project virtual environment
-in your current terminal session by running :bash:`pipenv shell`.
+in your current terminal session by running ``pipenv shell``.
 
-For more information on pipenv, find the official documentation here: https://docs.pipenv.org/.
+For more information on ``pipenv``, find the official documentation here: https://docs.pipenv.org/.
 
 
 Academic Whitepaper
@@ -165,7 +193,7 @@ The Umbral scheme academic whitepaper and cryptographic specifications
 are available on GitHub_.
 
   "Umbral: A Threshold Proxy Re-Encryption Scheme"
-  *by David Nuñez*
+  *by David Nuñez*.
   https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 
 .. _GitHub: https://github.com/nucypher/umbral-doc/

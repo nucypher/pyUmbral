@@ -4,19 +4,52 @@
 ========
 pyUmbral
 ========
-v0.1.3-alpha.0
+.. start-badges
 
-.. image:: https://circleci.com/gh/nucypher/pyUmbral/tree/master.svg?style=svg
+|version|  |circleci| |commits-since| |docs| |discord|
+
+.. |docs| image:: https://readthedocs.org/projects/pyumbral/badge/?style=flat
+    :target: https://readthedocs.org/projects/pyumbral
+    :alt: Documentation Status
+
+.. |discord| image:: https://img.shields.io/discord/411401661714792449.svg?logo=discord
+    :target: https://discord.gg/xYqyEby
+    :alt: Discord
+
+.. |circleci| image:: https://img.shields.io/circleci/project/github/nucypher/pyUmbral.svg?logo=circleci
     :target: https://circleci.com/gh/nucypher/pyUmbral/tree/master
+    :alt: CircleCI build status
 
-pyUmbral is a python implementation of David Nuñez's threshold proxy rencryption scheme: Umbral_.
-Implemented with OpenSSL_ and Cryptography.io_, pyUmbral is a referential and open-source cryptography library
-extending the traditional cryptological narrative of "Alice and Bob" by introducing a new actor,
-*Ursula*, who has the ability to take secrets encrypted for Alice and *re-encrypt* them for Bob.
+.. |version| image:: https://img.shields.io/pypi/v/umbral.svg
+    :alt: PyPI Package latest release
+    :target: https://pypi.org/project/umbral
+
+.. |commits-since| image:: https://img.shields.io/github/commits-since/nucypher/pyumbral/v0.1.3-alpha.0.svg
+    :alt: Commits since latest release
+    :target: https://github.com/nucypher/pyUmbral/compare/v0.1.3-alpha.0...master
+
+.. end-badges
+
+pyUmbral is the reference implementation of the Umbral_ threshold proxy re-encryption scheme.
+It is open-source, built with Python, and uses OpenSSL_ and Cryptography.io_.
+
+Using Umbral, Alice (the data owner) can *delegate decryption rights* to Bob for
+any ciphertext intended to her, through a re-encryption process performed by a
+set of semi-trusted proxies or *Ursulas*. When a threshold of these proxies
+participate by performing re-encryption, Bob is able to combine these independent
+re-encryptions and decrypt the original message using his private key.
+
+.. image:: https://www.nucypher.com/_next/static/images/umbral-d60f22230f2ac92b56c6e7d84794e5c4.svg
+  :width: 400 px
+  :align: center
+
+pyUmbral is the cryptographic engine behind nucypher_,
+a proxy re-encryption network to empower privacy in decentralized systems.
 
 .. _Umbral: https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 .. _Cryptography.io: https://cryptography.io/en/latest/
 .. _OpenSSL: https://www.openssl.org/
+.. _nucypher: https://github.com/nucypher/nucypher
 
 .. toctree::
    :maxdepth: 3
@@ -26,22 +59,14 @@ extending the traditional cryptological narrative of "Alice and Bob" by introduc
    using_pyumbral
 
 
-Features
-==========
-- Re-encryption Toolkit
-- Re-encryption Key Fragmentation
-- Key Encapsulation
-- Elliptic Curve Arithmetic
-
-
 Academic Whitepaper
 ====================
 
 The Umbral scheme academic whitepaper and cryptographic specifications
-are availible on GitHub_.
+are available on GitHub_.
 
-  "Umbral A Threshold Proxy Re-Encryption Scheme"
-  *by David Nuñez*
+  "Umbral: A Threshold Proxy Re-Encryption Scheme"
+  *by David Nuñez*.
   https://github.com/nucypher/umbral-doc/blob/master/umbral-doc.pdf
 
 .. _GitHub: https://github.com/nucypher/umbral-doc/

@@ -1,6 +1,4 @@
 """
-Copyright (C) 2018 NuCypher
-
 This file is part of pyUmbral.
 
 pyUmbral is free software: you can redistribute it and/or modify

@@ -27,12 +27,13 @@ mypy = "*"
 monkeytype = "*"
 coverage = "*"
 codecov = "*"
-# Docs
-sphinx = "*"
-sphinx-autobuild = "*"
 # Testing libraries
 hypothesis = "*"
 nbval = "*"
+# Docs
+sphinx = "*"
+sphinx-autobuild = "*"
+sphinx_rtd_theme = "*"
 # Overrides vulnerable versions allowed by codecov and sphinx:
 requests = ">=2.20.0"
 

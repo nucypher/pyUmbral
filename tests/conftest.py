@@ -28,8 +28,6 @@ from umbral import pre
 
 set_default_curve(SECP256K1)
 
-MockKeyPair = namedtuple('TestKeyPair', 'priv pub')
-
 parameters = (
     # (N, M)
     (1, 1),
@@ -56,18 +54,19 @@ kfrag_signing_modes = (
     (True, True), (True, False), (False, True), (False, False)
 )
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture
 def alices_keys():
     delegating_priv = keys.UmbralPrivateKey.gen_key()
     signing_priv = keys.UmbralPrivateKey.gen_key()
     return delegating_priv, signing_priv
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture
 def bobs_keys():
     priv = keys.UmbralPrivateKey.gen_key()
     pub = priv.get_pubkey()
-    return MockKeyPair(priv, pub)
+    return priv, pub
 
 
 @pytest.fixture()
@@ -90,24 +89,44 @@ def random_ec_curvebn2():
     yield CurveBN.gen_rand()
 
 
-@pytest.fixture(scope='function')
-def capsule(alices_keys):
-    delegating_privkey, _signing_privkey = alices_keys
-    _sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
-    return capsule   
+
+
+@pytest.fixture(scope='session')
+def message():
+    message = b"dnunez [9:30 AM]" \
+              b"@Tux we had this super fruitful discussion last night with @jMyles @michwill @KPrasch" \
+              b"to sum up: the symmetric ciphertext is now called the 'Chimney'." \
+              b"the chimney of the capsule, of course" \
+              b"tux [9:32 AM]" \
+              b"wat"
+    return message
+
 
 @pytest.fixture
-def prepared_capsule(alices_keys, bobs_keys):
+def ciphertext_and_capsule(alices_keys, message):
+    delegating_privkey, _signing_privkey = alices_keys
+    # See nucypher's issue #183
+    chimney, capsule = pre.encrypt(delegating_privkey.get_pubkey(), message)
+    return chimney, capsule
+
+
+@pytest.fixture
+def capsule(ciphertext_and_capsule):
+    ciphertext, capsule = ciphertext_and_capsule
+    return capsule
+
+
+@pytest.fixture
+def prepared_capsule(alices_keys, bobs_keys, capsule):
     delegating_privkey, signing_privkey = alices_keys
     _receiving_privkey, receiving_pubkey = bobs_keys
-
-    _sym_key, capsule = pre._encapsulate(delegating_privkey.get_pubkey())
     capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
                                  receiving=receiving_pubkey,
                                  verifying=signing_privkey.get_pubkey())
     return capsule    
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture
 def kfrags(alices_keys, bobs_keys):
     delegating_privkey, signing_privkey = alices_keys
     signer_alice = Signer(signing_privkey)

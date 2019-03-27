@@ -328,7 +328,7 @@ class UmbralPublicKey:
         return self.to_bytes(is_compressed=is_compressed).hex()
 
     @classmethod
-    def from_hex(cls, hex_string: str) -> 'UmbralPublicKey':
+    def from_hex(cls, hex_string) -> 'UmbralPublicKey':
         return cls.from_bytes(key_bytes=hex_string, decoder=bytes.fromhex)
 
     def to_cryptography_pubkey(self) -> _EllipticCurvePublicKey:

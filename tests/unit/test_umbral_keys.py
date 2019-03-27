@@ -133,6 +133,14 @@ def test_key_encoder_decoder(random_ec_curvebn1):
     assert decoded_key.to_bytes() == umbral_key.to_bytes()
 
 
+def test_public_key_as_hex(random_ec_curvebn1):
+    pubkey = UmbralPrivateKey(random_ec_curvebn1, default_params()).get_pubkey()
+    hex_string = pubkey.hex()
+    decoded_pubkey = UmbralPublicKey.from_hex(hex_string)
+
+    assert pubkey == decoded_pubkey
+
+
 def test_umbral_key_to_cryptography_keys():
     umbral_priv_key = UmbralPrivateKey.gen_key()
     umbral_pub_key = umbral_priv_key.get_pubkey()

@@ -142,7 +142,7 @@ or re-encrypted for him by Ursula, he will not be able to open it.
     ...                    decrypting_key=bobs_private_key)
     Traceback (most recent call last):
         ...
-    cryptography.exceptions.InvalidTag
+    umbral.pre.UmbralDecryptionError
 
 
 Ursulas perform re-encryption

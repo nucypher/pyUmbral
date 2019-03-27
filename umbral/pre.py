@@ -20,20 +20,21 @@ import typing
 from typing import Dict, List, Optional, Tuple, Union, Any
 
 from bytestring_splitter import BytestringSplitter
+from cryptography.exceptions import InvalidTag
+from constant_sorrow import constants
+
+from umbral.cfrags import CapsuleFrag
 from umbral.config import default_curve
+from umbral.curve import Curve
 from umbral.curvebn import CurveBN
 from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
-from umbral.cfrags import CapsuleFrag
-from umbral.kfrags import KFrag, NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from umbral.kfrags import KFrag, NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
 from umbral.params import UmbralParameters
 from umbral.point import Point
-from umbral.signing import Signer
-from umbral.curve import Curve
-from umbral.utils import poly_eval, lambda_coeff
 from umbral.random_oracles import kdf, hash_to_curvebn
-
-from constant_sorrow import constants
+from umbral.signing import Signer
+from umbral.utils import poly_eval, lambda_coeff
 
 
 class GenericUmbralError(Exception):
@@ -44,6 +45,13 @@ class UmbralCorrectnessError(GenericUmbralError):
     def __init__(self, message: str, offending_cfrags: List[CapsuleFrag]) -> None:
         super().__init__(message)
         self.offending_cfrags = offending_cfrags
+
+
+class UmbralDecryptionError(GenericUmbralError):
+    def __init__(self) -> None:
+        super().__init__("Decryption of ciphertext failed: "
+                         "either someone tampered with the ciphertext or "
+                         "you are using an incorrect decryption key.")
 
 
 class Capsule:
@@ -489,5 +497,9 @@ def decrypt(ciphertext: bytes, capsule: Capsule, decrypting_key: UmbralPrivateKe
         encapsulated_key = _decapsulate_original(decrypting_key, capsule)
 
     dem = UmbralDEM(encapsulated_key)
-    cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
+    try:
+        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
+    except InvalidTag as e:
+        raise UmbralDecryptionError() from e
+
     return cleartext

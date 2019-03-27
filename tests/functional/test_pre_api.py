@@ -21,12 +21,14 @@ from umbral import pre
 from umbral.signing import Signer
 from ..conftest import wrong_parameters
 
+
 def test_public_key_encryption(alices_keys):
     delegating_privkey, _ = alices_keys
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
     cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
+
 
 @pytest.mark.parametrize("N, M", wrong_parameters)
 def test_wrong_N_M_in_split_rekey(N, M, alices_keys, bobs_keys):
@@ -41,3 +43,14 @@ def test_wrong_N_M_in_split_rekey(N, M, alices_keys, bobs_keys):
                                       threshold=M,
                                       N=N)
 
+
+def test_decryption_error(alices_keys, bobs_keys, ciphertext_and_capsule, message):
+    delegating_privkey, _signing_privkey = alices_keys
+    receiving_privkey, _receiving_pubkey = bobs_keys
+    ciphertext, capsule = ciphertext_and_capsule
+
+    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
+    assert message == cleartext
+
+    with pytest.raises(pre.UmbralDecryptionError) as e:
+        _cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)

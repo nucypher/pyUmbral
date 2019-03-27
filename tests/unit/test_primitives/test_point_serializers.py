@@ -51,6 +51,7 @@ def test_generate_random_points():
         assert isinstance(another_point, Point)
         assert point != another_point
 
+
 @pytest.mark.parametrize("curve, nid, point_bytes", generate_test_points_bytes())
 def test_bytes_serializers(point_bytes, nid, curve):
     point_with_curve = Point.from_bytes(point_bytes, curve=curve) # from curve
@@ -75,6 +76,7 @@ def test_bytes_serializers(point_bytes, nid, curve):
         malformed_point_bytes = point_representation[:-1]
         with pytest.raises(InternalError):
             _ = Point.from_bytes(malformed_point_bytes)
+
 
 @pytest.mark.parametrize("curve, nid, point_affine", generate_test_points_affine())
 def test_affine(point_affine, nid, curve):

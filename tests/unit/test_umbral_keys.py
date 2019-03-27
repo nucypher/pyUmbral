@@ -87,37 +87,23 @@ def test_private_key_serialization_with_encryption(random_ec_curvebn1):
 
 
 def test_public_key_serialization(random_ec_curvebn1):
-    priv_key = random_ec_curvebn1
-
-    params = default_params()
-    pub_key = priv_key * params.g
-
-    umbral_key = UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPrivateKey(random_ec_curvebn1, default_params()).get_pubkey()
+    pub_point = umbral_key.point_key
 
     encoded_key = umbral_key.to_bytes()
 
     decoded_key = UmbralPublicKey.from_bytes(encoded_key)
-    assert pub_key == decoded_key.point_key
+    assert pub_point == decoded_key.point_key
 
 
 def test_public_key_to_compressed_bytes(random_ec_curvebn1):
-    priv_key = random_ec_curvebn1
-
-    params = default_params()
-    pub_key = priv_key * params.g
-
-    umbral_key = UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPrivateKey(random_ec_curvebn1, default_params()).get_pubkey()
     key_bytes = bytes(umbral_key)
     assert len(key_bytes) == Point.expected_bytes_length(is_compressed=True)
 
 
 def test_public_key_to_uncompressed_bytes(random_ec_curvebn1):
-    priv_key = random_ec_curvebn1
-
-    params = default_params()
-    pub_key = priv_key * params.g
-
-    umbral_key = UmbralPublicKey(pub_key, params)
+    umbral_key = UmbralPrivateKey(random_ec_curvebn1, default_params()).get_pubkey()
     key_bytes = umbral_key.to_bytes(is_compressed=False)
     assert len(key_bytes) == Point.expected_bytes_length(is_compressed=False)
 
@@ -138,6 +124,10 @@ def test_public_key_as_hex(random_ec_curvebn1):
     hex_string = pubkey.hex()
     decoded_pubkey = UmbralPublicKey.from_hex(hex_string)
 
+    assert pubkey == decoded_pubkey
+
+    hex_string = pubkey.hex(is_compressed=False)
+    decoded_pubkey = UmbralPublicKey.from_hex(hex_string)
     assert pubkey == decoded_pubkey
 
 

@@ -75,7 +75,7 @@ try:
     fail_decrypted_data = pre.decrypt(ciphertext=ciphertext,
                                       capsule=bob_capsule,
                                       decrypting_key=bobs_private_key)
-except:
+except pre.UmbralDecryptionError:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
 #8

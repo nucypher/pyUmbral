@@ -94,6 +94,7 @@ workflows:
           requires:
             - mypy_type_check_36
             - doctests_36
+            - notebook_tests_36
           filters:
             tags:
               only: /v[0-9]+.*/

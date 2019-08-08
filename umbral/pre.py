@@ -181,6 +181,9 @@ class Capsule:
     def __bytes__(self) -> bytes:
         return self.to_bytes()
 
+    def __contains__(self, cfrag):
+        return cfrag in self._attached_cfrags
+
     def __eq__(self, other) -> bool:
         """
         Each component is compared to its counterpart in constant time per the __eq__ of Point and CurveBN.

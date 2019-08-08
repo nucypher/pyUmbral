@@ -55,6 +55,7 @@ class UmbralDecryptionError(GenericUmbralError):
 
 
 class Capsule:
+
     def __init__(self,
                  params: UmbralParameters,
                  point_e: Point,
@@ -73,7 +74,7 @@ class Capsule:
         self.point_v = point_v
         self.bn_sig = bn_sig
 
-        self._attached_cfrags = list()    # type: list
+        self._attached_cfrags = set()    # type: set
         self._cfrag_correctness_keys = {
             'delegating': None, 'receiving': None, 'verifying': None
         }   # type: dict
@@ -170,7 +171,7 @@ class Capsule:
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
         if cfrag.verify_correctness(self):
-            self._attached_cfrags.append(cfrag)
+            self._attached_cfrags.add(cfrag)
         else:
             error_msg = "CFrag is not correct and cannot be attached to the Capsule"
             raise UmbralCorrectnessError(error_msg, [cfrag])

@@ -121,3 +121,15 @@ def test_capsule_length(prepared_capsule, kfrags):
         assert len(capsule) == counter
         cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
+
+
+def test_capsule_clear(prepared_capsule, kfrags):
+    capsule = prepared_capsule
+
+    for counter, kfrag in enumerate(kfrags):
+        assert len(capsule) == counter
+        cfrag = pre.reencrypt(kfrag, capsule)
+        capsule.attach_cfrag(cfrag)
+
+    capsule.clear_cfrags()
+    assert len(capsule) == 0

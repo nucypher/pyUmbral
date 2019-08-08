@@ -176,6 +176,9 @@ class Capsule:
             error_msg = "CFrag is not correct and cannot be attached to the Capsule"
             raise UmbralCorrectnessError(error_msg, [cfrag])
 
+    def clear_cfrags(self):
+        self._attached_cfrags = set()
+
     def first_cfrag(self):
         try:
             return list(self._attached_cfrags)[0]

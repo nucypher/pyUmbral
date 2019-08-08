@@ -176,6 +176,12 @@ class Capsule:
             error_msg = "CFrag is not correct and cannot be attached to the Capsule"
             raise UmbralCorrectnessError(error_msg, [cfrag])
 
+    def first_cfrag(self):
+        try:
+            return list(self._attached_cfrags)[0]
+        except IndexError:
+            raise TypeError("This Capsule doesn't have any CFrags attached.  Ergo, you can't get the first one.")
+
     def components(self) -> Tuple[Point, Point, CurveBN]:
         return self.point_e, self.point_v, self.bn_sig
 
@@ -390,7 +396,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    precursor = capsule._attached_cfrags[0].point_precursor
+    precursor = capsule.first_cfrag().point_precursor
     dh_point = priv_key * precursor
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction

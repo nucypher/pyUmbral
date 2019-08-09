@@ -55,6 +55,7 @@ class UmbralDecryptionError(GenericUmbralError):
 
 
 class Capsule:
+
     def __init__(self,
                  params: UmbralParameters,
                  point_e: Point,
@@ -73,7 +74,7 @@ class Capsule:
         self.point_v = point_v
         self.bn_sig = bn_sig
 
-        self._attached_cfrags = list()    # type: list
+        self._attached_cfrags = set()    # type: set
         self._cfrag_correctness_keys = {
             'delegating': None, 'receiving': None, 'verifying': None
         }   # type: dict
@@ -170,16 +171,28 @@ class Capsule:
 
     def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
         if cfrag.verify_correctness(self):
-            self._attached_cfrags.append(cfrag)
+            self._attached_cfrags.add(cfrag)
         else:
             error_msg = "CFrag is not correct and cannot be attached to the Capsule"
             raise UmbralCorrectnessError(error_msg, [cfrag])
+
+    def clear_cfrags(self):
+        self._attached_cfrags = set()
+
+    def first_cfrag(self):
+        try:
+            return list(self._attached_cfrags)[0]
+        except IndexError:
+            raise TypeError("This Capsule doesn't have any CFrags attached.  Ergo, you can't get the first one.")
 
     def components(self) -> Tuple[Point, Point, CurveBN]:
         return self.point_e, self.point_v, self.bn_sig
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()
+
+    def __contains__(self, cfrag):
+        return cfrag in self._attached_cfrags
 
     def __eq__(self, other) -> bool:
         """
@@ -386,7 +399,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, capsule: Capsu
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    precursor = capsule._attached_cfrags[0].point_precursor
+    precursor = capsule.first_cfrag().point_precursor
     dh_point = priv_key * precursor
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction

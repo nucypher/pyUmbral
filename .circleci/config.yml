@@ -137,11 +137,15 @@ python_37_base: &python_37_base
 commands:
   pipenv_install:
     description: "Install Python dependencies with Pipenv"
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
     steps:
       - checkout
       - run:
           name: Install Python dependencies with Pipenv
-          command: pipenv install --three --dev --skip-lock --pre
+          command: pipenv install --python << parameters.python_version >> --dev --skip-lock --pre
       - run:
           name: Check PEP 508 Requirements
           command: pipenv check
@@ -189,17 +193,20 @@ jobs:
   pipenv_install_35:
     <<: *python_35_base
     steps:
-      - pipenv_install
+      - pipenv_install:
+          python_version: "3.5"
 
   pipenv_install_36:
     <<: *python_36_base
     steps:
-      - pipenv_install
+      - pipenv_install:
+          python_version: "3.6"
 
   pipenv_install_37:
     <<: *python_37_base
     steps:
-      - pipenv_install
+      - pipenv_install:
+          python_version: "3.7"
 
   pip_install_35:
     <<: *python_35_base

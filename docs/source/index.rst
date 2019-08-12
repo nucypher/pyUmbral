@@ -39,7 +39,7 @@ set of semi-trusted proxies or *Ursulas*. When a threshold of these proxies
 participate by performing re-encryption, Bob is able to combine these independent
 re-encryptions and decrypt the original message using his private key.
 
-.. image:: https://www.nucypher.com/_next/static/images/umbral-d60f22230f2ac92b56c6e7d84794e5c4.svg
+.. image:: .static/umbral.svg
   :width: 400 px
   :align: center
 

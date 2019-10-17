@@ -1,82 +1,81 @@
 {
-  "params": "default",
   "name": "Test vectors for umbral.curvebn.CurveBN.hash()",
+  "params": "default",
   "vectors": [
     {
-      "output": "fd307d78e9f94e1b76762b8efd1284067c4ddd49f64f95441d57784d05a6323d",
       "input": [
         {
           "class": "bytes",
           "bytes": ""
         }
-      ]
+      ],
+      "output": "fd307d78e9f94e1b76762b8efd1284067c4ddd49f64f95441d57784d05a6323d"
     },
     {
-      "output": "26249427a90ff70e82597a97a80f62fd133038a1ddae58b446eddf1a08098da3",
       "input": [
         {
           "class": "bytes",
           "bytes": "616263"
         }
-      ]
+      ],
+      "output": "26249427a90ff70e82597a97a80f62fd133038a1ddae58b446eddf1a08098da3"
     },
     {
-      "output": "daea78aeae6a550a201463c9f9a988e5c9d539c7269787e207f69fb376652cff",
       "input": [
         {
           "class": "Point",
-          "bytes": "031b3ea3f6f4d0a107dbb303aaff066ed0feff0e9c7f10016e0bf8d398d35e91cb"
+          "bytes": "03cdaadd5e0493c8426fd65004ea1e10ddcd3fcb37ac87ce84d0ffdda36d8d6072"
         }
-      ]
+      ],
+      "output": "b8070774566dbc192f9aeb4e34eb94b39bacdee67f7c373ca1371dd4b8b1ab41"
     },
     {
-      "output": "98d675e2e71ec4af51e48e87119c1f47ee64729b15a76fbec987177b428c3035",
       "input": [
         {
           "class": "CurveBN",
-          "bytes": "a89e5b144e4c052d19a90ac48098118e17b3d5c6d8ffa9904ab8ec222339c217"
+          "bytes": "b32e9abad43a3724ff37dd9d15253fe66339f978e7581dff5b34b4db970b7bf3"
         }
-      ]
+      ],
+      "output": "7d1978b2203d57abb5fe3383d7929ff8aec7b2ea08bc7f4120d12843792ceadb"
     },
     {
-      "output": "1d7fb629eb8227319662a634870b2c305d7eac9a3c9deb7481e3516ff9e4a9aa",
       "input": [
         {
           "class": "Point",
-          "bytes": "031b3ea3f6f4d0a107dbb303aaff066ed0feff0e9c7f10016e0bf8d398d35e91cb"
+          "bytes": "03cdaadd5e0493c8426fd65004ea1e10ddcd3fcb37ac87ce84d0ffdda36d8d6072"
         },
         {
           "class": "CurveBN",
-          "bytes": "a89e5b144e4c052d19a90ac48098118e17b3d5c6d8ffa9904ab8ec222339c217"
+          "bytes": "b32e9abad43a3724ff37dd9d15253fe66339f978e7581dff5b34b4db970b7bf3"
         }
-      ]
+      ],
+      "output": "57d604fa36e3acbe841c5367f29393868c57290fa7f411b1b9fbdbfe1c320c4f"
     },
     {
-      "output": "88fd4ff55d0da0105a8b72592156d60436654f3547e949db05eade2735a3dfe8",
       "input": [
         {
           "class": "Point",
-          "bytes": "031b3ea3f6f4d0a107dbb303aaff066ed0feff0e9c7f10016e0bf8d398d35e91cb"
+          "bytes": "03cdaadd5e0493c8426fd65004ea1e10ddcd3fcb37ac87ce84d0ffdda36d8d6072"
         },
         {
           "class": "Point",
-          "bytes": "027476dc915e14012f520113f2943e917c288b9a967150b190f8feb68ec824071b"
+          "bytes": "02aa6a41b809ba8d2816444788d597e6af5b81c56f7645f67e8dde417fca052828"
         },
         {
           "class": "Point",
-          "bytes": "03caedd5354ae2fee918f6f4f62e9ef190d242e50eab280015275af34aee26ad1d"
+          "bytes": "0336877b38451dd8baaa4830794091a38b7abb2c8187e1062cc2512e202739d5eb"
         },
         {
           "class": "Point",
-          "bytes": "0363e5e7541c9f4f9a576a0b76055cdef878ae12c2867aaa3ef7879488995ba090"
+          "bytes": "0278adf9ca33ea46b2c0fb7b5a14a2820b171a97f8c69846e9866194ed1315438a"
         },
         {
           "class": "Point",
-          "bytes": "034dabe34d7afa6f0c1b6c1df0e9eacc3a140fea9cb8103492434c15b9e0b7c441"
+          "bytes": "027adba799a3cf3935abb5366b5ec3f132f05a9baa0647734e7be50952e3309bd2"
         },
         {
           "class": "Point",
-          "bytes": "0309e35e6cfd57ee6692503ccf36a0237b23fedb0f76605eae6fe7495a52f9c7a5"
+          "bytes": "03ee94ece91a0091e3f2c132f348716b0ab01d4ec320ad408ff9308e092dfe1e1b"
         },
         {
           "class": "Point",
@@ -84,13 +83,14 @@
         },
         {
           "class": "Point",
-          "bytes": "029fe0b7044442b3d3dd667f34edd8812da7bd49390454e1cee0cd17c7975959c1"
+          "bytes": "026fa5450221297328a37043220b0f82a7fdf2a4ab01c9b30cd572181736390ad3"
         },
         {
           "class": "Point",
-          "bytes": "0383ab1a5c2a03fedbc897730595474b2ba389370249ceabb5f342f696e5dfe47a"
+          "bytes": "038a295338304923b70a233778a1b93f869062a5d1663127a6e5a5a5b07739f21d"
         }
-      ]
+      ],
+      "output": "c384b9566bc17b5ae424862116c89f882374c5bb2ec2c5c54bbf7b4e2cc8e179"
     }
   ]
 }

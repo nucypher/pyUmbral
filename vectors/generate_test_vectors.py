@@ -6,7 +6,7 @@ from umbral.keys import UmbralPrivateKey
 from umbral.signing import Signer
 from umbral.curvebn import CurveBN
 from umbral.point import Point
-from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
+from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point, kdf
 from umbral.config import set_default_curve, default_params
 
 
@@ -162,6 +162,7 @@ expected = [('Addition', point1 + point2),
             ('Inversion', -point1),
             ('To_affine.X', point1.to_affine()[0]),
             ('To_affine.Y', point1.to_affine()[1]),
+            ('kdf', kdf(point1, pre.DEM_KEYSIZE)),
             ]
 
 expected = [{'operation': op, 'result': hexlify(result)} for (op, result) in expected]
@@ -226,7 +227,7 @@ for kfrag in kfrags:
 
 vector_suite = {
     'name': 'Test vectors for KFrags',
-    'description': ('This is a collection of KFrags generated under the ' 
+    'description': ('This is a collection of KFrags generated under the '
                     'enclosed delegating, verifying and receiving keys. '
                     'Each of them must deserialize correctly and the '
                     'call to verify() must succeed.'),
@@ -272,7 +273,7 @@ vector_suite = {
 }
 
 #print(json.dumps(vector_suite, indent=2))
-create_test_vector_file(vector_suite, 'vectors_cfrags.json', generate_again=generate_again) 
+create_test_vector_file(vector_suite, 'vectors_cfrags.json', generate_again=generate_again)
 
 
 

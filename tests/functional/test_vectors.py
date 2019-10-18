@@ -24,7 +24,7 @@ from umbral.keys import UmbralPublicKey
 from umbral.config import default_params
 from umbral.kfrags import KFrag
 from umbral.cfrags import CapsuleFrag
-from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point
+from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point, kdf
 from umbral import pre
 
 def test_curvebn_operations():
@@ -34,7 +34,7 @@ def test_curvebn_operations():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     bn1 = CurveBN.from_bytes(bytes.fromhex(vector_suite['first operand']))
     bn2 = CurveBN.from_bytes(bytes.fromhex(vector_suite['second operand']))
@@ -64,7 +64,7 @@ def test_curvebn_hash():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     params = default_params()
 
@@ -81,7 +81,7 @@ def test_point_operations():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     point1 = Point.from_bytes(bytes.fromhex(vector_suite['first Point operand']))
     point2 = Point.from_bytes(bytes.fromhex(vector_suite['second Point operand']))
@@ -107,6 +107,8 @@ def test_point_operations():
     for (operation, result) in test:
         assert result == int.from_bytes(expected[operation], 'big'), 'Error in {}'.format(operation)
 
+    assert kdf(point1, pre.DEM_KEYSIZE) == expected['kdf']
+
 
 def test_unsafe_hash_to_point():
 
@@ -115,7 +117,7 @@ def test_unsafe_hash_to_point():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     params = default_params()
 
@@ -133,7 +135,7 @@ def test_kfrags():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     verifying_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['verifying_key']))
     delegating_key = UmbralPublicKey.from_bytes(bytes.fromhex(vector_suite['delegating_key']))
@@ -154,7 +156,7 @@ def test_cfrags():
         with open(vector_file) as f:
             vector_suite = json.load(f)
     except OSError:
-        raise 
+        raise
 
     params = default_params()
 

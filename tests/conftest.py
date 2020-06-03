@@ -111,19 +111,26 @@ def ciphertext_and_capsule(alices_keys, message):
 
 
 @pytest.fixture
+def ciphertext_and_prepared_capsule(alices_keys, bobs_keys, ciphertext_and_capsule):
+    ciphertext, capsule = ciphertext_and_capsule
+    delegating_privkey, signing_privkey = alices_keys
+    _receiving_privkey, receiving_pubkey = bobs_keys
+    prepared_capsule = capsule.with_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                                     receiving=receiving_pubkey,
+                                                     verifying=signing_privkey.get_pubkey())
+    return ciphertext, prepared_capsule
+
+
+@pytest.fixture
 def capsule(ciphertext_and_capsule):
     ciphertext, capsule = ciphertext_and_capsule
     return capsule
 
 
 @pytest.fixture
-def prepared_capsule(alices_keys, bobs_keys, capsule):
-    delegating_privkey, signing_privkey = alices_keys
-    _receiving_privkey, receiving_pubkey = bobs_keys
-    capsule = capsule.with_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                            receiving=receiving_pubkey,
-                                            verifying=signing_privkey.get_pubkey())
-    return capsule
+def prepared_capsule(ciphertext_and_prepared_capsule):
+    ciphertext, prepared_capsule = ciphertext_and_prepared_capsule
+    return prepared_capsule
 
 
 @pytest.fixture

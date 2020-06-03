@@ -25,7 +25,10 @@ from umbral.cfrags import CapsuleFrag
 
 
 def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
-                                                  kfrags, prepared_capsule):
+                                                  kfrags, ciphertext_and_prepared_capsule, message):
+
+    ciphertext, prepared_capsule = ciphertext_and_prepared_capsule
+
     delegating_privkey, signing_privkey = alices_keys
     delegating_pubkey = delegating_privkey.get_pubkey()
 
@@ -57,26 +60,26 @@ def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
     #  CFrag 0 is not valid ...
     assert not prepared_capsule_alice1.verify_cfrag(cfrags[0])
 
-    # ... and trying to attach it raises an error.
+    # ... and trying to decrypt raises an error with it being listed as offending.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        prepared_capsule_alice1.attach_cfrag(cfrags[0])
+        pre.decrypt_reencrypted(ciphertext, prepared_capsule_alice1, cfrags, receiving_privkey)
 
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
-    assert len(correctness_error.offending_cfrags) == 1
+    assert len(correctness_error.offending_cfrags) == 1 # The rest of CFrags should be correct
 
     # The rest of CFrags should be correct:
-    correct_cases = 0
     for cfrag_i in cfrags[1:]:
         assert prepared_capsule_alice1.verify_cfrag(cfrag_i)
-        prepared_capsule_alice1.attach_cfrag(cfrag_i)
-        correct_cases += 1
 
-    assert correct_cases == len(cfrags[1:])
+    # Decryption works without the offending cfrag
+    cleartext = pre.decrypt_reencrypted(ciphertext, prepared_capsule_alice1, cfrags[1:], receiving_privkey)
+    assert cleartext == message
 
 
-def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
-    capsule_alice = prepared_capsule
+def test_cheating_ursula_sends_garbage(kfrags, bobs_keys, ciphertext_and_prepared_capsule, message):
+    ciphertext, prepared_capsule = ciphertext_and_prepared_capsule
+    receiving_privkey, receiving_pubkey = bobs_keys
 
     cfrags = []
     for i, kfrag in enumerate(kfrags):
@@ -84,7 +87,7 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
         metadata_i = "This is an example of metadata for re-encryption request #{}"
         metadata_i = metadata_i.format(i).encode()
 
-        cfrag = pre.reencrypt(kfrag, capsule_alice, metadata=metadata_i)
+        cfrag = pre.reencrypt(kfrag, prepared_capsule, metadata=metadata_i)
         cfrags.append(cfrag)
 
     # Let's put random garbage in one of the cfrags
@@ -92,11 +95,11 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
     cfrags[0].point_v1 = Point.gen_rand()
 
     #  Of course, this CFrag is not valid ...
-    assert not capsule_alice.verify_cfrag(cfrags[0])
+    assert not prepared_capsule.verify_cfrag(cfrags[0])
 
-    # ... and trying to attach it raises an error.
+    # ... and trying to decrypt raises an error with it being listed as offending.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        capsule_alice.attach_cfrag(cfrags[0])
+        pre.decrypt_reencrypted(ciphertext, prepared_capsule, cfrags, receiving_privkey)
 
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
@@ -105,27 +108,28 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags should be correct:
     for cfrag_i in cfrags[1:]:
-        assert capsule_alice.verify_cfrag(cfrag_i)
-        capsule_alice.attach_cfrag(cfrag_i)
+        assert prepared_capsule.verify_cfrag(cfrag_i)
+
+    cleartext = pre.decrypt_reencrypted(ciphertext, prepared_capsule, cfrags[1:], receiving_privkey)
+    assert cleartext == message
 
 
-def test_cfrag_with_missing_proof_cannot_be_attached(kfrags, prepared_capsule):
-    capsule = prepared_capsule
+def test_cfrag_with_missing_proof_cannot_be_verified(kfrags, prepared_capsule):
 
     cfrags = []
     for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule)
+        cfrag = pre.reencrypt(kfrag, prepared_capsule)
         cfrags.append(cfrag)
 
     # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar),
     #  then the CFrag cannot be attached.
     cfrags[0].proof = None
     with pytest.raises(CapsuleFrag.NoProofProvided):
-        capsule.attach_cfrag(cfrags[0])
+        prepared_capsule.verify_cfrag(cfrags[0])
 
     # The remaining CFrags are fine, so they can be attached correctly
     for cfrag in cfrags[1:]:
-        capsule.attach_cfrag(cfrag)
+        assert prepared_capsule.verify_cfrag(cfrag)
 
 
 def test_kfrags_signed_without_correctness_keys(alices_keys, bobs_keys, capsule):

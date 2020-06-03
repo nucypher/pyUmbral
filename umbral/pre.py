@@ -17,7 +17,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import typing
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Union, Any, Sequence
 
 from bytestring_splitter import BytestringSplitter
 from cryptography.exceptions import InvalidTag
@@ -196,28 +196,6 @@ class PreparedCapsule:
                             signing_pubkey=self.verifying_key,
                             delegating_pubkey=self.delegating_key,
                             receiving_pubkey=self.receiving_key)
-
-    def attach_cfrag(self, cfrag: CapsuleFrag) -> None:
-        if self.verify_cfrag(cfrag):
-            self._attached_cfrags.add(cfrag)
-        else:
-            error_msg = "CFrag is not correct and cannot be attached to the Capsule"
-            raise UmbralCorrectnessError(error_msg, [cfrag])
-
-    def clear_cfrags(self):
-        self._attached_cfrags = set()
-
-    def first_cfrag(self):
-        try:
-            return list(self._attached_cfrags)[0]
-        except IndexError:
-            raise TypeError("This Capsule doesn't have any CFrags attached.  Ergo, you can't get the first one.")
-
-    def __contains__(self, cfrag):
-        return cfrag in self._attached_cfrags
-
-    def __len__(self) -> int:
-        return len(self._attached_cfrags)
 
 
 def generate_kfrags(delegating_privkey: UmbralPrivateKey,
@@ -402,7 +380,9 @@ def _decapsulate_original(private_key: UmbralPrivateKey,
     return key
 
 
-def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, prepared_capsule: PreparedCapsule,
+def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey,
+                             prepared_capsule: PreparedCapsule,
+                             cfrags: Sequence[CapsuleFrag],
                              key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric encapsulated_key"""
 
@@ -412,12 +392,12 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, prepared_capsu
     pub_key = receiving_privkey.get_pubkey().point_key
     priv_key = receiving_privkey.bn_key
 
-    precursor = prepared_capsule.first_cfrag().point_precursor
+    precursor = cfrags[0].point_precursor
     dh_point = priv_key * precursor
 
     # Combination of CFrags via Shamir's Secret Sharing reconstruction
     xs = list()
-    for cfrag in prepared_capsule._attached_cfrags:
+    for cfrag in cfrags:
         x = hash_to_curvebn(precursor,
                             pub_key,
                             dh_point,
@@ -427,7 +407,7 @@ def _decapsulate_reencrypted(receiving_privkey: UmbralPrivateKey, prepared_capsu
         xs.append(x)
 
     e_summands, v_summands = list(), list()
-    for cfrag, x in zip(prepared_capsule._attached_cfrags, xs):
+    for cfrag, x in zip(cfrags, xs):
         if precursor != cfrag.point_precursor:
             raise ValueError("Attached CFrags are not pairwise consistent")
         lambda_i = lambda_coeff(x, xs)
@@ -474,7 +454,9 @@ def encrypt(alice_pubkey: UmbralPublicKey, plaintext: bytes) -> Tuple[bytes, Cap
     return ciphertext, capsule
 
 
-def _open_capsule(prepared_capsule: PreparedCapsule, receiving_privkey: UmbralPrivateKey,
+def _open_capsule(prepared_capsule: PreparedCapsule,
+                  cfrags: Sequence[CapsuleFrag],
+                  receiving_privkey: UmbralPrivateKey,
                   check_proof: bool = True) -> bytes:
     """
     Activates the Capsule from the attached CFrags,
@@ -485,7 +467,7 @@ def _open_capsule(prepared_capsule: PreparedCapsule, receiving_privkey: UmbralPr
 
     if check_proof:
         offending_cfrags = []
-        for cfrag in prepared_capsule._attached_cfrags:
+        for cfrag in cfrags:
             if not prepared_capsule.verify_cfrag(cfrag):
                 offending_cfrags.append(cfrag)
 
@@ -493,40 +475,50 @@ def _open_capsule(prepared_capsule: PreparedCapsule, receiving_privkey: UmbralPr
             error_msg = "Decryption error: Some CFrags are not correct"
             raise UmbralCorrectnessError(error_msg, offending_cfrags)
 
-    key = _decapsulate_reencrypted(receiving_privkey, prepared_capsule)
+    key = _decapsulate_reencrypted(receiving_privkey, prepared_capsule, cfrags)
     return key
 
 
-def decrypt(ciphertext: bytes, capsule: Union[Capsule, PreparedCapsule], decrypting_key: UmbralPrivateKey,
-            check_proof: bool = True) -> bytes:
-    """
-    Opens the capsule and gets what's inside.
-
-    We hope that's a symmetric key, which we use to decrypt the ciphertext
-    and return the resulting cleartext.
-    """
+def decrypt_original(ciphertext: bytes,
+                     capsule: Capsule,
+                     decrypting_key: UmbralPrivateKey) -> bytes:
 
     if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
         raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
-    elif not isinstance(capsule, (Capsule, PreparedCapsule)) or not capsule.verify():
+    elif not isinstance(capsule, Capsule) or not capsule.verify():
         raise Capsule.NotValid
     elif not isinstance(decrypting_key, UmbralPrivateKey):
         raise TypeError("The decrypting key is not an UmbralPrivateKey")
 
-    if isinstance(capsule, PreparedCapsule):
-        # Since there are cfrags attached, we assume this is Bob opening the Capsule.
-        # (i.e., this is a re-encrypted capsule)
-        original_capsule = capsule.capsule
-        encapsulated_key = _open_capsule(capsule, decrypting_key, check_proof=check_proof)
-    else:
-        # Since there aren't cfrags attached, we assume this is Alice opening the Capsule.
-        # (i.e., this is an original capsule)
-        original_capsule = capsule
-        encapsulated_key = _decapsulate_original(decrypting_key, capsule)
+    encapsulated_key = _decapsulate_original(decrypting_key, capsule)
 
     dem = UmbralDEM(encapsulated_key)
     try:
-        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(original_capsule))
+        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
+    except InvalidTag as e:
+        raise UmbralDecryptionError() from e
+
+    return cleartext
+
+
+def decrypt_reencrypted(ciphertext: bytes,
+                        capsule: PreparedCapsule,
+                        cfrags: Sequence[CapsuleFrag],
+                        decrypting_key: UmbralPrivateKey,
+                        check_proof: bool = True) -> bytes:
+
+    if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
+        raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
+    elif not isinstance(capsule, PreparedCapsule) or not capsule.verify():
+        raise Capsule.NotValid
+    elif not isinstance(decrypting_key, UmbralPrivateKey):
+        raise TypeError("The decrypting key is not an UmbralPrivateKey")
+
+    encapsulated_key = _open_capsule(capsule, cfrags, decrypting_key, check_proof=check_proof)
+
+    dem = UmbralDEM(encapsulated_key)
+    try:
+        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule.capsule))
     except InvalidTag as e:
         raise UmbralDecryptionError() from e
 

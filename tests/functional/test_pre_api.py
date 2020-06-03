@@ -26,7 +26,7 @@ def test_public_key_encryption(alices_keys):
     delegating_privkey, _ = alices_keys
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_privkey.get_pubkey(), plain_data)
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
+    cleartext = pre.decrypt_original(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
 
 
@@ -49,8 +49,8 @@ def test_decryption_error(alices_keys, bobs_keys, ciphertext_and_capsule, messag
     receiving_privkey, _receiving_pubkey = bobs_keys
     ciphertext, capsule = ciphertext_and_capsule
 
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
+    cleartext = pre.decrypt_original(ciphertext, capsule, delegating_privkey)
     assert message == cleartext
 
     with pytest.raises(pre.UmbralDecryptionError) as e:
-        _cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
+        _cleartext = pre.decrypt_original(ciphertext, capsule, receiving_privkey)

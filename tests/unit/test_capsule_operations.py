@@ -112,24 +112,3 @@ def test_capsule_as_dict_key(alices_keys, bobs_keys):
     some_dict[capsule] = "Bob has changed his mind."
     assert some_dict[capsule] == "Bob has changed his mind."
     assert len(some_dict.keys()) == 1
-
-
-def test_capsule_length(prepared_capsule, kfrags):
-    capsule = prepared_capsule
-
-    for counter, kfrag in enumerate(kfrags):
-        assert len(capsule) == counter
-        cfrag = pre.reencrypt(kfrag, capsule)
-        capsule.attach_cfrag(cfrag)
-
-
-def test_capsule_clear(prepared_capsule, kfrags):
-    capsule = prepared_capsule
-
-    for counter, kfrag in enumerate(kfrags):
-        assert len(capsule) == counter
-        cfrag = pre.reencrypt(kfrag, capsule)
-        capsule.attach_cfrag(cfrag)
-
-    capsule.clear_cfrags()
-    assert len(capsule) == 0

@@ -102,7 +102,7 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
 
     delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params=params)
     capsule = pre.Capsule.from_bytes(capsule_bytes, params)
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
+    cleartext = pre.decrypt_original(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
 
     del delegating_privkey
@@ -154,12 +154,10 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
                                                      receiving=receiving_pubkey,
                                                      verifying=signing_pubkey)
 
-    for cfrag_bytes in cfrags_bytes:
-        # TODO: use params instead of curve?
-        cfrag = CapsuleFrag.from_bytes(cfrag_bytes, params.curve)
-        prepared_capsule.attach_cfrag(cfrag)
+    # TODO: use params instead of curve?
+    cfrags = [CapsuleFrag.from_bytes(cfrag_bytes, params.curve) for cfrag_bytes in cfrags_bytes]
 
-    reenc_cleartext = pre.decrypt(ciphertext, prepared_capsule, receiving_privkey)
+    reenc_cleartext = pre.decrypt_reencrypted(ciphertext, prepared_capsule, cfrags, receiving_privkey)
     assert reenc_cleartext == plain_data
 
 

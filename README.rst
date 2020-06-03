@@ -94,9 +94,9 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = pre.decrypt(ciphertext=ciphertext,
-                            capsule=capsule,
-                            decrypting_key=alices_private_key)
+    cleartext = pre.decrypt_original(ciphertext=ciphertext,
+                                     capsule=capsule,
+                                     decrypting_key=alices_private_key)
 
 
 **Re-Encryption Key Fragments**
@@ -148,12 +148,10 @@ and then decrypts the re-encrypted ciphertext.
 .. code-block:: python
 
   # Bob activates and opens the capsule
-  for cfrag in cfrags:
-    prepared_capsule.attach_cfrag(cfrag)
-
-  bob_cleartext = pre.decrypt(ciphertext=ciphertext,
-                              capsule=prepared_capsule,
-                              decrypting_key=bobs_private_key)
+  bob_cleartext = pre.decrypt_reencrypted(ciphertext=ciphertext,
+                                          capsule=prepared_capsule,
+                                          cfrags=cfrags,
+                                          decrypting_key=bobs_private_key)
   assert bob_cleartext == plaintext
 
 See more detailed usage examples in the docs_ directory.

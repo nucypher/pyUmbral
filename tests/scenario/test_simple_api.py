@@ -58,7 +58,7 @@ def test_simple_api(N, M, curve=default_curve()):
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
     # Decryption by Alice
-    cleartext = pre.decrypt(ciphertext, capsule, delegating_privkey)
+    cleartext = pre.decrypt_original(ciphertext, capsule, delegating_privkey)
     assert cleartext == plain_data
 
     # Split Re-Encryption Key Generation (aka Delegation)
@@ -82,12 +82,8 @@ def test_simple_api(N, M, curve=default_curve()):
         # Bob collects the result
         cfrags.append(cfrag)
 
-    # Capsule activation (by Bob)
-    for cfrag in cfrags:
-        prepared_capsule.attach_cfrag(cfrag)
-
     # Decryption by Bob
-    reenc_cleartext = pre.decrypt(ciphertext, prepared_capsule, receiving_privkey)
+    reenc_cleartext = pre.decrypt_reencrypted(ciphertext, prepared_capsule, cfrags, receiving_privkey)
     assert reenc_cleartext == plain_data
 
 

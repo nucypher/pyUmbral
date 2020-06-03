@@ -80,9 +80,9 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
-    ...                         capsule=capsule,
-    ...                         decrypting_key=alices_private_key)
+    >>> cleartext = pre.decrypt_original(ciphertext=ciphertext,
+    ...                                  capsule=capsule,
+    ...                                  decrypting_key=alices_private_key)
 
 
 Threshold Re-Encryption
@@ -137,9 +137,9 @@ or re-encrypted for him by Ursula, he will not be able to open it.
 
 .. doctest:: capsule_story
 
-    >>> fail = pre.decrypt(ciphertext=ciphertext,
-    ...                    capsule=capsule,
-    ...                    decrypting_key=bobs_private_key)
+    >>> fail = pre.decrypt_original(ciphertext=ciphertext,
+    ...                             capsule=capsule,
+    ...                             decrypting_key=bobs_private_key)
     Traceback (most recent call last):
         ...
     umbral.pre.UmbralDecryptionError
@@ -182,27 +182,23 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 Decryption
 ==================================
 
-Bob attaches cfrags to the capsule
-----------------------------------
-Bob attaches at least ``threshold`` cfrags to the capsule,
-which has to be prepared in advance with the necessary correctness keys.
-Only then it can become *activated*.
-
-.. doctest:: capsule_story
-
-    >>> for cfrag in cfrags:
-    ...     prepared_capsule.attach_cfrag(cfrag)
-
-
-Bob activates and opens the capsule
+Bob assembles cfrags for the capsule
 ------------------------------------
-Finally, Bob decrypts the re-encrypted ciphertext using the activated capsule.
+Bob needs to get at least ``threshold`` cfrags for the capsule,
+which has to be prepared in advance with the necessary correctness keys.
+Only then it can be decrypted.
+
+
+Bob opens the capsule
+---------------------
+Finally, Bob decrypts the re-encrypted ciphertext using the capsule and cfrags.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
-    ...                         capsule=prepared_capsule,
-    ...                         decrypting_key=bobs_private_key)
+    >>> cleartext = pre.decrypt_reencrypted(ciphertext=ciphertext,
+    ...                                     capsule=prepared_capsule,
+    ...                                     cfrags=cfrags,
+    ...                                     decrypting_key=bobs_private_key)
 
 .. doctest:: capsule_story
    :hide:

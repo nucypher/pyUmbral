@@ -50,4 +50,4 @@ def test_cannot_attach_cfrag_without_proof():
         UmbralPrivateKey.gen_key().get_pubkey())
 
     with pytest.raises(cfrag.NoProofProvided):
-        prepared_capsule.attach_cfrag(cfrag)
+        prepared_capsule.verify_cfrag(cfrag)

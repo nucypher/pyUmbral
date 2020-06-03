@@ -31,14 +31,14 @@ def test_with_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):
     delegating_privkey, signing_privkey = alices_keys
     _receiving_privkey, receiving_pubkey = bobs_keys
 
-    capsule = capsule.with_correctness_keys(delegating_privkey.get_pubkey(),
+    prepared_capsule = capsule.with_correctness_keys(delegating_privkey.get_pubkey(),
                                             receiving_pubkey,
                                             signing_privkey.get_pubkey()
                                             )
 
     for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, capsule)
-        capsule.attach_cfrag(cfrag)
+        cfrag = pre.reencrypt(kfrag, prepared_capsule)
+        prepared_capsule.verify_cfrag(cfrag)
 
 
 def test_set_invalid_correctness_keys(alices_keys, capsule, kfrags):

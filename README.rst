@@ -94,8 +94,8 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
     ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = pre.decrypt(ciphertext=ciphertext, 
-                            capsule=capsule, 
+    cleartext = pre.decrypt(ciphertext=ciphertext,
+                            capsule=capsule,
                             decrypting_key=alices_private_key)
 
 
@@ -130,13 +130,13 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
   # Several Ursulas perform re-encryption, and Bob collects the resulting `cfrags`.
   # He must gather at least `threshold` `cfrags` in order to activate the capsule.
 
-  capsule.set_correctness_keys(delegating=alices_public_key,
-                               receiving=bobs_public_key,
-                               verifying=alices_verifying_key)
+  prepared_capsule = capsule.with_correctness_keys(delegating=alices_public_key,
+                                                   receiving=bobs_public_key,
+                                                   verifying=alices_verifying_key)
 
   cfrags = list()           # Bob's cfrag collection
   for kfrag in kfrags[:10]:
-    cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
+    cfrag = pre.reencrypt(kfrag=kfrag, prepared_capsule=prepared_capsule)
     cfrags.append(cfrag)    # Bob collects a cfrag
 
 
@@ -149,10 +149,10 @@ and then decrypts the re-encrypted ciphertext.
 
   # Bob activates and opens the capsule
   for cfrag in cfrags:
-    capsule.attach_cfrag(cfrag)
+    prepared_capsule.attach_cfrag(cfrag)
 
-  bob_cleartext = pre.decrypt(ciphertext=ciphertext, 
-                              capsule=capsule, 
+  bob_cleartext = pre.decrypt(ciphertext=ciphertext,
+                              capsule=prepared_capsule,
                               decrypting_key=bobs_private_key)
   assert bob_cleartext == plaintext
 
@@ -171,7 +171,7 @@ To install pyUmbral, simply use ``pip``:
   $ pip3 install umbral
 
 
-Alternatively, you can checkout the repo and install it from there. 
+Alternatively, you can checkout the repo and install it from there.
 The NuCypher team uses ``pipenv`` for managing pyUmbral's dependencies.
 The recommended installation procedure is as follows:
 

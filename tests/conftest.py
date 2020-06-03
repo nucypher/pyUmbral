@@ -120,10 +120,10 @@ def capsule(ciphertext_and_capsule):
 def prepared_capsule(alices_keys, bobs_keys, capsule):
     delegating_privkey, signing_privkey = alices_keys
     _receiving_privkey, receiving_pubkey = bobs_keys
-    capsule.set_correctness_keys(delegating=delegating_privkey.get_pubkey(),
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
-    return capsule    
+    capsule = capsule.with_correctness_keys(delegating=delegating_privkey.get_pubkey(),
+                                            receiving=receiving_pubkey,
+                                            verifying=signing_privkey.get_pubkey())
+    return capsule
 
 
 @pytest.fixture

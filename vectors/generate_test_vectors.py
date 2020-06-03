@@ -66,11 +66,11 @@ plain_data = b'peace at dawn'
 
 ciphertext, capsule = pre.encrypt(delegating_key, plain_data)
 
-capsule.set_correctness_keys(delegating=delegating_key,
-                             receiving=receiving_key,
-                             verifying=verifying_key)
+prepared_capsule = capsule.with_correctness_keys(delegating=delegating_key,
+                                                 receiving=receiving_key,
+                                                 verifying=verifying_key)
 
-cfrag = pre.reencrypt(kfrags[0], capsule)
+cfrag = pre.reencrypt(kfrags[0], prepared_capsule)
 points = [capsule.point_e, cfrag.point_e1, cfrag.proof.point_e2,
           capsule.point_v, cfrag.point_v1, cfrag.proof.point_v2,
           capsule.params.u, cfrag.proof.point_kfrag_commitment, cfrag.proof.point_kfrag_pok]
@@ -246,14 +246,14 @@ create_test_vector_file(vector_suite, 'vectors_kfrags.json', generate_again=gene
 # CFrags #
 ##########
 
-capsule.set_correctness_keys(delegating=delegating_key,
-                             receiving=receiving_key,
-                             verifying=verifying_key)
+prepared_capsule = capsule.with_correctness_keys(delegating=delegating_key,
+                                                 receiving=receiving_key,
+                                                 verifying=verifying_key)
 
 vectors = list()
 
 for kfrag in kfrags:
-    cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+    cfrag = pre.reencrypt(kfrag, prepared_capsule, provide_proof=False)
     json_input = {'kfrag': hexlify(kfrag), 'cfrag': hexlify(cfrag)}
     vectors.append(json_input)
 

@@ -98,9 +98,9 @@ Bob Exists
     >>> bobs_public_key = bobs_private_key.get_pubkey()
 
 
-Alice grants access to Bob by generating kfrags 
+Alice grants access to Bob by generating kfrags
 -----------------------------------------------
-When Alice wants to grant Bob access to open her encrypted messages, 
+When Alice wants to grant Bob access to open her encrypted messages,
 she creates *re-encryption key fragments*, or *"kfrags"*,
 which are next sent to N proxies or *Ursulas*.
 
@@ -147,11 +147,11 @@ or re-encrypted for him by Ursula, he will not be able to open it.
 
 Ursulas perform re-encryption
 ------------------------------
-Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
+Bob asks several Ursulas to re-encrypt the capsule so he can open it.
 Each Ursula performs re-encryption on the capsule using the ``kfrag``
 provided by Alice, obtaining this way a "capsule fragment", or ``cfrag``.
 Let's mock a network or transport layer by sampling ``threshold`` random kfrags,
-one for each required Ursula. Note that each Ursula must prepare the received 
+one for each required Ursula. Note that each Ursula must prepare the received
 capsule before re-encryption by setting the proper correctness keys.
 
 Bob collects the resulting cfrags from several Ursulas.
@@ -164,14 +164,13 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
     >>> kfrags = random.sample(kfrags,  # All kfrags from above
     ...                        10)      # M - Threshold
 
-    >>> capsule.set_correctness_keys(delegating=alices_public_key,
-    ...                              receiving=bobs_public_key,
-    ...                              verifying=alices_verifying_key)
-    (True, True, True)
+    >>> prepared_capsule = capsule.with_correctness_keys(delegating=alices_public_key,
+    ...                                                  receiving=bobs_public_key,
+    ...                                                  verifying=alices_verifying_key)
 
     >>> cfrags = list()                 # Bob's cfrag collection
     >>> for kfrag in kfrags:
-    ...     cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
+    ...     cfrag = pre.reencrypt(kfrag=kfrag, prepared_capsule=prepared_capsule)
     ...     cfrags.append(cfrag)        # Bob collects a cfrag
 
 .. doctest:: capsule_story
@@ -186,18 +185,13 @@ Decryption
 Bob attaches cfrags to the capsule
 ----------------------------------
 Bob attaches at least ``threshold`` cfrags to the capsule,
-which has to be prepared in advance with the necessary correctness keys. 
+which has to be prepared in advance with the necessary correctness keys.
 Only then it can become *activated*.
 
 .. doctest:: capsule_story
 
-    >>> capsule.set_correctness_keys(delegating=alices_public_key,
-    ...                              receiving=bobs_public_key,
-    ...                              verifying=alices_verifying_key)
-    (False, False, False)
-
     >>> for cfrag in cfrags:
-    ...     capsule.attach_cfrag(cfrag)
+    ...     prepared_capsule.attach_cfrag(cfrag)
 
 
 Bob activates and opens the capsule
@@ -207,7 +201,7 @@ Finally, Bob decrypts the re-encrypted ciphertext using the activated capsule.
 .. doctest:: capsule_story
 
     >>> cleartext = pre.decrypt(ciphertext=ciphertext,
-    ...                         capsule=capsule,
+    ...                         capsule=prepared_capsule,
     ...                         decrypting_key=bobs_private_key)
 
 .. doctest:: capsule_story

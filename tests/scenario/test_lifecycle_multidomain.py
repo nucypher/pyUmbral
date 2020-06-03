@@ -31,12 +31,12 @@ from ..conftest import parameters, other_supported_curves, kfrag_signing_modes
 @pytest.mark.parametrize("signing_mode", kfrag_signing_modes)
 def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve()):
     """
-    This test is a variant of test_simple_api, but with intermediate 
-    serialization/deserialization steps, modeling how pyUmbral artifacts 
-    (such as keys, ciphertexts, etc) will actually be used. 
-    These intermediate steps are in between the different 'usage domains' 
-    in NuCypher, namely, key generation, delegation, encryption, decryption by 
-    Alice, re-encryption by Ursula, and decryption by Bob. 
+    This test is a variant of test_simple_api, but with intermediate
+    serialization/deserialization steps, modeling how pyUmbral artifacts
+    (such as keys, ciphertexts, etc) will actually be used.
+    These intermediate steps are in between the different 'usage domains'
+    in NuCypher, namely, key generation, delegation, encryption, decryption by
+    Alice, re-encryption by Ursula, and decryption by Bob.
 
     Manually injects UmbralParameters for multi-curve testing.
     """
@@ -54,7 +54,7 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
     receiving_privkey_bytes, receiving_pubkey_bytes = new_keypair_bytes()
 
     ## DELEGATION DOMAIN:
-    ## Alice delegates decryption rights to some Bob by generating a set of 
+    ## Alice delegates decryption rights to some Bob by generating a set of
     ## KFrags, using her delegating private key and Bob's receiving public key
 
     delegating_privkey = UmbralPrivateKey.from_bytes(delegating_privkey_bytes, params=params)
@@ -91,7 +91,7 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
     plain_data = b'peace at dawn'
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
     capsule_bytes = bytes(capsule)
-    
+
     del capsule
     del delegating_pubkey
     del params
@@ -113,25 +113,28 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
 
     cfrags_bytes = list()
     for kfrag_bytes in kfrags_bytes:
+
         params = UmbralParameters(curve=curve)
+        capsule = pre.Capsule.from_bytes(capsule_bytes, params)
+
         delegating_pubkey = UmbralPublicKey.from_bytes(delegating_pubkey_bytes, params)
         signing_pubkey = UmbralPublicKey.from_bytes(signing_pubkey_bytes, params)
         receiving_pubkey = UmbralPublicKey.from_bytes(receiving_pubkey_bytes, params)
 
-        capsule = pre.Capsule.from_bytes(capsule_bytes, params)
-        capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                     receiving=receiving_pubkey,
-                                     verifying=signing_pubkey)
+        prepared_capsule = capsule.with_correctness_keys(delegating=delegating_pubkey,
+                                                         receiving=receiving_pubkey,
+                                                         verifying=signing_pubkey)
 
         # TODO: use params instead of curve?
         kfrag = KFrag.from_bytes(kfrag_bytes, params.curve)
 
         assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey, params)
 
-        cfrag_bytes = bytes(pre.reencrypt(kfrag, capsule))
+        cfrag_bytes = bytes(pre.reencrypt(kfrag, prepared_capsule))
         cfrags_bytes.append(cfrag_bytes)
 
         del capsule
+        del prepared_capsule
         del kfrag
         del params
         del delegating_pubkey
@@ -147,16 +150,16 @@ def test_lifecycle_with_serialization(N, M, signing_mode, curve=default_curve())
     receiving_privkey = UmbralPrivateKey.from_bytes(receiving_privkey_bytes, params=params)
     receiving_pubkey = receiving_privkey.get_pubkey()
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_pubkey)
+    prepared_capsule = capsule.with_correctness_keys(delegating=delegating_pubkey,
+                                                     receiving=receiving_pubkey,
+                                                     verifying=signing_pubkey)
 
     for cfrag_bytes in cfrags_bytes:
         # TODO: use params instead of curve?
         cfrag = CapsuleFrag.from_bytes(cfrag_bytes, params.curve)
-        capsule.attach_cfrag(cfrag)
+        prepared_capsule.attach_cfrag(cfrag)
 
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
+    reenc_cleartext = pre.decrypt(ciphertext, prepared_capsule, receiving_privkey)
     assert reenc_cleartext == plain_data
 
 

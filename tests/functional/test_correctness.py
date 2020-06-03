@@ -17,6 +17,7 @@ along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 
+from umbral import keys
 from umbral import pre
 from umbral.point import Point
 from umbral.signing import Signer
@@ -30,13 +31,13 @@ def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
 
     receiving_privkey, receiving_pubkey = bobs_keys
 
-    capsule_alice1 = prepared_capsule
+    prepared_capsule_alice1 = prepared_capsule
 
     _unused_key2, capsule_alice2 = pre._encapsulate(delegating_pubkey)
 
-    capsule_alice2.set_correctness_keys(delegating=delegating_pubkey,
-                                        receiving=receiving_pubkey,
-                                        verifying=signing_privkey.get_pubkey())
+    prepared_capsule_alice2 = capsule_alice2.with_correctness_keys(delegating=delegating_pubkey,
+                                                                   receiving=receiving_pubkey,
+                                                                   verifying=signing_privkey.get_pubkey())
 
     cfrags = []
     for i, kfrag in enumerate(kfrags):
@@ -47,18 +48,18 @@ def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
 
         if i == 0:
             # Let's put the re-encryption of a different Alice ciphertext
-            cfrag = pre.reencrypt(kfrag, capsule_alice2, metadata=metadata_i)
+            cfrag = pre.reencrypt(kfrag, prepared_capsule_alice2, metadata=metadata_i)
         else:
-            cfrag = pre.reencrypt(kfrag, capsule_alice1, metadata=metadata_i)
+            cfrag = pre.reencrypt(kfrag, prepared_capsule_alice1, metadata=metadata_i)
 
         cfrags.append(cfrag)
 
     #  CFrag 0 is not valid ...
-    assert not cfrags[0].verify_correctness(capsule_alice1)
+    assert not prepared_capsule_alice1.verify_cfrag(cfrags[0])
 
     # ... and trying to attach it raises an error.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
-        capsule_alice1.attach_cfrag(cfrags[0])
+        prepared_capsule_alice1.attach_cfrag(cfrags[0])
 
     correctness_error = exception_info.value
     assert cfrags[0] in correctness_error.offending_cfrags
@@ -67,8 +68,8 @@ def test_cheating_ursula_replays_old_reencryption(alices_keys, bobs_keys,
     # The rest of CFrags should be correct:
     correct_cases = 0
     for cfrag_i in cfrags[1:]:
-        assert cfrag_i.verify_correctness(capsule_alice1)
-        capsule_alice1.attach_cfrag(cfrag_i)
+        assert prepared_capsule_alice1.verify_cfrag(cfrag_i)
+        prepared_capsule_alice1.attach_cfrag(cfrag_i)
         correct_cases += 1
 
     assert correct_cases == len(cfrags[1:])
@@ -91,7 +92,7 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
     cfrags[0].point_v1 = Point.gen_rand()
 
     #  Of course, this CFrag is not valid ...
-    assert not cfrags[0].verify_correctness(capsule_alice)
+    assert not capsule_alice.verify_cfrag(cfrags[0])
 
     # ... and trying to attach it raises an error.
     with pytest.raises(pre.UmbralCorrectnessError) as exception_info:
@@ -104,7 +105,7 @@ def test_cheating_ursula_sends_garbage(kfrags, prepared_capsule):
     # The response of cheating Ursula is in cfrags[0],
     # so the rest of CFrags should be correct:
     for cfrag_i in cfrags[1:]:
-        assert cfrag_i.verify_correctness(capsule_alice)
+        assert capsule_alice.verify_cfrag(cfrag_i)
         capsule_alice.attach_cfrag(cfrag_i)
 
 
@@ -116,13 +117,13 @@ def test_cfrag_with_missing_proof_cannot_be_attached(kfrags, prepared_capsule):
         cfrag = pre.reencrypt(kfrag, capsule)
         cfrags.append(cfrag)
 
-    # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar), 
+    # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar),
     #  then the CFrag cannot be attached.
     cfrags[0].proof = None
     with pytest.raises(CapsuleFrag.NoProofProvided):
         capsule.attach_cfrag(cfrags[0])
 
-    # The remaining CFrags are fine, so they can be attached correctly 
+    # The remaining CFrags are fine, so they can be attached correctly
     for cfrag in cfrags[1:]:
         capsule.attach_cfrag(cfrag)
 
@@ -142,13 +143,21 @@ def test_kfrags_signed_without_correctness_keys(alices_keys, bobs_keys, capsule)
                                  sign_delegating_key=False,
                                  sign_receiving_key=False)
 
+    wrong_key = keys.UmbralPrivateKey.gen_key()
+    wrong_pubkey = wrong_key.get_pubkey()
+
+    # Even though this prepared capsule has wrong delegating and receiving keys,
+    # it can still be used to verify a kfrag since we don't sign those keys.
+    prepared_capsule = capsule.with_correctness_keys(verifying=verifying_key,
+                                                     delegating=wrong_pubkey,
+                                                     receiving=wrong_pubkey)
+
     for kfrag in kfrags:
         # You can verify the KFrag specifying only the verifying key
         assert kfrag.verify(signing_pubkey=verifying_key)
 
         # ... or if it is set in the capsule, using the capsule
-        capsule.set_correctness_keys(verifying=verifying_key)
-        assert kfrag.verify_for_capsule(capsule)
+        assert prepared_capsule.verify_kfrag(kfrag)
 
         # It should even work when other keys are set in the capsule
         assert kfrag.verify(signing_pubkey=verifying_key,

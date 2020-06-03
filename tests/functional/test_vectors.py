@@ -171,9 +171,9 @@ def test_cfrags():
                         CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
                        for json_kfrag in vector_suite['vectors']]
 
-    capsule.set_correctness_keys(delegating=delegating_key,
-                                 receiving=receiving_key,
-                                 verifying=verifying_key)
+    capsule = capsule.with_correctness_keys(delegating=delegating_key,
+                                            receiving=receiving_key,
+                                            verifying=verifying_key)
 
     for kfrag, cfrag in kfrags_n_cfrags:
         assert kfrag.verify(signing_pubkey=verifying_key,

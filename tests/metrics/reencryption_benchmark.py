@@ -65,9 +65,9 @@ def __standard_encryption_api() -> tuple:
     plain_data = os.urandom(32)
     ciphertext, capsule = pre.encrypt(delegating_pubkey, plain_data)
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
+    capsule = capsule.with_correctness_keys(delegating=delegating_pubkey,
+                                            receiving=receiving_pubkey,
+                                            verifying=signing_privkey.get_pubkey())
 
     return delegating_privkey, signer, receiving_pubkey, ciphertext, capsule
 

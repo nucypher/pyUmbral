@@ -207,15 +207,9 @@ class CapsuleFrag:
 
         self.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
 
-    def verify_correctness(self, capsule) -> bool:
+    def verify_correctness(self, capsule, delegating_pubkey, signing_pubkey, receiving_pubkey) -> bool:
         if self.proof is None:
             raise CapsuleFrag.NoProofProvided
-
-        correctness_keys = capsule.get_correctness_keys()
-
-        delegating_pubkey = correctness_keys['delegating']
-        signing_pubkey = correctness_keys['verifying']
-        receiving_pubkey = correctness_keys['receiving']
 
         params = capsule.params
 

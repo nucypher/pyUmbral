@@ -22,7 +22,7 @@ from umbral.keys import UmbralPrivateKey
 from umbral.kfrags import KFrag
 
 
-def test_set_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):
+def test_with_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):
     """
     If the three keys do appear together, along with the capsule,
     we can attach them all at once.
@@ -31,35 +31,14 @@ def test_set_correctness_keys(alices_keys, bobs_keys, capsule, kfrags):
     delegating_privkey, signing_privkey = alices_keys
     _receiving_privkey, receiving_pubkey = bobs_keys
 
-    capsule.set_correctness_keys(delegating_privkey.get_pubkey(),
-                                 receiving_pubkey,
-                                 signing_privkey.get_pubkey()
-                                 )
+    capsule = capsule.with_correctness_keys(delegating_privkey.get_pubkey(),
+                                            receiving_pubkey,
+                                            signing_privkey.get_pubkey()
+                                            )
 
     for kfrag in kfrags:
         cfrag = pre.reencrypt(kfrag, capsule)
         capsule.attach_cfrag(cfrag)
-
-
-def test_setting_one_correctness_keys(alices_keys, capsule):
-    # The capsule doesn't have any correctness keys set initially
-    assert capsule.get_correctness_keys()['delegating'] is None
-    assert capsule.get_correctness_keys()['receiving'] is None
-    assert capsule.get_correctness_keys()['verifying'] is None
-
-    # Let's set only one of them, e.g., the delegating key
-    delegating_privkey, _signing_privkey = alices_keys
-    delegating_pubkey = delegating_privkey.get_pubkey()
-
-    details = capsule.set_correctness_keys(delegating=delegating_pubkey)
-
-    # Since we are only setting the first key ("delegating"),
-    # the other keys are not set
-    assert details == (True, False, False)
-
-    assert capsule.get_correctness_keys()['delegating'] == delegating_pubkey
-    assert capsule.get_correctness_keys()['receiving'] is None
-    assert capsule.get_correctness_keys()['verifying'] is None
 
 
 def test_set_invalid_correctness_keys(alices_keys, capsule, kfrags):
@@ -71,10 +50,10 @@ def test_set_invalid_correctness_keys(alices_keys, capsule, kfrags):
     delegating_privkey, signing_privkey = alices_keys
     unrelated_receiving_pubkey = UmbralPrivateKey.gen_key().get_pubkey()
 
-    capsule.set_correctness_keys(delegating_privkey.get_pubkey(),
-                                 unrelated_receiving_pubkey,
-                                 signing_privkey.get_pubkey()
-                                 )
+    capsule = capsule.with_correctness_keys(delegating_privkey.get_pubkey(),
+                                            unrelated_receiving_pubkey,
+                                            signing_privkey.get_pubkey()
+                                            )
 
     for kfrag in kfrags:
         with pytest.raises(KFrag.NotValid):

@@ -19,7 +19,7 @@ from umbral.kfrags import KFrag
 
 
 def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
-    
+
     delegating_privkey, signing_privkey = alices_keys
     _receiving_privkey, receiving_pubkey = bobs_keys
 
@@ -45,16 +45,16 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
 
 def test_kfrag_verify_for_capsule(prepared_capsule, kfrags):
     for kfrag in kfrags:
-        assert kfrag.verify_for_capsule(prepared_capsule)
+        assert prepared_capsule.verify_kfrag(kfrag)
 
         # If we alter some element, the verification fails
         previous_id, kfrag.id = kfrag.id, bytes(32)
-        assert not kfrag.verify_for_capsule(prepared_capsule)    
+        assert not prepared_capsule.verify_kfrag(kfrag)
 
         # Let's restore the KFrag, and alter the re-encryption key instead
         kfrag.id = previous_id
         kfrag.bn_key += kfrag.bn_key
-        assert not kfrag.verify_for_capsule(prepared_capsule)    
+        assert not prepared_capsule.verify_kfrag(kfrag)
 
 
 def test_kfrag_as_dict_key(kfrags):

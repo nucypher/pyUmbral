@@ -170,14 +170,6 @@ class KFrag:
 
         return correct_commitment & valid_kfrag_signature
 
-    def verify_for_capsule(self, capsule) -> bool:
-        correctness_keys = capsule.get_correctness_keys()
-
-        return self.verify(params=capsule.params,
-                           signing_pubkey=correctness_keys["verifying"],
-                           delegating_pubkey=correctness_keys["delegating"],
-                           receiving_pubkey=correctness_keys["receiving"])
-
     def delegating_key_in_signature(self):
         return self.keys_in_signature == DELEGATING_ONLY or \
                self.keys_in_signature == DELEGATING_AND_RECEIVING

@@ -79,12 +79,12 @@ except pre.UmbralDecryptionError:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
 #8
-# Alice grants access to Bob by generating kfrags 
+# Alice grants access to Bob by generating kfrags
 # -----------------------------------------------
-# When Alice wants to grant Bob access to open her encrypted messages, 
-# she creates *threshold split re-encryption keys*, or *"kfrags"*, 
-# which are next sent to N proxies or *Ursulas*. 
-# She uses her private key, and Bob's public key, and she sets a minimum 
+# When Alice wants to grant Bob access to open her encrypted messages,
+# she creates *threshold split re-encryption keys*, or *"kfrags"*,
+# which are next sent to N proxies or *Ursulas*.
+# She uses her private key, and Bob's public key, and she sets a minimum
 # threshold of 10, for 20 total shares
 
 kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
@@ -96,8 +96,8 @@ kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
 #9
 # Ursulas perform re-encryption
 # ------------------------------
-# Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
-# Each Ursula performs re-encryption on the capsule using the `kfrag` 
+# Bob asks several Ursulas to re-encrypt the capsule so he can open it.
+# Each Ursula performs re-encryption on the capsule using the `kfrag`
 # provided by Alice, obtaining this way a "capsule fragment", or `cfrag`.
 # Let's mock a network or transport layer by sampling `threshold` random `kfrags`,
 # one for each required Ursula.
@@ -107,12 +107,12 @@ import random
 kfrags = random.sample(kfrags,  # All kfrags from above
                        10)      # M - Threshold
 
-# Bob collects the resulting `cfrags` from several Ursulas. 
+# Bob collects the resulting `cfrags` from several Ursulas.
 # Bob must gather at least `threshold` `cfrags` in order to activate the capsule.
 
-bob_capsule.set_correctness_keys(delegating=alices_public_key,
-                                 receiving=bobs_public_key,
-                                 verifying=alices_verifying_key)
+bob_capsule = bob_capsule.with_correctness_keys(delegating=alices_public_key,
+                                                receiving=bobs_public_key,
+                                                verifying=alices_verifying_key)
 
 cfrags = list()  # Bob's cfrag collection
 for kfrag in kfrags:

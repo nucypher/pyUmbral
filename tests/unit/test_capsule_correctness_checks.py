@@ -27,28 +27,6 @@ from umbral.pre import Capsule
 from umbral.config import default_params
 
 
-def test_cannot_attach_cfrag_without_keys():
-    """
-    We need the proper keys to verify the correctness of CFrags
-    in order to attach them to a Capsule.
-    """
-    params = default_params()
-
-    capsule = Capsule(params,
-                      point_e=Point.gen_rand(),
-                      point_v=Point.gen_rand(),
-                      bn_sig=CurveBN.gen_rand())
-
-    cfrag = CapsuleFrag(point_e1=Point.gen_rand(),
-                        point_v1=Point.gen_rand(),
-                        kfrag_id=os.urandom(10),
-                        point_precursor=Point.gen_rand(),
-                        )
-
-    with pytest.raises(TypeError):
-        capsule.attach_cfrag(cfrag)
-
-
 def test_cannot_attach_cfrag_without_proof():
     """
     However, even when properly attaching keys, we can't attach the CFrag
@@ -66,39 +44,10 @@ def test_cannot_attach_cfrag_without_proof():
                         kfrag_id=os.urandom(10),
                         point_precursor=Point.gen_rand(),
                         )
-    key_details = capsule.set_correctness_keys(
+    prepared_capsule = capsule.with_correctness_keys(
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey(),
         UmbralPrivateKey.gen_key().get_pubkey())
 
-    delegating_details, receiving_details, verifying_details = key_details
-
-    assert all((delegating_details, receiving_details, verifying_details))
-
     with pytest.raises(cfrag.NoProofProvided):
-        capsule.attach_cfrag(cfrag)
-
-
-def test_cannot_set_different_keys():
-    """
-    Once a key is set on a Capsule, it can't be changed to a different key.
-    """
-    params = default_params()
-
-    capsule = Capsule(params,
-                      point_e=Point.gen_rand(),
-                      point_v=Point.gen_rand(),
-                      bn_sig=CurveBN.gen_rand())
-
-    capsule.set_correctness_keys(delegating=UmbralPrivateKey.gen_key().get_pubkey(),
-                                 receiving=UmbralPrivateKey.gen_key().get_pubkey(),
-                                 verifying=UmbralPrivateKey.gen_key().get_pubkey())
-
-    with pytest.raises(ValueError):
-        capsule.set_correctness_keys(delegating=UmbralPrivateKey.gen_key().get_pubkey())
-
-    with pytest.raises(ValueError):
-        capsule.set_correctness_keys(receiving=UmbralPrivateKey.gen_key().get_pubkey())
-
-    with pytest.raises(ValueError):
-        capsule.set_correctness_keys(verifying=UmbralPrivateKey.gen_key().get_pubkey())
+        prepared_capsule.attach_cfrag(cfrag)

@@ -28,13 +28,13 @@ from ..conftest import parameters, other_supported_curves
 @pytest.mark.parametrize("N, M", parameters)
 def test_simple_api(N, M, curve=default_curve()):
     """
-    This test models the main interactions between NuCypher actors (i.e., Alice, 
+    This test models the main interactions between NuCypher actors (i.e., Alice,
     Bob, Data Source, and Ursulas) and artifacts (i.e., public and private keys,
-    ciphertexts, capsules, KFrags, CFrags, etc). 
+    ciphertexts, capsules, KFrags, CFrags, etc).
 
     The test covers all the main stages of data sharing with NuCypher:
-    key generation, delegation, encryption, decryption by 
-    Alice, re-encryption by Ursula, and decryption by Bob. 
+    key generation, delegation, encryption, decryption by
+    Alice, re-encryption by Ursula, and decryption by Bob.
 
     Manually injects umbralparameters for multi-curve testing."""
 
@@ -66,9 +66,9 @@ def test_simple_api(N, M, curve=default_curve()):
 
 
     # Capsule preparation (necessary before re-encryotion and activation)
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_pubkey)
+    prepared_capsule = capsule.with_correctness_keys(delegating=delegating_pubkey,
+                                                     receiving=receiving_pubkey,
+                                                     verifying=signing_pubkey)
 
     # Bob requests re-encryption to some set of M ursulas
     cfrags = list()
@@ -77,17 +77,17 @@ def test_simple_api(N, M, curve=default_curve()):
         assert kfrag.verify(signing_pubkey, delegating_pubkey, receiving_pubkey, params)
 
         # Re-encryption by an Ursula
-        cfrag = pre.reencrypt(kfrag, capsule)
+        cfrag = pre.reencrypt(kfrag, prepared_capsule)
 
         # Bob collects the result
         cfrags.append(cfrag)
 
     # Capsule activation (by Bob)
     for cfrag in cfrags:
-        capsule.attach_cfrag(cfrag)
+        prepared_capsule.attach_cfrag(cfrag)
 
     # Decryption by Bob
-    reenc_cleartext = pre.decrypt(ciphertext, capsule, receiving_privkey)
+    reenc_cleartext = pre.decrypt(ciphertext, prepared_capsule, receiving_privkey)
     assert reenc_cleartext == plain_data
 
 

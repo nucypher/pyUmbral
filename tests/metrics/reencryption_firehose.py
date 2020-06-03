@@ -49,9 +49,9 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[KFrag], Capsule]:
 
     kfrags = pre.generate_kfrags(delegating_privkey, receiving_pubkey, m, n, signer)
 
-    capsule.set_correctness_keys(delegating=delegating_pubkey,
-                                 receiving=receiving_pubkey,
-                                 verifying=signing_privkey.get_pubkey())
+    capsule = capsule.with_correctness_keys(delegating=delegating_pubkey,
+                                            receiving=receiving_pubkey,
+                                            verifying=signing_privkey.get_pubkey())
 
     return kfrags, capsule
 

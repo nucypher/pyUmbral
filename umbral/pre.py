@@ -313,33 +313,20 @@ def generate_kfrags(delegating_privkey: UmbralPrivateKey,
 
 def reencrypt(kfrag: KFrag,
               prepared_capsule: PreparedCapsule,
-              provide_proof: bool = True,
               metadata: Optional[bytes] = None,
               verify_kfrag: bool = True) -> CapsuleFrag:
 
     if not isinstance(prepared_capsule, PreparedCapsule):
         raise Capsule.NotValid
 
-    capsule = prepared_capsule.capsule
-
-    if not capsule.verify():
+    if not prepared_capsule.verify():
         raise Capsule.NotValid
 
     if verify_kfrag:
         if not isinstance(kfrag, KFrag) or not prepared_capsule.verify_kfrag(kfrag):
             raise KFrag.NotValid
 
-    rk = kfrag.bn_key
-    e1 = rk * capsule.point_e  # type: Any
-    v1 = rk * capsule.point_v  # type: Any
-
-    cfrag = CapsuleFrag(point_e1=e1, point_v1=v1, kfrag_id=kfrag.id,
-                        point_precursor=kfrag.point_precursor)
-
-    if provide_proof:
-        cfrag.prove_correctness(capsule, kfrag, metadata)
-
-    return cfrag
+    return CapsuleFrag.from_kfrag(prepared_capsule.capsule, kfrag, metadata)
 
 
 def _encapsulate(alice_pubkey: UmbralPublicKey,

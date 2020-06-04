@@ -52,6 +52,56 @@ class CorrectnessProof:
         return (bn_size * 3) + (point_size * 4)
 
     @classmethod
+    def from_kfrag_and_cfrag(cls,
+                   capsule,
+                   kfrag,
+                   cfrag_e1,
+                   cfrag_v1,
+                   metadata: Optional[bytes] = None):
+
+        params = capsule.params
+
+        # Check correctness of original ciphertext
+        if not capsule.verify():
+            raise capsule.NotValid("Capsule verification failed.")
+
+        rk = kfrag.bn_key
+        t = CurveBN.gen_rand(params.curve)
+        ####
+        # Here are the formulaic constituents shared with `verify_correctness`.
+        ####
+        e = capsule.point_e
+        v = capsule.point_v
+
+        e1 = cfrag_e1
+        v1 = cfrag_v1
+
+        u = params.u
+        u1 = kfrag.point_commitment
+
+        e2 = t * e  # type: Any
+        v2 = t * v  # type: Any
+        u2 = t * u  # type: Any
+
+        hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
+        if metadata is not None:
+            hash_input.append(metadata)
+
+        h = hash_to_curvebn(*hash_input, params=params, hash_class=ExtendedKeccak)
+        ########
+
+        z3 = t + h * rk
+
+        return cls(point_e2=e2,
+                   point_v2=v2,
+                   point_kfrag_commitment=u1,
+                   point_kfrag_pok=u2,
+                   bn_sig=z3,
+                   kfrag_signature=kfrag.signature_for_bob,
+                   metadata=metadata,
+                   )
+
+    @classmethod
     def from_bytes(cls, data: bytes, curve: Optional[Curve] = None) -> 'CorrectnessProof':
         """
         Instantiate CorrectnessProof from serialized data.
@@ -98,17 +148,32 @@ class CorrectnessProof:
 
 
 class CapsuleFrag:
+
     def __init__(self,
                  point_e1: Point,
                  point_v1: Point,
                  kfrag_id: bytes,
                  point_precursor: Point,
-                 proof: Optional[CorrectnessProof] = None) -> None:
+                 proof: CorrectnessProof) -> None:
         self.point_e1 = point_e1
         self.point_v1 = point_v1
         self.kfrag_id = kfrag_id
         self.point_precursor = point_precursor
         self.proof = proof
+
+    @classmethod
+    def from_kfrag(cls, capsule, kfrag, metadata):
+        rk = kfrag.bn_key
+        e1 = rk * capsule.point_e  # type: Any
+        v1 = rk * capsule.point_v  # type: Any
+
+        proof = CorrectnessProof.from_kfrag_and_cfrag(capsule, kfrag, e1, v1, metadata)
+
+        return cls(point_e1=e1,
+                   point_v1=v1,
+                   kfrag_id=kfrag.id,
+                   point_precursor=kfrag.point_precursor,
+                   proof=proof)
 
     class NoProofProvided(TypeError):
         """
@@ -147,8 +212,8 @@ class CapsuleFrag:
         )
         components = splitter(data, return_remainder=True)
 
-        proof = components.pop() or None
-        components.append(CorrectnessProof.from_bytes(proof, curve) if proof else None)
+        proof = components.pop()
+        components.append(CorrectnessProof.from_bytes(proof, curve))
 
         return cls(*components)
 
@@ -160,56 +225,11 @@ class CapsuleFrag:
         v1 = self.point_v1.to_bytes()
         precursor = self.point_precursor.to_bytes()
 
-        serialized_cfrag = e1 + v1 + self.kfrag_id + precursor
-
-        if self.proof is not None:
-            serialized_cfrag += self.proof.to_bytes()
+        serialized_cfrag = e1 + v1 + self.kfrag_id + precursor + self.proof.to_bytes()
 
         return serialized_cfrag
 
-    def prove_correctness(self,
-                          capsule,
-                          kfrag,
-                          metadata: Optional[bytes] = None):
-
-        params = capsule.params
-
-        # Check correctness of original ciphertext
-        if not capsule.verify():
-            raise capsule.NotValid("Capsule verification failed.")
-
-        rk = kfrag.bn_key
-        t = CurveBN.gen_rand(params.curve)
-        ####
-        # Here are the formulaic constituents shared with `verify_correctness`.
-        ####
-        e = capsule.point_e
-        v = capsule.point_v
-
-        e1 = self.point_e1
-        v1 = self.point_v1
-
-        u = params.u
-        u1 = kfrag.point_commitment
-
-        e2 = t * e  # type: Any
-        v2 = t * v  # type: Any
-        u2 = t * u  # type: Any
-
-        hash_input = [e, e1, e2, v, v1, v2, u, u1, u2]
-        if metadata is not None:
-            hash_input.append(metadata)
-
-        h = hash_to_curvebn(*hash_input, params=params, hash_class=ExtendedKeccak)
-        ########
-
-        z3 = t + h * rk
-
-        self.attach_proof(e2, v2, u1, u2, metadata=metadata, z3=z3, kfrag_signature=kfrag.signature_for_bob)
-
     def verify_correctness(self, capsule, delegating_pubkey, signing_pubkey, receiving_pubkey) -> bool:
-        if self.proof is None:
-            raise CapsuleFrag.NoProofProvided
 
         params = capsule.params
 
@@ -255,24 +275,6 @@ class CapsuleFrag:
                & correct_reencryption_of_e \
                & correct_reencryption_of_v \
                & correct_rk_commitment
-
-    def attach_proof(self,
-                     e2: Point,
-                     v2: Point,
-                     u1: Point,
-                     u2: Point,
-                     z3: CurveBN,
-                     kfrag_signature: Signature,
-                     metadata: Optional[bytes]) -> None:
-
-        self.proof = CorrectnessProof(point_e2=e2,
-                                      point_v2=v2,
-                                      point_kfrag_commitment=u1,
-                                      point_kfrag_pok=u2,
-                                      bn_sig=z3,
-                                      kfrag_signature=kfrag_signature,
-                                      metadata=metadata,
-                                      )
 
     def __bytes__(self) -> bytes:
         return self.to_bytes()

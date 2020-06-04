@@ -171,9 +171,9 @@ def test_cfrags():
                         CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
                        for json_kfrag in vector_suite['vectors']]
 
-    capsule = capsule.with_correctness_keys(delegating=delegating_key,
-                                            receiving=receiving_key,
-                                            verifying=verifying_key)
+    prepared_capsule = capsule.with_correctness_keys(delegating=delegating_key,
+                                                     receiving=receiving_key,
+                                                     verifying=verifying_key)
 
     for kfrag, cfrag in kfrags_n_cfrags:
         assert kfrag.verify(signing_pubkey=verifying_key,
@@ -181,10 +181,9 @@ def test_cfrags():
                             receiving_pubkey=receiving_key), \
             'Invalid KFrag {}'.format(kfrag.to_bytes().hex())
 
-        new_cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+        new_cfrag = pre.reencrypt(kfrag, prepared_capsule)
         assert new_cfrag.point_e1 == cfrag.point_e1
         assert new_cfrag.point_v1 == cfrag.point_v1
         assert new_cfrag.kfrag_id == cfrag.kfrag_id
         assert new_cfrag.point_precursor == cfrag.point_precursor
-        assert new_cfrag.proof is None
-        assert cfrag.to_bytes() == new_cfrag.to_bytes()
+        assert prepared_capsule.verify_cfrag(new_cfrag)

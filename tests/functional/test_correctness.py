@@ -114,24 +114,6 @@ def test_cheating_ursula_sends_garbage(kfrags, bobs_keys, ciphertext_and_prepare
     assert cleartext == message
 
 
-def test_cfrag_with_missing_proof_cannot_be_verified(kfrags, prepared_capsule):
-
-    cfrags = []
-    for kfrag in kfrags:
-        cfrag = pre.reencrypt(kfrag, prepared_capsule)
-        cfrags.append(cfrag)
-
-    # If the proof is lost (e.g., it is chopped off a serialized CFrag or similar),
-    #  then the CFrag cannot be attached.
-    cfrags[0].proof = None
-    with pytest.raises(CapsuleFrag.NoProofProvided):
-        prepared_capsule.verify_cfrag(cfrags[0])
-
-    # The remaining CFrags are fine, so they can be attached correctly
-    for cfrag in cfrags[1:]:
-        assert prepared_capsule.verify_cfrag(cfrag)
-
-
 def test_kfrags_signed_without_correctness_keys(alices_keys, bobs_keys, capsule):
     delegating_privkey, signing_privkey = alices_keys
     delegating_pubkey = delegating_privkey.get_pubkey()

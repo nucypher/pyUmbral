@@ -253,7 +253,7 @@ prepared_capsule = capsule.with_correctness_keys(delegating=delegating_key,
 vectors = list()
 
 for kfrag in kfrags:
-    cfrag = pre.reencrypt(kfrag, prepared_capsule, provide_proof=False)
+    cfrag = pre.reencrypt(kfrag, prepared_capsule)
     json_input = {'kfrag': hexlify(kfrag), 'cfrag': hexlify(cfrag)}
     vectors.append(json_input)
 
@@ -263,7 +263,7 @@ vector_suite = {
                     'enclosed Capsule, under the enclosed delegating, '
                     'verifying and receiving keys. Each CFrag must deserialize '
                     'correctly and can be replicated with a call to '
-                    '`pre.reencrypt(kfrag, capsule, provide_proof=False)`'),
+                    '`pre.reencrypt(kfrag, capsule)`'),
     'params': 'default',
     'capsule': hexlify(capsule),
     'verifying_key': hexlify(verifying_key),
@@ -274,7 +274,3 @@ vector_suite = {
 
 #print(json.dumps(vector_suite, indent=2))
 create_test_vector_file(vector_suite, 'vectors_cfrags.json', generate_again=generate_again)
-
-
-
-

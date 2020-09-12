@@ -61,10 +61,6 @@ class CorrectnessProof:
 
         params = capsule.params
 
-        # Check correctness of original ciphertext
-        if not capsule.verify():
-            raise capsule.NotValid("Capsule verification failed.")
-
         rk = kfrag.bn_key
         t = CurveBN.gen_rand(params.curve)
         ####

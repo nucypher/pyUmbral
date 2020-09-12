@@ -74,6 +74,10 @@ class Capsule:
         self.point_v = point_v
         self.bn_sig = bn_sig
 
+        if not self._verify():
+            # Check correctness of original ciphertext
+            raise self.NotValid("Capsule verification failed.")
+
     class NotValid(ValueError):
         """
         raised if the capsule does not pass verification.
@@ -128,7 +132,7 @@ class Capsule:
         e, v, s = self.components()
         return e.to_bytes() + v.to_bytes() + s.to_bytes()
 
-    def verify(self) -> bool:
+    def _verify(self):
 
         g = self.params.g
         e, v, s = self.components()
@@ -181,9 +185,6 @@ class PreparedCapsule:
         self.verifying_key = verifying_key
 
         self._attached_cfrags = set()    # type: set
-
-    def verify(self):
-        return self.capsule.verify()
 
     def verify_cfrag(self, cfrag) -> bool:
         return cfrag.verify_correctness(capsule=self.capsule,
@@ -319,9 +320,6 @@ def reencrypt(kfrag: KFrag,
     if not isinstance(prepared_capsule, PreparedCapsule):
         raise Capsule.NotValid
 
-    if not prepared_capsule.verify():
-        raise Capsule.NotValid
-
     if verify_kfrag:
         if not isinstance(kfrag, KFrag) or not prepared_capsule.verify_kfrag(kfrag):
             raise KFrag.NotValid
@@ -357,10 +355,6 @@ def _decapsulate_original(private_key: UmbralPrivateKey,
                           capsule: Capsule,
                           key_length: int = DEM_KEYSIZE) -> bytes:
     """Derive the same symmetric key"""
-
-    if not capsule.verify():
-        # Check correctness of original ciphertext
-        raise capsule.NotValid("Capsule verification failed.")
 
     shared_key = private_key.bn_key * (capsule.point_e + capsule.point_v)  # type: Any
     key = kdf(shared_key, key_length)
@@ -482,9 +476,6 @@ def decrypt_original(ciphertext: bytes,
     We hope that's a symmetric key, which we use to decrypt the ciphertext
     and return the resulting cleartext.
     """
-    if not capsule.verify():
-        raise Capsule.NotValid
-
     encapsulated_key = _decapsulate_original(decrypting_key, capsule)
     return _dem_decrypt(encapsulated_key, ciphertext, capsule)
 
@@ -499,8 +490,5 @@ def decrypt_reencrypted(ciphertext: bytes,
     We hope that's a symmetric key, which we use to decrypt the ciphertext
     and return the resulting cleartext.
     """
-    if not capsule.verify():
-        raise Capsule.NotValid
-
     encapsulated_key = _open_capsule(capsule, cfrags, decrypting_key, check_proof=check_proof)
     return _dem_decrypt(encapsulated_key, ciphertext, capsule.capsule)

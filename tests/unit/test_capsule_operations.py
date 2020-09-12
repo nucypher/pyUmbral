@@ -33,16 +33,6 @@ def test_capsule_creation(alices_keys):
     with pytest.raises(TypeError):
         rare_capsule = Capsule(params)  # Alice cannot make a capsule this way.
 
-
-
-    # Some users may create capsules their own way.
-    custom_capsule = Capsule(params,
-                             point_e=Point.gen_rand(),
-                             point_v=Point.gen_rand(),
-                             bn_sig=CurveBN.gen_rand())
-
-    assert isinstance(custom_capsule, Capsule)
-
     # Typical Alice, constructing a typical capsule
     delegating_privkey, _signing_key = alices_keys
     plaintext = b'peace at dawn'
@@ -50,19 +40,41 @@ def test_capsule_creation(alices_keys):
 
     assert isinstance(typical_capsule, Capsule)
 
+    # Some users may create capsules their own way.
+    # Using the data from the previously created capsule to make sure it will pass verification.
+    custom_capsule = Capsule(params,
+                             point_e=typical_capsule.point_e,
+                             point_v=typical_capsule.point_v,
+                             bn_sig=typical_capsule.bn_sig)
 
-def test_capsule_equality():
+    assert isinstance(custom_capsule, Capsule)
+
+
+def test_capsule_equality(alices_keys):
     params = default_params()
+    delegating_privkey, _signing_key = alices_keys
+    plaintext = b'peace at dawn'
+    _ciphertext, typical_capsule = pre.encrypt(delegating_privkey.get_pubkey(), plaintext)
 
     one_capsule = Capsule(params,
-                          point_e=Point.gen_rand(),
-                          point_v=Point.gen_rand(),
-                          bn_sig=CurveBN.gen_rand())
+                          point_e=typical_capsule.point_e,
+                          point_v=typical_capsule.point_v,
+                          bn_sig=typical_capsule.bn_sig)
+
+    same_capsule = Capsule(params,
+                          point_e=typical_capsule.point_e,
+                          point_v=typical_capsule.point_v,
+                          bn_sig=typical_capsule.bn_sig)
+
+    assert one_capsule == same_capsule
+
+    # Capsule creation involves RNG, so it will have different components
+    _ciphertext, another_typical_capsule = pre.encrypt(delegating_privkey.get_pubkey(), plaintext)
 
     another_capsule = Capsule(params,
-                              point_e=Point.gen_rand(),
-                              point_v=Point.gen_rand(),
-                              bn_sig=CurveBN.gen_rand())
+                              point_e=another_typical_capsule.point_e,
+                              point_v=another_typical_capsule.point_v,
+                              bn_sig=another_typical_capsule.bn_sig)
 
     assert one_capsule != another_capsule
 
@@ -80,17 +92,14 @@ def test_decapsulation_by_alice(alices_keys):
     assert sym_key_2 == sym_key
 
 
-def test_bad_capsule_fails_reencryption(kfrags):
+def test_bad_capsule_cannot_be_created():
     params = default_params()
 
-    bollocks_capsule = Capsule(params,
-                               point_e=Point.gen_rand(),
-                               point_v=Point.gen_rand(),
-                               bn_sig=CurveBN.gen_rand())
-
-    for kfrag in kfrags:
-        with pytest.raises(Capsule.NotValid):
-            pre.reencrypt(kfrag, bollocks_capsule)
+    with pytest.raises(Capsule.NotValid, match="Capsule verification failed."):
+        bollocks_capsule = Capsule(params,
+                                   point_e=Point.gen_rand(),
+                                   point_v=Point.gen_rand(),
+                                   bn_sig=CurveBN.gen_rand())
 
 
 def test_capsule_as_dict_key(alices_keys, bobs_keys):

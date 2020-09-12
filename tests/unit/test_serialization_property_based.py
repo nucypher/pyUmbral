@@ -26,7 +26,7 @@ from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.params import UmbralParameters
 from umbral.point import Point
 from umbral.random_oracles import unsafe_hash_to_point
-from umbral.pre import Capsule
+from umbral.pre import Capsule, _encapsulate
 
 # test parameters
 max_examples = 1000
@@ -42,6 +42,10 @@ bns = integers(min_value=1, max_value=backend._bn_to_int(curve.order)).map(
 
 points = binary(min_size=1).map(
     lambda x: unsafe_hash_to_point(x, label=b'hypothesis', params=params))
+
+public_keys = points.map(lambda p: UmbralPublicKey(p, params))
+
+capsules = public_keys.map(lambda pk: _encapsulate(pk)[1])
 
 signatures = tuples(integers(min_value=1, max_value=backend._bn_to_int(curve.order)),
                  integers(min_value=1, max_value=backend._bn_to_int(curve.order))).map(
@@ -86,10 +90,10 @@ def test_kfrag_roundtrip(d, b0, p0, p1, sig_proxy, sig_bob):
               signature_for_proxy=sig_proxy, signature_for_bob=sig_bob)
     assert_kfrag_eq(k, KFrag.from_bytes(k.to_bytes()))
 
-@given(points, points, bns)
+@given(capsules)
 @settings(max_examples=max_examples)
-def test_capsule_roundtrip_0(p0, p1, b):
-    c = Capsule(params=params, point_e=p0, point_v=p1, bn_sig=b)
+def test_capsule_roundtrip_0(capsule):
+    c = Capsule(params=params, point_e=capsule.point_e, point_v=capsule.point_v, bn_sig=capsule.bn_sig)
     assert(c == Capsule.from_bytes(c.to_bytes(), params=params))
 
 @given(points, points, points, points, bns, signatures)

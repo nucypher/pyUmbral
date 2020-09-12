@@ -52,12 +52,12 @@ def mock_openssl(mocker, random_ec_point1: Point, random_ec_curvebn1: CurveBN, r
     def check_curvebn_ctypes(*curvebns):
         for bn in curvebns:
             assert 'BIGNUM' in str(bn)
-            assert bn.__class__.__name__ == 'CDataGCP'
+            assert bn.__class__.__name__ == '__CDataGCP'
 
     def check_point_ctypes(*ec_points):
         for point in ec_points:
             assert 'EC_POINT' in str(point)
-            assert point.__class__.__name__ == 'CDataGCP'
+            assert point.__class__.__name__ == '__CDataGCP'
 
     @contextlib.contextmanager
     def mocked_openssl_backend():

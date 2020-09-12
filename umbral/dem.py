@@ -52,7 +52,9 @@ class UmbralDEM:
         Decrypts data using ChaCha20-Poly1305 and validates the provided
         authenticated data.
         """
+        if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
+            raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
+
         nonce = ciphertext[:DEM_NONCE_SIZE]
         ciphertext = ciphertext[DEM_NONCE_SIZE:]
-        cleartext = self.cipher.decrypt(nonce, ciphertext, authenticated_data)
-        return cleartext
+        return self.cipher.decrypt(nonce, ciphertext, authenticated_data)

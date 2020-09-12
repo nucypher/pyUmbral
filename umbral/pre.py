@@ -27,7 +27,7 @@ from umbral.cfrags import CapsuleFrag
 from umbral.config import default_curve
 from umbral.curve import Curve
 from umbral.curvebn import CurveBN
-from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
+from umbral.dem import UmbralDEM, DEM_KEYSIZE
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.kfrags import KFrag, NO_KEY, DELEGATING_ONLY, RECEIVING_ONLY, DELEGATING_AND_RECEIVING
 from umbral.params import UmbralParameters
@@ -466,26 +466,27 @@ def _open_capsule(prepared_capsule: PreparedCapsule,
     return key
 
 
-def decrypt_original(ciphertext: bytes,
-                     capsule: Capsule,
-                     decrypting_key: UmbralPrivateKey) -> bytes:
-
-    if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
-        raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
-    elif not isinstance(capsule, Capsule) or not capsule.verify():
-        raise Capsule.NotValid
-    elif not isinstance(decrypting_key, UmbralPrivateKey):
-        raise TypeError("The decrypting key is not an UmbralPrivateKey")
-
-    encapsulated_key = _decapsulate_original(decrypting_key, capsule)
-
+def _dem_decrypt(encapsulated_key: bytes, ciphertext: bytes, capsule: Capsule):
     dem = UmbralDEM(encapsulated_key)
     try:
-        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
+        return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
     except InvalidTag as e:
         raise UmbralDecryptionError() from e
 
-    return cleartext
+
+def decrypt_original(ciphertext: bytes,
+                     capsule: Capsule,
+                     decrypting_key: UmbralPrivateKey) -> bytes:
+    """
+    Opens the capsule using the original (Alice's) key used for encryption and gets what's inside.
+    We hope that's a symmetric key, which we use to decrypt the ciphertext
+    and return the resulting cleartext.
+    """
+    if not capsule.verify():
+        raise Capsule.NotValid
+
+    encapsulated_key = _decapsulate_original(decrypting_key, capsule)
+    return _dem_decrypt(encapsulated_key, ciphertext, capsule)
 
 
 def decrypt_reencrypted(ciphertext: bytes,
@@ -493,20 +494,13 @@ def decrypt_reencrypted(ciphertext: bytes,
                         cfrags: Sequence[CapsuleFrag],
                         decrypting_key: UmbralPrivateKey,
                         check_proof: bool = True) -> bytes:
-
-    if not isinstance(ciphertext, bytes) or len(ciphertext) < DEM_NONCE_SIZE:
-        raise ValueError("Input ciphertext must be a bytes object of length >= {}".format(DEM_NONCE_SIZE))
-    elif not isinstance(capsule, PreparedCapsule) or not capsule.verify():
+    """
+    Opens the capsule using the receiver's (Bob's) key and reencrypted cfrags and gets what's inside.
+    We hope that's a symmetric key, which we use to decrypt the ciphertext
+    and return the resulting cleartext.
+    """
+    if not capsule.verify():
         raise Capsule.NotValid
-    elif not isinstance(decrypting_key, UmbralPrivateKey):
-        raise TypeError("The decrypting key is not an UmbralPrivateKey")
 
     encapsulated_key = _open_capsule(capsule, cfrags, decrypting_key, check_proof=check_proof)
-
-    dem = UmbralDEM(encapsulated_key)
-    try:
-        cleartext = dem.decrypt(ciphertext, authenticated_data=bytes(capsule.capsule))
-    except InvalidTag as e:
-        raise UmbralDecryptionError() from e
-
-    return cleartext
+    return _dem_decrypt(encapsulated_key, ciphertext, capsule.capsule)

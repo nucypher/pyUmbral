@@ -21,8 +21,6 @@ from typing import Callable, Optional, Any
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
 from cryptography.exceptions import InternalError
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt as CryptographyScrypt
 from nacl.secret import SecretBox
 
@@ -34,6 +32,8 @@ from umbral.point import Point
 from umbral.curve import Curve
 from umbral.random_oracles import hash_to_curvebn
 
+from hkdf import Hkdf
+from hashlib import blake2b
 
 __SALT_SIZE = 32
 
@@ -407,13 +407,11 @@ class UmbralKeyingMaterial:
         """
         params = params if params is not None else default_params()
 
-        key_material = HKDF(
-            algorithm=hashes.BLAKE2b(64),
-            length=64,
-            salt=salt,
-            info=b"NuCypher/KeyDerivation/"+label,
-            backend=default_backend()
-        ).derive(self.__keying_material)
+        key_material = Hkdf(
+            salt,
+            self.__keying_material,
+            hash=blake2b,
+        ).expand(info=b"NuCypher/KeyDerivation/"+label, length=64)
 
         bn_key = hash_to_curvebn(key_material, params=params)
         return UmbralPrivateKey(bn_key, params)

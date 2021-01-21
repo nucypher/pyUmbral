@@ -63,6 +63,7 @@ INSTALL_REQUIRES = [
     'pysha3',
     'constant-sorrow>=0.1.0a7',
     'bytestring-splitter',
+    'hkdf'
 ]
 
 DEV_INSTALL_REQUIRES = [

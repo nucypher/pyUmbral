@@ -9,6 +9,7 @@ setuptools = "*"
 cryptography = ">=2.3"
 pynacl = "*"
 pysha3 = "*"
+hkdf = "*"
 # NuCypher
 bytestring-splitter = "*"
 constant-sorrow = ">=0.1.0a7"
@@ -36,6 +37,7 @@ sphinx-autobuild = "*"
 sphinx_rtd_theme = "*"
 # Overrides vulnerable versions allowed by codecov and sphinx:
 requests = ">=2.20.0"
+umbral = {editable = true, path = "."}
 
 [pipenv]
 allow_prereleases = true

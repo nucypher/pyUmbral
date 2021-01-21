@@ -104,12 +104,12 @@ def test_pubkey_roundtrip(p):
     k = UmbralPublicKey(p, params)
     assert(k == UmbralPublicKey.from_bytes(k.to_bytes(), params=params))
 
-# @given(binary(min_size=1))
-# #@settings(max_examples=20, suppress_health_check=[HealthCheck.hung_test])
-# def test_privkey_roundtrip(p):
-#     insecure_scrypt_cost = 5   # This is deliberately insecure, just to make it faster
-#     k = UmbralPrivateKey.gen_key()
-#     rt = UmbralPrivateKey.from_bytes(k.to_bytes(password=p, _scrypt_cost=insecure_scrypt_cost),
-#                                      password=p,
-#                                      _scrypt_cost=insecure_scrypt_cost)
-#     assert(k.get_pubkey() == rt.get_pubkey())
+@given(binary(min_size=1))
+@settings(max_examples=20)
+def test_privkey_roundtrip(p):
+    insecure_scrypt_cost = 5   # This is deliberately insecure, just to make it faster
+    k = UmbralPrivateKey.gen_key()
+    rt = UmbralPrivateKey.from_bytes(k.to_bytes(password=p, _scrypt_cost=insecure_scrypt_cost),
+                                     password=p,
+                                     _scrypt_cost=insecure_scrypt_cost)
+    assert(k.get_pubkey() == rt.get_pubkey())

@@ -18,9 +18,6 @@ from abc import abstractmethod, ABC
 from typing import Optional, Type
 
 from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.exceptions import InternalError
 
 import sha3
@@ -31,6 +28,8 @@ from umbral.point import Point
 from umbral.params import UmbralParameters
 from umbral.config import default_params
 
+from hkdf import Hkdf
+from hashlib import blake2b
 
 class Hash(ABC):
 
@@ -66,7 +65,7 @@ class Hash(ABC):
 class Blake2b(Hash):
     def __init__(self, customization_string: bytes = b''):
         # TODO: use a Blake2b implementation that supports personalization (see #155)
-        self._blake2b = hashes.Hash(hashes.BLAKE2b(64), backend=backend)
+        self._blake2b = blake2b(digest_size=64)
         super().__init__(customization_string)
 
     def update(self, data: bytes) -> None:
@@ -78,7 +77,7 @@ class Blake2b(Hash):
         return replica
 
     def finalize(self) -> bytes:
-        return self._blake2b.finalize()
+        return self._blake2b.digest()
 
 
 class ExtendedKeccak(Hash):
@@ -116,12 +115,14 @@ def kdf(ecpoint: Point,
         ) -> bytes:
 
     data = ecpoint.to_bytes(is_compressed=True)
-    hkdf = HKDF(algorithm=hashes.BLAKE2b(64),
-                length=key_length,
-                salt=salt,
-                info=info,
-                backend=default_backend())
-    return hkdf.derive(data)
+
+    salt = salt or b''
+    info = info or b''
+    return Hkdf(
+            salt,
+            data,
+            hash=blake2b,
+        ).expand(info=info, length=key_length)
 
 
 # TODO: Common API for all hash_to_curvebn functions.

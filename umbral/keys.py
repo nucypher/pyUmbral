@@ -382,7 +382,7 @@ class UmbralPublicKey:
 class UmbralKeyingMaterial:
     """
     This class handles keying material for Umbral, by allowing deterministic
-    derivation of UmbralPrivateKeys based on labels. 
+    derivation of UmbralPrivateKeys based on labels.
     Don't use this key material directly as a key.
     """
 
@@ -402,7 +402,7 @@ class UmbralKeyingMaterial:
                                 salt: Optional[bytes] = None,
                                 params: Optional[UmbralParameters] = None) -> UmbralPrivateKey:
         """
-        Derives an UmbralPrivateKey using a KDF from this instance of 
+        Derives an UmbralPrivateKey using a KDF from this instance of
         UmbralKeyingMaterial, a label, and an optional salt.
         """
         params = params if params is not None else default_params()

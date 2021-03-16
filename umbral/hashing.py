@@ -23,6 +23,28 @@ class Hash:
         return self._sha256.finalize()
 
 
+def digest_to_scalar(digest: Hash) -> CurveScalar:
+    # TODO: to be replaced by the standard algroithm.
+    # Currently just matching what we have in RustCrypto stack.
+    # Can produce zeros!
+
+    hash_digest = openssl._bytes_to_bn(digest.finalize())
+
+    bignum = openssl._get_new_BN()
+    with backend._tmp_bn_ctx() as bn_ctx:
+        res = backend._lib.BN_mod(bignum, hash_digest, CURVE.order, bn_ctx)
+        backend.openssl_assert(res == 1)
+
+    return CurveScalar(bignum)
+
+
+def hash_capsule_points(e: CurvePoint, v: CurvePoint) -> CurveScalar:
+    digest = Hash(b"CAPSULE_POINTS")
+    digest.update(bytes(e))
+    digest.update(bytes(v))
+    return digest_to_scalar(digest)
+
+
 def unsafe_hash_to_point(dst: bytes, data: bytes) -> 'Point':
     """
     Hashes arbitrary data into a valid EC point of the specified curve,

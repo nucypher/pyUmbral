@@ -39,17 +39,12 @@ class DEM:
                  ):
         self._key = kdf(key_material, self.KEY_SIZE, salt, info)
 
-    def encrypt(self, plaintext: bytes, nonce: Optional[bytes] = None) -> bytes:
-        if nonce is None:
-            nonce = os.urandom(self.NONCE_SIZE)
-
-        if len(nonce) != self.NONCE_SIZE:
-            raise ValueError(f"The nonce must be exactly {self.NONCE_SIZE} bytes long")
-
-        ciphertext = xchacha_encrypt(plaintext, b"", nonce, self._key)
+    def encrypt(self, plaintext: bytes, authenticated_data: bytes = b"") -> bytes:
+        nonce = os.urandom(self.NONCE_SIZE)
+        ciphertext = xchacha_encrypt(plaintext, authenticated_data, nonce, self._key)
         return nonce + ciphertext
 
-    def decrypt(self, nonce_and_ciphertext: bytes) -> bytes:
+    def decrypt(self, nonce_and_ciphertext: bytes, authenticated_data: bytes = b"") -> bytes:
 
         if len(nonce_and_ciphertext) < self.NONCE_SIZE:
             raise ValueError(f"The ciphertext must include the nonce")
@@ -58,4 +53,4 @@ class DEM:
         ciphertext = nonce_and_ciphertext[self.NONCE_SIZE:]
 
         # TODO: replace `nacl.exceptions.CryptoError` with our error?
-        return xchacha_decrypt(ciphertext, b"", nonce, self._key)
+        return xchacha_decrypt(ciphertext, authenticated_data, nonce, self._key)

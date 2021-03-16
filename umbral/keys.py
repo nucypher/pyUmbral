@@ -34,6 +34,9 @@ class SecretKey(Serializable):
     def __hash__(self):
         raise NotImplementedError("Hashing secret objects is insecure")
 
+    def secret_scalar(self):
+        return self._scalar_key
+
     @classmethod
     def __take__(cls, data: bytes) -> Tuple['SecretKey', bytes]:
         (scalar_key,), data = cls.__take_types__(data, CurveScalar)

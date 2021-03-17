@@ -1,7 +1,10 @@
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric import utils
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 
 from . import openssl
 from .curve import CURVE
@@ -9,6 +12,9 @@ from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .dem import DEM
 from .serializable import Serializable
+
+if TYPE_CHECKING: # pragma: no cover
+    from .hashing import Hash
 
 
 class SecretKey(Serializable):
@@ -75,6 +81,64 @@ class SecretKey(Serializable):
 
         evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
         return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)
+
+    def sign_digest(self, digest: 'Hash', backend_hash_algorithm) -> 'Signature':
+
+        signature_algorithm = ECDSA(utils.Prehashed(backend_hash_algorithm()))
+        message = digest.finalize()
+
+        cpk = self.to_cryptography_privkey()
+        signature_der_bytes = cpk.sign(message, signature_algorithm)
+        r, s = utils.decode_dss_signature(signature_der_bytes)
+
+        # Normalize s
+        # s is public, so no constant-timeness required here
+        order = backend._bn_to_int(CURVE.order)
+        if s > (order >> 1):
+            s = order - s
+
+        return Signature(CurveScalar.from_int(r), CurveScalar.from_int(s))
+
+
+class Signature(Serializable):
+    """
+    Wrapper for ECDSA signatures.
+    We store signatures as r and s; this class allows interoperation
+    between (r, s) and DER formatting.
+    """
+
+    def __init__(self, r: CurveScalar, s: CurveScalar):
+        self.r = r
+        self.s = s
+
+    def __repr__(self):
+        return f"ECDSA Signature: {bytes(self).hex()[:15]}"
+
+    def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash', backend_hash_algorithm) -> bool:
+        cryptography_pub_key = verifying_key.to_cryptography_pubkey()
+        signature_algorithm = ECDSA(utils.Prehashed(backend_hash_algorithm()))
+        message = digest.finalize()
+        signature_der_bytes = utils.encode_dss_signature(int(self.r), int(self.s))
+
+        # TODO: Raise error instead of returning boolean
+        try:
+            cryptography_pub_key.verify(signature=signature_der_bytes,
+                                        data=message,
+                                        signature_algorithm=signature_algorithm)
+        except InvalidSignature:
+            return False
+        return True
+
+    @classmethod
+    def __take__(cls, data):
+        (r, s), data = cls.__take_types__(data, CurveScalar, CurveScalar)
+        return cls(r, s), data
+
+    def __bytes__(self):
+        return bytes(self.r) + bytes(self.s)
+
+    def __eq__(self, other):
+        return self.r == other.r and self.s == other.s
 
 
 class PublicKey(Serializable):

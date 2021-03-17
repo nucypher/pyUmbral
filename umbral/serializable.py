@@ -35,3 +35,18 @@ class Serializable(ABC):
     @abstractmethod
     def __bytes__(self):
         raise NotImplementedError
+
+
+def serialize_bool(b: bool) -> bytes:
+    return b'\x01' if b else b'\x00'
+
+
+def take_bool(data: bytes) -> Tuple[bool, bytes]:
+    bool_bytes, data = Serializable.__take_bytes__(data, 1)
+    if bool_bytes == b'\x01':
+        b = True
+    elif bool_bytes == b'\x00':
+        b = False
+    else:
+        raise ValueError(f"Incorrectly serialized boolean; expected b'\\x00' or b'\\x01', got {repr(bool_bytes)}")
+    return b, data

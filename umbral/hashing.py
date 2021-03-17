@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
@@ -8,6 +8,10 @@ from . import openssl
 from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
+from .keys import PublicKey, SecretKey, Signature
+from .serializable import serialize_bool
+if TYPE_CHECKING: # pragma: no cover
+    from .key_frag import KeyFragID
 
 
 class Hash:
@@ -38,6 +42,19 @@ def digest_to_scalar(digest: Hash) -> CurveScalar:
     return CurveScalar(bignum)
 
 
+def hash_to_polynomial_arg(precursor: CurvePoint,
+                           pubkey: CurvePoint,
+                           dh_point: CurvePoint,
+                           kfrag_id: 'KeyFragID',
+                           ) -> CurveScalar:
+    digest = Hash(b"POLYNOMIAL_ARG")
+    digest.update(bytes(precursor))
+    digest.update(bytes(pubkey))
+    digest.update(bytes(dh_point))
+    digest.update(bytes(kfrag_id))
+    return digest_to_scalar(digest)
+
+
 def hash_capsule_points(e: CurvePoint, v: CurvePoint) -> CurveScalar:
     digest = Hash(b"CAPSULE_POINTS")
     digest.update(bytes(e))
@@ -45,7 +62,60 @@ def hash_capsule_points(e: CurvePoint, v: CurvePoint) -> CurveScalar:
     return digest_to_scalar(digest)
 
 
-def unsafe_hash_to_point(dst: bytes, data: bytes) -> 'Point':
+def hash_to_shared_secret(precursor: CurvePoint,
+                          pubkey: CurvePoint,
+                          dh_point: CurvePoint
+                          ) -> CurveScalar:
+    digest = Hash(b"SHARED_SECRET")
+    digest.update(bytes(precursor))
+    digest.update(bytes(pubkey))
+    digest.update(bytes(dh_point))
+    return digest_to_scalar(digest)
+
+
+def hash_to_cfrag_signature(kfrag_id: 'KeyFragID',
+                            commitment: CurvePoint,
+                            precursor: CurvePoint,
+                            maybe_delegating_pk: Optional[PublicKey],
+                            maybe_receiving_pk: Optional[PublicKey],
+                            ) -> 'SignatureDigest':
+
+    digest = SignatureDigest(b"CFRAG_SIGNATURE")
+    digest.update(bytes(kfrag_id))
+    digest.update(bytes(commitment))
+    digest.update(bytes(precursor))
+
+    if maybe_delegating_pk:
+        digest.update(serialize_bool(True))
+        digest.update(bytes(maybe_delegating_pk))
+    else:
+        digest.update(serialize_bool(False))
+
+    if maybe_receiving_pk:
+        digest.update(serialize_bool(True))
+        digest.update(bytes(maybe_receiving_pk))
+    else:
+        digest.update(serialize_bool(False))
+
+    return digest
+
+
+class SignatureDigest:
+
+    def __init__(self, dst: bytes):
+        self._digest = Hash(dst)
+
+    def update(self, value):
+        self._digest.update(value)
+
+    def sign(self, sk: SecretKey) -> Signature:
+        return sk.sign_digest(self._digest, hashes.SHA256)
+
+    def verify(self, pk: PublicKey, sig: Signature):
+        return sig.verify_digest(pk, self._digest, hashes.SHA256)
+
+
+def unsafe_hash_to_point(dst: bytes, data: bytes) -> CurvePoint:
     """
     Hashes arbitrary data into a valid EC point of the specified curve,
     using the try-and-increment method.

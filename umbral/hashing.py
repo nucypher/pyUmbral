@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, Iterable
 
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
@@ -15,6 +15,9 @@ if TYPE_CHECKING: # pragma: no cover
 
 
 class Hash:
+
+    OUTPUT_SIZE = 32
+
     def __init__(self, dst: bytes):
         self._sha256 = hashes.Hash(hashes.SHA256(), backend=backend)
         len_dst = len(dst).to_bytes(4, byteorder='big')
@@ -70,6 +73,16 @@ def hash_to_shared_secret(precursor: CurvePoint,
     digest.update(bytes(precursor))
     digest.update(bytes(pubkey))
     digest.update(bytes(dh_point))
+    return digest_to_scalar(digest)
+
+
+
+def hash_to_cfrag_verification(points: Iterable[CurvePoint], metadata: Optional[bytes] = None) -> CurveScalar:
+    digest = Hash(b"CFRAG_VERIFICATION")
+    for point in points:
+        digest.update(bytes(point))
+    if metadata is not None:
+        digest.update(metadata)
     return digest_to_scalar(digest)
 
 

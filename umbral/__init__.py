@@ -3,9 +3,10 @@ from .__about__ import (
 )
 
 from .capsule import Capsule
+from .capsule_frag import CapsuleFrag
 from .key_frag import KeyFrag, generate_kfrags
 from .keys import SecretKey, PublicKey
-from .pre import encrypt, decrypt_original
+from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt
 
 __all__ = [
     "__title__",
@@ -20,7 +21,10 @@ __all__ = [
     "PublicKey",
     "Capsule",
     "KeyFrag",
+    "CapsuleFrag",
     "encrypt",
     "decrypt_original",
     "generate_kfrags",
+    "reencrypt",
+    "decrypt_reencrypted",
 ]

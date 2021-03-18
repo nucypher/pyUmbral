@@ -27,7 +27,7 @@ class CurveScalar(Serializable):
         """
         Returns a CurveScalar object with a cryptographically secure OpenSSL BIGNUM.
         """
-        one = backend._lib.BN_value_one()
+        one = cls.one()._backend_bignum
 
         # TODO: in most cases, we want this number to be secret.
         # OpenSSL 1.1.1 has `BN_priv_rand_range()`, but it is not
@@ -88,6 +88,10 @@ class CurveScalar(Serializable):
 
         # -1 less than, 0 is equal to, 1 is greater than
         return not bool(backend._lib.BN_cmp(self._backend_bignum, other._backend_bignum))
+
+    @classmethod
+    def one(cls):
+        return cls(backend._lib.BN_value_one())
 
     def is_zero(self):
         # BN_is_zero() is not exported, so this will have to do

@@ -2,7 +2,6 @@ import os
 from typing import Optional
 
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 
 from nacl.bindings.crypto_aead import (
@@ -11,6 +10,8 @@ from nacl.bindings.crypto_aead import (
     crypto_aead_xchacha20poly1305_ietf_KEYBYTES as XCHACHA_KEY_SIZE,
     crypto_aead_xchacha20poly1305_ietf_NPUBBYTES as XCHACHA_NONCE_SIZE,
     )
+
+from . import openssl
 
 
 def kdf(data: bytes,
@@ -23,7 +24,7 @@ def kdf(data: bytes,
                 length=key_length,
                 salt=salt,
                 info=info,
-                backend=backend)
+                backend=openssl.backend)
     return hkdf.derive(data)
 
 

@@ -1,8 +1,6 @@
 from typing import TYPE_CHECKING, Tuple
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 
@@ -51,51 +49,19 @@ class SecretKey(Serializable):
     def __bytes__(self) -> bytes:
         return bytes(self._scalar_key)
 
-    def to_cryptography_privkey(self) -> _EllipticCurvePrivateKey:
-        """
-        Returns a cryptography.io EllipticCurvePrivateKey from the Umbral key.
-        """
-        ec_key = backend._lib.EC_KEY_new()
-        backend.openssl_assert(ec_key != backend._ffi.NULL)
-        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
+    def sign_digest(self, digest: 'Hash') -> 'Signature':
 
-        set_group_result = backend._lib.EC_KEY_set_group(ec_key, CURVE.ec_group)
-        backend.openssl_assert(set_group_result == 1)
-
-        set_privkey_result = backend._lib.EC_KEY_set_private_key(
-            ec_key, self._scalar_key._backend_bignum
-        )
-        backend.openssl_assert(set_privkey_result == 1)
-
-        # Get public key
-        point = openssl._get_new_EC_POINT(CURVE)
-        with backend._tmp_bn_ctx() as bn_ctx:
-            mult_result = backend._lib.EC_POINT_mul(
-                CURVE.ec_group, point, self._scalar_key._backend_bignum,
-                backend._ffi.NULL, backend._ffi.NULL, bn_ctx
-            )
-            backend.openssl_assert(mult_result == 1)
-
-        set_pubkey_result = backend._lib.EC_KEY_set_public_key(ec_key, point)
-        backend.openssl_assert(set_pubkey_result == 1)
-
-        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
-        return _EllipticCurvePrivateKey(backend, ec_key, evp_pkey)
-
-    def sign_digest(self, digest: 'Hash', backend_hash_algorithm) -> 'Signature':
-
-        signature_algorithm = ECDSA(utils.Prehashed(backend_hash_algorithm()))
+        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
         message = digest.finalize()
 
-        cpk = self.to_cryptography_privkey()
-        signature_der_bytes = cpk.sign(message, signature_algorithm)
+        backend_sk = openssl.bn_to_privkey(CURVE, self._scalar_key._backend_bignum)
+        signature_der_bytes = backend_sk.sign(message, signature_algorithm)
         r, s = utils.decode_dss_signature(signature_der_bytes)
 
         # Normalize s
         # s is public, so no constant-timeness required here
-        order = backend._bn_to_int(CURVE.order)
-        if s > (order >> 1):
-            s = order - s
+        if s > (CURVE.order >> 1):
+            s = CURVE.order - s
 
         return Signature(CurveScalar.from_int(r), CurveScalar.from_int(s))
 
@@ -114,17 +80,18 @@ class Signature(Serializable):
     def __repr__(self):
         return f"ECDSA Signature: {bytes(self).hex()[:15]}"
 
-    def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash', backend_hash_algorithm) -> bool:
-        cryptography_pub_key = verifying_key.to_cryptography_pubkey()
-        signature_algorithm = ECDSA(utils.Prehashed(backend_hash_algorithm()))
+    def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash') -> bool:
+        backend_pk = openssl.point_to_pubkey(CURVE, verifying_key.point()._backend_point)
+        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
+
         message = digest.finalize()
         signature_der_bytes = utils.encode_dss_signature(int(self.r), int(self.s))
 
         # TODO: Raise error instead of returning boolean
         try:
-            cryptography_pub_key.verify(signature=signature_der_bytes,
-                                        data=message,
-                                        signature_algorithm=signature_algorithm)
+            backend_pk.verify(signature=signature_der_bytes,
+                              data=message,
+                              signature_algorithm=signature_algorithm)
         except InvalidSignature:
             return False
         return True
@@ -160,25 +127,6 @@ class PublicKey(Serializable):
 
     def __bytes__(self) -> bytes:
         return bytes(self._point_key)
-
-    def to_cryptography_pubkey(self) -> _EllipticCurvePublicKey:
-        """
-        Returns a cryptography.io EllipticCurvePublicKey from the Umbral key.
-        """
-        ec_key = backend._lib.EC_KEY_new()
-        backend.openssl_assert(ec_key != backend._ffi.NULL)
-        ec_key = backend._ffi.gc(ec_key, backend._lib.EC_KEY_free)
-
-        set_group_result = backend._lib.EC_KEY_set_group(ec_key, CURVE.ec_group)
-        backend.openssl_assert(set_group_result == 1)
-
-        set_pubkey_result = backend._lib.EC_KEY_set_public_key(
-            ec_key, self._point_key._backend_point
-        )
-        backend.openssl_assert(set_pubkey_result == 1)
-
-        evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
-        return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)
 
     def __str__(self):
         return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"

@@ -144,7 +144,7 @@ def bn_is_normalized(check_bn, modulus):
     return (check_sign == 1 or check_sign == 0) and range_check == -1
 
 
-def bn_from_int(py_int: int, modulus=None, set_consttime_flag=True):
+def bn_from_int(py_int: int, check_modulus=None, set_consttime_flag=True):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If ``modulus`` is
     provided, it will check if the Python integer is within ``[0, modulus)``.
@@ -155,15 +155,15 @@ def bn_from_int(py_int: int, modulus=None, set_consttime_flag=True):
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
 
-    if modulus and not bn_is_normalized(conv_bn, modulus):
-        raise ValueError("The Python integer given is not under the provided modulus.")
+    if check_modulus and not bn_is_normalized(conv_bn, check_modulus):
+        raise ValueError(f"The Python integer given ({py_int}) is not under the provided modulus.")
 
     if set_consttime_flag:
         backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
 
-def bn_from_bytes(bytes_seq: bytes, set_consttime_flag=True, modulus=None):
+def bn_from_bytes(bytes_seq: bytes, set_consttime_flag=True, check_modulus=None, apply_modulus=None):
     """
     Converts the given byte sequence to an OpenSSL BIGNUM.
     If set_consttime_flag is set to True, OpenSSL will use constant time
@@ -173,10 +173,14 @@ def bn_from_bytes(bytes_seq: bytes, set_consttime_flag=True, modulus=None):
     backend._lib.BN_bin2bn(bytes_seq, len(bytes_seq), bn)
     backend.openssl_assert(bn != backend._ffi.NULL)
 
-    if modulus:
+    if check_modulus and not bn_is_normalized(bn, check_modulus):
+        raise ValueError(f"The integer encoded with given bytes ({repr(bytes_seq)}) "
+                          "is not under the provided modulus.")
+
+    if apply_modulus:
         bignum =_bn_new()
         with backend._tmp_bn_ctx() as bn_ctx:
-            res = backend._lib.BN_mod(bignum, bn, modulus, bn_ctx)
+            res = backend._lib.BN_mod(bignum, bn, apply_modulus, bn_ctx)
             backend.openssl_assert(res == 1)
 
     return bn

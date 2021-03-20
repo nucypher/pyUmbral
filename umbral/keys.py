@@ -57,14 +57,18 @@ class SecretKey(Serializable):
 
         backend_sk = openssl.bn_to_privkey(CURVE, self._scalar_key._backend_bignum)
         signature_der_bytes = backend_sk.sign(message, signature_algorithm)
-        r, s = utils.decode_dss_signature(signature_der_bytes)
+        r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
 
         # Normalize s
         # s is public, so no constant-timeness required here
-        if s > (CURVE.order >> 1):
-            s = CURVE.order - s
+        if s_int > (CURVE.order >> 1):
+            s_int = CURVE.order - s_int
 
-        return Signature(CurveScalar.from_int(r), CurveScalar.from_int(s))
+        # Already normalized, don't waste time
+        r = CurveScalar.from_int(r_int, check_normalization=False)
+        s = CurveScalar.from_int(s_int, check_normalization=False)
+
+        return Signature(r, s)
 
 
 class Signature(Serializable):

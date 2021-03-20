@@ -17,9 +17,6 @@ class CurveScalar(Serializable):
     """
 
     def __init__(self, backend_bignum):
-        if not openssl.bn_is_normalized(backend_bignum, CURVE.bn_order):
-            raise ValueError("The provided BIGNUM is not on the provided curve.")
-
         self._backend_bignum = backend_bignum
 
     @classmethod
@@ -30,11 +27,12 @@ class CurveScalar(Serializable):
         return cls(openssl.bn_random_nonzero(CURVE.bn_order))
 
     @classmethod
-    def from_int(cls, num: int) -> 'CurveScalar':
+    def from_int(cls, num: int, check_normalization: bool = True) -> 'CurveScalar':
         """
         Returns a CurveScalar object from a given integer on a curve.
         """
-        conv_bn = openssl.bn_from_int(num, modulus=CURVE.bn_order)
+        modulus = CURVE.bn_order if check_normalization else None
+        conv_bn = openssl.bn_from_int(num, check_modulus=modulus)
         return cls(conv_bn)
 
     @classmethod
@@ -43,13 +41,13 @@ class CurveScalar(Serializable):
         # Currently just matching what we have in RustCrypto stack
         # (taking bytes modulo curve order).
         # Can produce zeros!
-        bn = openssl.bn_from_bytes(digest.finalize(), modulus=CURVE.bn_order)
+        bn = openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order)
         return cls(bn)
 
     @classmethod
     def __take__(cls, data: bytes) -> Tuple['CurveScalar', bytes]:
         scalar_data, data = cls.__take_bytes__(data, CURVE.scalar_size)
-        bignum = openssl.bn_from_bytes(scalar_data)
+        bignum = openssl.bn_from_bytes(scalar_data, check_modulus=CURVE.bn_order)
         return cls(bignum), data
 
     def __bytes__(self) -> bytes:

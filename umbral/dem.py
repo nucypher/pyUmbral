@@ -4,11 +4,13 @@ from typing import Optional
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes
 
+import nacl
 from nacl.bindings.crypto_aead import (
     crypto_aead_xchacha20poly1305_ietf_encrypt as xchacha_encrypt,
     crypto_aead_xchacha20poly1305_ietf_decrypt as xchacha_decrypt,
     crypto_aead_xchacha20poly1305_ietf_KEYBYTES as XCHACHA_KEY_SIZE,
     crypto_aead_xchacha20poly1305_ietf_NPUBBYTES as XCHACHA_NONCE_SIZE,
+    crypto_aead_xchacha20poly1305_ietf_ABYTES as XCHACHA_TAG_SIZE,
     )
 
 from . import openssl
@@ -28,10 +30,15 @@ def kdf(data: bytes,
     return hkdf.derive(data)
 
 
+class ErrorInvalidTag(Exception):
+    pass
+
+
 class DEM:
 
     KEY_SIZE = XCHACHA_KEY_SIZE
     NONCE_SIZE = XCHACHA_NONCE_SIZE
+    TAG_SIZE = XCHACHA_TAG_SIZE
 
     def __init__(self,
                  key_material: bytes,
@@ -53,5 +60,11 @@ class DEM:
         nonce = nonce_and_ciphertext[:self.NONCE_SIZE]
         ciphertext = nonce_and_ciphertext[self.NONCE_SIZE:]
 
-        # TODO: replace `nacl.exceptions.CryptoError` with our error?
-        return xchacha_decrypt(ciphertext, authenticated_data, nonce, self._key)
+        # Prevent an out of bounds error deep in NaCl
+        if len(ciphertext) < self.TAG_SIZE:
+            raise ValueError(f"The authentication tag is missing or malformed")
+
+        try:
+            return xchacha_decrypt(ciphertext, authenticated_data, nonce, self._key)
+        except nacl.exceptions.CryptoError:
+            raise ErrorInvalidTag

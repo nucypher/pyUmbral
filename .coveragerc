@@ -3,3 +3,11 @@ omit =
     setup.py,
     *__init__.py
 parallel=True
+
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Exclude abstract methods
+    @abstractmethod

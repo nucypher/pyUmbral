@@ -60,9 +60,6 @@ INSTALL_REQUIRES = [
     'setuptools',
     'cryptography>=2.3',
     'pynacl',
-    'pysha3',
-    'constant-sorrow>=0.1.0a7',
-    'bytestring-splitter',
 ]
 
 DEV_INSTALL_REQUIRES = [

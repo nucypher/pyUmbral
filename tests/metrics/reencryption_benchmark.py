@@ -4,7 +4,21 @@ import time
 import pytest
 
 import umbral as umbral_py
-import umbral_pre as umbral_rs
+
+try:
+    import umbral_pre as umbral_rs
+except ImportError:
+    umbral_rs = None
+
+
+def pytest_generate_tests(metafunc):
+    if 'umbral' in metafunc.fixturenames:
+        implementations = [umbral_py]
+        ids = ['python']
+        if umbral_rs is not None:
+            implementations.append(umbral_rs)
+            ids.append('rust')
+        metafunc.parametrize('umbral', implementations, ids=ids)
 
 
 #                              Faster
@@ -47,7 +61,6 @@ def __standard_encryption_api(umbral) -> tuple:
                        warmup=True,
                        warmup_iterations=10)
 @pytest.mark.parametrize("m, n", FRAG_VALUES)
-@pytest.mark.parametrize("umbral", [umbral_py, umbral_rs], ids=["python", "rust"])
 def test_generate_kfrags_performance(benchmark, m: int, n: int, umbral) -> None:
 
     def __setup():
@@ -68,7 +81,6 @@ def test_generate_kfrags_performance(benchmark, m: int, n: int, umbral) -> None:
                        warmup=True,
                        warmup_iterations=10)
 @pytest.mark.parametrize("m, n", ((6, 10), ))
-@pytest.mark.parametrize("umbral", [umbral_py, umbral_rs], ids=["python", "rust"])
 def test_random_frag_reencryption_performance(benchmark, m: int, n: int, umbral) -> None:
 
     def __setup():
@@ -90,7 +102,6 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int, umbral)
                        warmup=True,
                        warmup_iterations=10)
 @pytest.mark.parametrize("m, n", ((6, 10), ))
-@pytest.mark.parametrize("umbral", [umbral_py, umbral_rs], ids=["python", "rust"])
 def test_single_frag_reencryption_performance(benchmark, m: int, n: int, umbral) -> None:
 
     delegating_sk, receiving_pk, signing_sk, ciphertext, capsule = __standard_encryption_api(umbral)

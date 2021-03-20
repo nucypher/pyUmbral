@@ -1,3 +1,4 @@
+import os
 from typing import TYPE_CHECKING, Tuple
 
 from cryptography.exceptions import InvalidSignature
@@ -8,7 +9,7 @@ from . import openssl
 from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
-from .dem import DEM
+from .dem import kdf
 from .serializable import Serializable
 
 if TYPE_CHECKING: # pragma: no cover
@@ -136,3 +137,46 @@ class PublicKey(Serializable):
 
     def __hash__(self) -> int:
         return hash((self.__class__, bytes(self)))
+
+
+class SecretKeyFactory(Serializable):
+    """
+    This class handles keying material for Umbral, by allowing deterministic
+    derivation of SecretKeys based on labels.
+    Don't use this key material directly as a key.
+    """
+
+    _KEY_SEED_SIZE = 64
+    _DERIVED_KEY_SIZE = 64
+
+    def __init__(self, key_seed: bytes):
+        self.__key_seed = key_seed
+
+    @classmethod
+    def random(cls) -> 'SecretKeyFactory':
+        return cls(os.urandom(cls._KEY_SEED_SIZE))
+
+    def secret_key_by_label(self, label: bytes) -> SecretKey:
+        tag = b"KEY_DERIVATION/" + label
+        key = kdf(self.__key_seed, self._DERIVED_KEY_SIZE, info=tag)
+
+        from .hashing import Hash
+        digest = Hash(tag)
+        digest.update(key)
+        scalar_key = CurveScalar.from_digest(digest)
+
+        return SecretKey(scalar_key)
+
+    @classmethod
+    def __take__(cls, data: bytes) -> Tuple['SecretKeyFactory', bytes]:
+        key_seed, data = cls.__take_bytes__(data, cls._KEY_SEED_SIZE)
+        return cls(key_seed), data
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.__key_seed)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}:..."
+
+    def __hash__(self):
+        raise NotImplementedError("Hashing secret objects is insecure")

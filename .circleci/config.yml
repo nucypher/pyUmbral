@@ -4,19 +4,11 @@ workflows:
   version: 2
   build_test_deploy:
     jobs:
-      - pipenv_install_35:
-          filters:
-            tags:
-              only: /.*/
       - pipenv_install_36:
           filters:
             tags:
               only: /.*/
       - pipenv_install_37:
-          filters:
-            tags:
-              only: /.*/
-      - pip_install_35:
           filters:
             tags:
               only: /.*/
@@ -28,13 +20,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - run_tests_35:
-          filters:
-            tags:
-              only: /.*/
-          requires:
-            - pipenv_install_35
-            - pip_install_35
       - run_tests_36:
           filters:
             tags:
@@ -54,7 +39,6 @@ workflows:
             tags:
               only: /.*/
           requires:
-            - run_tests_35
             - run_tests_36
             - run_tests_37
       - doctests_36:
@@ -62,7 +46,6 @@ workflows:
             tags:
               only: /.*/
           requires:
-            - run_tests_35
             - run_tests_36
             - run_tests_37
       - notebook_tests_36:
@@ -70,7 +53,6 @@ workflows:
             tags:
               only: /.*/
           requires:
-            - run_tests_35
             - run_tests_36
             - run_tests_37
       - reencryption_memory_profile_36:
@@ -78,7 +60,6 @@ workflows:
             tags:
               only: /.*/
           requires:
-            - run_tests_35
             - run_tests_36
             - run_tests_37
       - reencryption_benchmark_36:
@@ -86,7 +67,6 @@ workflows:
             tags:
               only: /.*/
 #          requires:  # Commented this section to speed up the build
-#            - run_tests_35
 #            - run_tests_36
 #            - run_tests_37
       - test_deploy:
@@ -118,11 +98,6 @@ workflows:
               only: /v[0-9]+.*/
             branches:
               ignore: /.*/
-
-python_35_base: &python_35_base
-    working_directory: ~/pyUmbral-35
-    docker:
-      - image: circleci/python:3.5
 
 python_36_base: &python_36_base
     working_directory: ~/pyUmbral-36
@@ -190,12 +165,6 @@ commands:
 
 jobs:
 
-  pipenv_install_35:
-    <<: *python_35_base
-    steps:
-      - pipenv_install:
-          python_version: "3.5"
-
   pipenv_install_36:
     <<: *python_36_base
     steps:
@@ -208,11 +177,6 @@ jobs:
       - pipenv_install:
           python_version: "3.7"
 
-  pip_install_35:
-    <<: *python_35_base
-    steps:
-    - pip_install
-
   pip_install_36:
     <<: *python_36_base
     steps:
@@ -222,13 +186,6 @@ jobs:
     <<: *python_37_base
     steps:
     - pip_install
-
-  run_tests_35:
-    <<: *python_35_base
-    parallelism: 4
-    steps:
-    - run_tests:
-        python_version: "3.5"
 
   run_tests_36:
     <<: *python_36_base

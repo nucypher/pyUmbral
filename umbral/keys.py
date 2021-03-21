@@ -17,6 +17,9 @@ if TYPE_CHECKING: # pragma: no cover
 
 
 class SecretKey(Serializable):
+    """
+    Umbral secret (private) key.
+    """
 
     __SERIALIZATION_INFO = b"SECRET_KEY"
 
@@ -26,7 +29,7 @@ class SecretKey(Serializable):
     @classmethod
     def random(cls) -> 'SecretKey':
         """
-        Generates a secret key and returns it.
+        Generates a random secret key and returns it.
         """
         return cls(CurveScalar.random_nonzero())
 
@@ -74,8 +77,6 @@ class SecretKey(Serializable):
 class Signature(Serializable):
     """
     Wrapper for ECDSA signatures.
-    We store signatures as r and s; this class allows interoperation
-    between (r, s) and DER formatting.
     """
 
     def __init__(self, r: CurveScalar, s: CurveScalar):
@@ -114,6 +115,9 @@ class Signature(Serializable):
 
 
 class PublicKey(Serializable):
+    """
+    Umbral public key.
+    """
 
     def __init__(self, point_key: CurvePoint):
         self._point_key = point_key
@@ -123,6 +127,9 @@ class PublicKey(Serializable):
 
     @classmethod
     def from_secret_key(cls, sk: SecretKey) -> 'PublicKey':
+        """
+        Creates the public key corresponding to the given secret key.
+        """
         return cls(CurvePoint.generator() * sk.secret_scalar())
 
     @classmethod
@@ -145,8 +152,9 @@ class PublicKey(Serializable):
 
 class SecretKeyFactory(Serializable):
     """
-    This class handles keying material for Umbral, by allowing deterministic
-    derivation of SecretKeys based on labels.
+    This class handles keyring material for Umbral, by allowing deterministic
+    derivation of :py:class:`SecretKey` objects based on labels.
+
     Don't use this key material directly as a key.
     """
 
@@ -158,9 +166,15 @@ class SecretKeyFactory(Serializable):
 
     @classmethod
     def random(cls) -> 'SecretKeyFactory':
+        """
+        Creates a random factory.
+        """
         return cls(os.urandom(cls._KEY_SEED_SIZE))
 
     def secret_key_by_label(self, label: bytes) -> SecretKey:
+        """
+        Creates a :py:class:`SecretKey` from the given label.
+        """
         tag = b"KEY_DERIVATION/" + label
         key = kdf(self.__key_seed, self._DERIVED_KEY_SIZE, info=tag)
 

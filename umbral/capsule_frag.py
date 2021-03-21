@@ -95,6 +95,9 @@ class CapsuleFragProof(Serializable):
 
 
 class CapsuleFrag(Serializable):
+    """
+    Re-encrypted fragment of :py:class:`Capsule`.
+    """
 
     def __init__(self,
                  point_e1: CurvePoint,
@@ -160,6 +163,11 @@ class CapsuleFrag(Serializable):
                signing_pk: PublicKey,
                metadata: Optional[bytes] = None,
                ) -> bool:
+        """
+        Verifies the validity of this fragment.
+
+        ``metadata`` should coincide with the one given to :py:func:`reencrypt`.
+        """
 
         params = PARAMETERS
 

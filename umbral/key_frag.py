@@ -126,6 +126,9 @@ def poly_eval(coeffs: List[CurveScalar], x: CurveScalar) -> CurveScalar:
 
 
 class KeyFrag(Serializable):
+    """
+    A signed fragment of the delegating key.
+    """
 
     def __init__(self,
                  id_: KeyFragID,
@@ -195,6 +198,12 @@ class KeyFrag(Serializable):
                delegating_pk: Optional[PublicKey] = None,
                receiving_pk: Optional[PublicKey] = None,
                ) -> bool:
+        """
+        Verifies the validity of this fragment.
+
+        If the delegating and/or receiving key were not signed in :py:func:`generate_kfrags`,
+        but are given to this function, they are ignored.
+        """
 
         u = PARAMETERS.u
 
@@ -280,6 +289,12 @@ def generate_kfrags(delegating_sk: SecretKey,
                     sign_delegating_key: bool = True,
                     sign_receiving_key: bool = True,
                     ) -> List[KeyFrag]:
+    """
+    Generates ``num_kfrags`` key fragments to pass to proxies for re-encryption.
+    At least ``threshold`` of them will be needed for decryption.
+    If ``sign_delegating_key`` or ``sign_receiving_key`` are ``True``,
+    the corresponding keys will have to be provided to :py:meth:`KeyFrag.verify`.
+    """
 
     base = KeyFragBase(delegating_sk, receiving_pk, signing_sk, threshold)
 

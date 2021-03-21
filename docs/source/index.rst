@@ -59,6 +59,7 @@ a proxy re-encryption network to empower privacy in decentralized systems.
 
    installation
    using_pyumbral
+   api
 
 
 Academic Whitepaper

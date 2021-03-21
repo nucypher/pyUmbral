@@ -9,8 +9,7 @@ from .key_frag import KeyFrag
 
 def encrypt(pk: PublicKey, plaintext: bytes) -> Tuple[Capsule, bytes]:
     """
-    Performs an encryption using the UmbralDEM object and encapsulates a key
-    for the sender using the public key provided.
+    Generates and encapsulates a symmetric key and uses it to encrypt the given plaintext.
 
     Returns the KEM Capsule and the ciphertext.
     """
@@ -32,6 +31,13 @@ def decrypt_original(sk: SecretKey, capsule: Capsule, ciphertext: bytes) -> byte
 
 
 def reencrypt(capsule: Capsule, kfrag: KeyFrag, metadata: Optional[bytes] = None) -> CapsuleFrag:
+    """
+    Creates a capsule fragment using the given key fragment.
+    Capsule fragments can later be used to decrypt the ciphertext.
+
+    If `metadata` is provided, it will have to be used for verification in
+    :py:meth:`CapsuleFrag.verify`.
+    """
     return CapsuleFrag.reencrypted(capsule, kfrag, metadata)
 
 
@@ -41,6 +47,9 @@ def decrypt_reencrypted(decrypting_sk: SecretKey,
                         cfrags: Sequence[CapsuleFrag],
                         ciphertext: bytes,
                         ) -> bytes:
+    """
+    Decrypts the ciphertext using the original capsule and the reencrypted capsule fragments.
+    """
 
     key_seed = capsule.open_reencrypted(decrypting_sk, delegating_pk, cfrags)
     # TODO: add salt and info here?

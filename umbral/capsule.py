@@ -20,6 +20,9 @@ def lambda_coeff(xs: Sequence[CurveScalar], i: int) -> CurveScalar:
 
 
 class Capsule(Serializable):
+    """
+    Encapsulated symmetric key.
+    """
 
     class NotValid(ValueError):
         """

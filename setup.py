@@ -79,7 +79,7 @@ DEV_INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'testing': DEV_INSTALL_REQUIRES,
-    'docs': ['sphinx', 'sphinx-autobuild'],
+    'docs': ['sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme'],
     'benchmarks': ['pytest-benchmark'],
 }
 

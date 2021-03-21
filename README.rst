@@ -62,19 +62,18 @@ Additionally, users that delegate access to their data (like Alice, in this exam
 
 .. code-block:: python
 
-    from umbral import pre, keys, signing
+    from umbral import SecretKey, PublicKey
 
     # Generate Umbral keys for Alice.
-    alices_private_key = keys.UmbralPrivateKey.gen_key()
-    alices_public_key = alices_private_key.get_pubkey()
+    alices_secret_key = SecretKey.random()
+    alices_public_key = PublicKey.from_secret_key(alices_secret_key)
 
-    alices_signing_key = keys.UmbralPrivateKey.gen_key()
-    alices_verifying_key = alices_signing_key.get_pubkey()
-    alices_signer = signing.Signer(private_key=alices_signing_key)
+    alices_signing_key = SecretKey.random()
+    alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
 
     # Generate Umbral keys for Bob.
-    bobs_private_key = keys.UmbralPrivateKey.gen_key()
-    bobs_public_key = bobs_private_key.get_pubkey()
+    bobs_secret_key = SecretKey.random()
+    bobs_public_key = PublicKey.from_secret_key(bobs_secret_key)
 
 
 **Encryption**
@@ -89,14 +88,14 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
 
 .. code-block:: python
 
+    from umbral import encrypt, decrypt_original
+
     # Encrypt data with Alice's public key.
     plaintext = b'Proxy Re-Encryption is cool!'
-    ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
+    capsule, ciphertext = encrypt(alices_public_key, plaintext)
 
     # Decrypt data with Alice's private key.
-    cleartext = pre.decrypt(ciphertext=ciphertext, 
-                            capsule=capsule, 
-                            decrypting_key=alices_private_key)
+    cleartext = decrypt_original(alices_secret_key, capsule, ciphertext)
 
 
 **Re-Encryption Key Fragments**
@@ -107,13 +106,15 @@ which are next sent to N proxies or *Ursulas*.
 
 .. code-block:: python
 
+    from umbral import generate_kfrags
+
     # Alice generates "M of N" re-encryption key fragments (or "KFrags") for Bob.
     # In this example, 10 out of 20.
-    kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
-                                 signer=alices_signer,
-                                 receiving_pubkey=bobs_public_key,
-                                 threshold=10,
-                                 N=20)
+    kfrags = generate_kfrags(delegating_sk=alices_secret_key,
+                             receiving_pk=bobs_public_key,
+                             signing_sk=alices_signing_key,
+                             threshold=10,
+                             num_kfrags=20)
 
 
 **Re-Encryption**
@@ -127,17 +128,13 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 
 .. code-block:: python
 
-  # Several Ursulas perform re-encryption, and Bob collects the resulting `cfrags`.
-  # He must gather at least `threshold` `cfrags` in order to activate the capsule.
+    from umbral import reencrypt
 
-  capsule.set_correctness_keys(delegating=alices_public_key,
-                               receiving=bobs_public_key,
-                               verifying=alices_verifying_key)
-
-  cfrags = list()           # Bob's cfrag collection
-  for kfrag in kfrags[:10]:
-    cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
-    cfrags.append(cfrag)    # Bob collects a cfrag
+    # Several Ursulas perform re-encryption, and Bob collects the resulting `cfrags`.
+    cfrags = list()           # Bob's cfrag collection
+    for kfrag in kfrags[:10]:
+        cfrag = pre.reencrypt(capsule=capsule, kfrag=kfrag)
+        cfrags.append(cfrag)    # Bob collects a cfrag
 
 
 **Decryption by Bob**
@@ -147,14 +144,14 @@ and then decrypts the re-encrypted ciphertext.
 
 .. code-block:: python
 
-  # Bob activates and opens the capsule
-  for cfrag in cfrags:
-    capsule.attach_cfrag(cfrag)
+    from umbral import decrypt_reencrypted
 
-  bob_cleartext = pre.decrypt(ciphertext=ciphertext, 
-                              capsule=capsule, 
-                              decrypting_key=bobs_private_key)
-  assert bob_cleartext == plaintext
+    bob_cleartext = pre.decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+                                            delegating_pk=alices_public_key,
+                                            capsule=capsule,
+                                            cfrags=cfrags,
+                                            ciphertext=ciphertext)
+    assert bob_cleartext == plaintext
 
 See more detailed usage examples in the docs_ directory.
 
@@ -171,7 +168,7 @@ To install pyUmbral, simply use ``pip``:
   $ pip3 install umbral
 
 
-Alternatively, you can checkout the repo and install it from there. 
+Alternatively, you can checkout the repo and install it from there.
 The NuCypher team uses ``pipenv`` for managing pyUmbral's dependencies.
 The recommended installation procedure is as follows:
 

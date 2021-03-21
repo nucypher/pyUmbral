@@ -1,0 +1,24 @@
+{
+  "name": "Test vectors for CurveScalar operations",
+  "params": "default",
+  "first operand": "d63d8806eba7bfc2f5fd77d21aa5d7cc7cffcee26ac096f7c5904629c0db1c12",
+  "second operand": "c2cc9d2f0b39201a5d4d4aa755c0506eab19c1abc89068d216f23f4965427ac4",
+  "vectors": [
+    {
+      "operation": "Addition",
+      "result": "990a2535f6e0dfdd534ac2797066283c6d6ab3a784085f8e1cb026e655e75595"
+    },
+    {
+      "operation": "Subtraction",
+      "result": "1370ead7e06e9fa898b02d2ac4e5875dd1e60d36a2302e25ae9e06e05b98a14e"
+    },
+    {
+      "operation": "Multiplication",
+      "result": "88cdbd2959262c74f26d4315e65b7e8c4fb5d1326fb9f1c6dbfd7c951d43485f"
+    },
+    {
+      "operation": "Inverse",
+      "result": "663c74e198bd4dcd2db7b78895fe8994a727d8bcba073818475a22483bb0103a"
+    }
+  ]
+}

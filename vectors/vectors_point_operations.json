@@ -1,37 +1,37 @@
 {
-  "name": "Test vectors for Point operations",
+  "name": "Test vectors for CurvePoint operations",
   "params": "default",
-  "first Point operand": "036893b75f97f4200270c07d043c86d4b9a48e0f0cf4a649b5311cb557cd49f65d",
-  "second Point operand": "022a7baeacffd711253616cc83da6c17451e5511b92fbef51da2a74f17db1989c6",
-  "CurveBN operand": "42bd8598f460a2334e921feaa58a64700bdd5eeb4a6d5f59f7363f5d167a2830",
+  "first CurvePoint operand": "02eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0",
+  "second CurvePoint operand": "02b925f594ea60040f470195c72fc7aa8caeac7161af3abe65dceb2908bc866754",
+  "CurveScalar operand": "d63d8806eba7bfc2f5fd77d21aa5d7cc7cffcee26ac096f7c5904629c0db1c12",
   "vectors": [
     {
       "operation": "Addition",
-      "result": "024e520b33f362bf072339db00c591ed9082914fa3c4f3e32b0e614019bf4961de"
+      "result": "02de2d20749111f538575c81e0abc406c71cf6d4c7c1b3555476d6f8778f271d5a"
     },
     {
       "operation": "Subtraction",
-      "result": "021e4e230982f00e23b7b95eb4fcd36881f478b90928a35f5fb0a46fe36d7eb8ed"
+      "result": "031bd3e6f5b33b3f94601d3a243efaf2c359c3b097aff1aa3fa8fbf5210f110b8d"
     },
     {
       "operation": "Multiplication",
-      "result": "03f72a2a0bfef906e5ae98931f156db679bfbb3e72aed461b217d9a035cb2882ad"
+      "result": "020fd46d21ec56d94a787c6d717222489b7a070a4f57065f442f588789d1feed87"
     },
     {
       "operation": "Inversion",
-      "result": "026893b75f97f4200270c07d043c86d4b9a48e0f0cf4a649b5311cb557cd49f65d"
+      "result": "03eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0"
     },
     {
       "operation": "To_affine.X",
-      "result": "6893b75f97f4200270c07d043c86d4b9a48e0f0cf4a649b5311cb557cd49f65d"
+      "result": "eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0"
     },
     {
       "operation": "To_affine.Y",
-      "result": "f940cab3f294e54a5ccd5643a212350be822b145e6dab7cae5ad1d98ffb9bbad"
+      "result": "d9bed51d198e8ccd919b54a6eabfed2032cc737d410e0364643716986de89afc"
     },
     {
       "operation": "kdf",
-      "result": "1bbe934cc018de9b123002acdf658b80d63456206c948279ea832832349328f3"
+      "result": "40b49492ba7924c421dd61ea39bf94ac6566feff43a1ef14e7adc2b9af3f6664"
     }
   ]
 }

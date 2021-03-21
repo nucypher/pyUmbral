@@ -1,13 +1,11 @@
 import json
 import os
 
-from umbral import pre
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
-from umbral.curvebn import CurveBN
-from umbral.point import Point
-from umbral.random_oracles import hash_to_curvebn, unsafe_hash_to_point, kdf
-from umbral.config import set_default_curve, default_params
+from umbral import SecretKey, PublicKey, encrypt, generate_kfrags, reencrypt
+from umbral.curve_scalar import CurveScalar
+from umbral.curve_point import  CurvePoint
+from umbral.hashing import Hash, unsafe_hash_to_point
+from umbral.dem import DEM, kdf
 
 
 #######################
@@ -35,90 +33,77 @@ def create_test_vector_file(vector, filename, generate_again=False):
 
 
 # If True, this will overwrite existing test vector files with new randomly generated instances
-generate_again = False
+generate_again = True
 
 #########
 # SETUP #
 #########
-set_default_curve()
-params = default_params()
-curve = params.curve
 
 # We create also some Umbral objects for later
-delegating_privkey = UmbralPrivateKey.gen_key(params=params)
-receiving_privkey = UmbralPrivateKey.gen_key(params=params)
-signing_privkey = UmbralPrivateKey.gen_key(params=params)
+delegating_sk = SecretKey.random()
+receiving_sk = SecretKey.random()
+signing_sk = SecretKey.random()
 
-verifying_key = signing_privkey.get_pubkey()
-delegating_key = delegating_privkey.get_pubkey()
-receiving_key = receiving_privkey.get_pubkey()
+verifying_pk = PublicKey.from_secret_key(signing_sk)
+delegating_pk = PublicKey.from_secret_key(delegating_sk)
+receiving_pk = PublicKey.from_secret_key(receiving_sk)
 
-signer = Signer(signing_privkey)
-
-kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
-                             receiving_pubkey=receiving_key,
-                             threshold=6,
-                             N=10,
-                             signer=signer,
-                             )
+kfrags = generate_kfrags(delegating_sk=delegating_sk,
+                         receiving_pk=receiving_pk,
+                         signing_sk=signing_sk,
+                         threshold=6,
+                         num_kfrags=10,
+                         )
 
 plain_data = b'peace at dawn'
 
-ciphertext, capsule = pre.encrypt(delegating_key, plain_data)
+capsule, ciphertext = encrypt(delegating_pk, plain_data)
 
-capsule.set_correctness_keys(delegating=delegating_key,
-                             receiving=receiving_key,
-                             verifying=verifying_key)
-
-cfrag = pre.reencrypt(kfrags[0], capsule)
+cfrag = reencrypt(capsule, kfrags[0])
 points = [capsule.point_e, cfrag.point_e1, cfrag.proof.point_e2,
           capsule.point_v, cfrag.point_v1, cfrag.proof.point_v2,
-          capsule.params.u, cfrag.proof.point_kfrag_commitment, cfrag.proof.point_kfrag_pok]
+          cfrag.proof.kfrag_commitment, cfrag.proof.kfrag_pok]
 
-z = cfrag.proof.bn_sig
+z = cfrag.proof.signature
 
 
-#######################
-# CurveBN arithmetics #
-#######################
+###########################
+# CurveScalar arithmetics #
+###########################
 
-# Let's generate two random CurveBNs
-bn1 = CurveBN.gen_rand(curve)
-bn2 = CurveBN.gen_rand(curve)
+# Let's generate two random CurveScalars
+bn1 = CurveScalar.random_nonzero()
+bn2 = CurveScalar.random_nonzero()
 
 # Expected results for some binary operations
 expected = [('Addition', bn1 + bn2),
             ('Subtraction', bn1 - bn2),
             ('Multiplication', bn1 * bn2),
-            ('Division', bn1 / bn2),
-            ('Pow', bn1 ** bn2),
-            ('Mod', bn1 % bn2),
-            ('Inverse', ~bn1),
-            ('Neg', -bn1),
+            ('Inverse', bn1.invert()),
             ]
 
 expected = [{'operation': op, 'result': hexlify(result)} for (op, result) in expected]
 
 # Definition of test vector
 vector_suite = {
-    'name': 'Test vectors for CurveBN operations',
+    'name': 'Test vectors for CurveScalar operations',
     'params': 'default',
     'first operand': hexlify(bn1),
     'second operand': hexlify(bn2),
     'vectors': expected
 }
 
-json_file = 'vectors_curvebn_operations.json'
+json_file = 'vectors_scalar_operations.json'
 
 create_test_vector_file(vector_suite, json_file, generate_again=generate_again)
 
 
 
-###################
-# hash_to_curvebn #
-###################
+###############################
+# CurveScalar.from_digest()   #
+###############################
 
-# Test vectors for different kinds of inputs (bytes, Points, CurveBNs, etc.)
+# Test vectors for different kinds of inputs (bytes, CurvePoints, CurveScalars, etc.)
 inputs = ([b''],
           [b'abc'],
           [capsule.point_e],
@@ -129,51 +114,54 @@ inputs = ([b''],
 
 vectors = list()
 for input_to_hash in inputs:
-    bn_output = hash_to_curvebn(*input_to_hash, params=params)
+    digest = Hash(b'some_dst')
+    for input_ in input_to_hash:
+        digest.update(input_)
+    scalar = CurveScalar.from_digest(digest)
     json_input = [{'class': data.__class__.__name__,
                    'bytes': hexlify(data),
                    } for data in input_to_hash]
 
-    json_input = {'input': json_input, 'output': hexlify(bn_output) }
+    json_input = {'input': json_input, 'output': hexlify(scalar) }
 
     vectors.append(json_input)
 
 vector_suite = {
-    'name' : 'Test vectors for umbral.curvebn.CurveBN.hash()',
+    'name' : 'Test vectors for umbral.curvebn.CurveScalar.from_digest()',
     'params' : 'default',
     'vectors' : vectors
 }
 
-create_test_vector_file(vector_suite, 'vectors_curvebn_hash.json', generate_again=generate_again)
+create_test_vector_file(vector_suite, 'vectors_scalar_from_digest.json', generate_again=generate_again)
 #print(json.dumps(vector_suite, indent=2))
 
 
-##########
-# Points #
-##########
+###############
+# CurvePoints #
+###############
 
-point1 = Point.gen_rand(curve)
-point2 = Point.gen_rand(curve)
+point1 = CurvePoint.random()
+point2 = CurvePoint.random()
 
-# Expected results for some Point operations
+# Expected results for some CurvePoint operations
 expected = [('Addition', point1 + point2),
             ('Subtraction', point1 - point2),
-            ('Multiplication', bn1 * point1),
+            ('Multiplication', point1 * bn1),
             ('Inversion', -point1),
             ('To_affine.X', point1.to_affine()[0]),
             ('To_affine.Y', point1.to_affine()[1]),
-            ('kdf', kdf(point1, pre.DEM_KEYSIZE)),
+            ('kdf', kdf(bytes(point1), DEM.KEY_SIZE)),
             ]
 
 expected = [{'operation': op, 'result': hexlify(result)} for (op, result) in expected]
 
 # Definition of test vector
 vector_suite = {
-    'name': 'Test vectors for Point operations',
+    'name': 'Test vectors for CurvePoint operations',
     'params': 'default',
-    'first Point operand': hexlify(point1),
-    'second Point operand': hexlify(point2),
-    'CurveBN operand': hexlify(bn1),
+    'first CurvePoint operand': hexlify(point1),
+    'second CurvePoint operand': hexlify(point2),
+    'CurveScalar operand': hexlify(bn1),
     'vectors': expected
 }
 
@@ -194,17 +182,17 @@ inputs = (b'',
 
 vectors = list()
 for data in inputs:
-    for label in inputs:
-        point = unsafe_hash_to_point(label=label, data=data, params=params)
+    for dst in inputs:
+        point = unsafe_hash_to_point(dst=dst, data=data)
         json_input = {'data': hexlify(data),
-                      'label': hexlify(label),
+                      'dst': hexlify(dst),
                       'point': hexlify(point),
                       }
 
         vectors.append(json_input)
 
 vector_suite = {
-    'name': 'Test vectors for umbral.point.Point.unsafe_hash_to_point',
+    'name': 'Test vectors for unsafe_hash_to_point()',
     'params': 'default',
     'vectors': vectors
 }
@@ -219,7 +207,7 @@ create_test_vector_file(vector_suite, 'vectors_unsafe_hash_to_point.json', gener
 
 vectors = list()
 for kfrag in kfrags:
-    assert kfrag.verify(verifying_key, delegating_key, receiving_key)
+    assert kfrag.verify(verifying_pk, delegating_pk, receiving_pk)
 
     json_input = {'kfrag': hexlify(kfrag)}
 
@@ -232,9 +220,9 @@ vector_suite = {
                     'Each of them must deserialize correctly and the '
                     'call to verify() must succeed.'),
     'params': 'default',
-    'verifying_key': hexlify(verifying_key),
-    'delegating_key': hexlify(delegating_key),
-    'receiving_key': hexlify(receiving_key),
+    'verifying_pk': hexlify(verifying_pk),
+    'delegating_pk': hexlify(delegating_pk),
+    'receiving_pk': hexlify(receiving_pk),
     'vectors': vectors
 }
 
@@ -246,14 +234,11 @@ create_test_vector_file(vector_suite, 'vectors_kfrags.json', generate_again=gene
 # CFrags #
 ##########
 
-capsule.set_correctness_keys(delegating=delegating_key,
-                             receiving=receiving_key,
-                             verifying=verifying_key)
-
 vectors = list()
 
+metadata = b'kfrag_metadata'
 for kfrag in kfrags:
-    cfrag = pre.reencrypt(kfrag, capsule, provide_proof=False)
+    cfrag = reencrypt(capsule, kfrag, metadata)
     json_input = {'kfrag': hexlify(kfrag), 'cfrag': hexlify(cfrag)}
     vectors.append(json_input)
 
@@ -263,18 +248,15 @@ vector_suite = {
                     'enclosed Capsule, under the enclosed delegating, '
                     'verifying and receiving keys. Each CFrag must deserialize '
                     'correctly and can be replicated with a call to '
-                    '`pre.reencrypt(kfrag, capsule, provide_proof=False)`'),
+                    '`reencrypt(kfrag, capsule, , b\'kfrag_metadata\')`'),
     'params': 'default',
     'capsule': hexlify(capsule),
-    'verifying_key': hexlify(verifying_key),
-    'delegating_key': hexlify(delegating_key),
-    'receiving_key': hexlify(receiving_key),
+    'metadata': hexlify(metadata),
+    'verifying_pk': hexlify(verifying_pk),
+    'delegating_pk': hexlify(delegating_pk),
+    'receiving_pk': hexlify(receiving_pk),
     'vectors': vectors
 }
 
 #print(json.dumps(vector_suite, indent=2))
 create_test_vector_file(vector_suite, 'vectors_cfrags.json', generate_again=generate_again)
-
-
-
-

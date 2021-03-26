@@ -31,7 +31,7 @@ pyUmbral
 .. end-badges
 
 pyUmbral is the reference implementation of the Umbral_ threshold proxy re-encryption scheme.
-It is open-source, built with Python, and uses OpenSSL_ via Cryptography.io_ and libsodium_ via PyNaCl_.
+It is open-source, built with Python, and uses OpenSSL_ via Cryptography.io_, and libsodium_ via PyNaCl_.
 
 Using Umbral, Alice (the data owner) can *delegate decryption rights* to Bob for
 any ciphertext intended to her, through a re-encryption process performed by a

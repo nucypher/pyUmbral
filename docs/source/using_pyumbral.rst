@@ -23,7 +23,9 @@ You can find them in the ``cryptography.hazmat.primitives.asymmetric.ec`` module
 
 .. _Cryptography.io: https://cryptography.io/en/latest/
 
-Be careful when choosing a curve - the security of your application depends on it.
+.. important::
+
+    Be careful when choosing a curve - the security of your application depends on it.
 
 We provide curve ``SECP256K1`` as a default because it is the basis for a number of crypto-blockchain projects;
 we don't otherwise endorse its security.
@@ -89,7 +91,7 @@ Bob Exists
 
 Alice grants access to Bob by generating kfrags
 -----------------------------------------------
-When Alice wants to grant Bob access to open her encrypted messages,
+When Alice wants to grant Bob access to view her encrypted data,
 she creates *re-encryption key fragments*, or *"kfrags"*,
 which are next sent to N proxies or *Ursulas*.
 

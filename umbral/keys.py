@@ -25,6 +25,11 @@ class SecretKey(Serializable):
 
     def __init__(self, scalar_key: CurveScalar):
         self._scalar_key = scalar_key
+        # Cached public key. Access it via `PublicKey.from_secret_key()` -
+        # it may be removed later.
+        # We are assuming here that there will be on average more calls to
+        # `PublicKey.from_secret_key()` than secret key instantiations.
+        self._public_key_point = CurvePoint.generator() * self._scalar_key
 
     @classmethod
     def random(cls) -> 'SecretKey':
@@ -130,7 +135,7 @@ class PublicKey(Serializable):
         """
         Creates the public key corresponding to the given secret key.
         """
-        return cls(CurvePoint.generator() * sk.secret_scalar())
+        return cls(sk._public_key_point)
 
     @classmethod
     def __take__(cls, data: bytes) -> Tuple['PublicKey', bytes]:

@@ -1,7 +1,8 @@
 import pytest
 import os
 
-from umbral.dem import DEM, ErrorInvalidTag
+from umbral import GenericError
+from umbral.dem import DEM
 
 
 def test_encrypt_decrypt():
@@ -47,7 +48,7 @@ def test_malformed_ciphertext():
         dem.decrypt(ciphertext[:DEM.NONCE_SIZE + DEM.TAG_SIZE - 1])
 
     # Too long
-    with pytest.raises(ErrorInvalidTag):
+    with pytest.raises(GenericError):
         dem.decrypt(ciphertext + b'abcd')
 
 
@@ -76,5 +77,5 @@ def test_encrypt_decrypt_associated_data():
     assert cleartext1 == plaintext
 
     # Attempt decryption with invalid associated data
-    with pytest.raises(ErrorInvalidTag):
+    with pytest.raises(GenericError):
         cleartext2 = dem.decrypt(ciphertext0, authenticated_data=b'wrong data')

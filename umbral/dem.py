@@ -14,6 +14,7 @@ from nacl.bindings.crypto_aead import (
     )
 
 from . import openssl
+from .errors import GenericError
 
 
 def kdf(data: bytes,
@@ -28,10 +29,6 @@ def kdf(data: bytes,
                 info=info,
                 backend=openssl.backend)
     return hkdf.derive(data)
-
-
-class ErrorInvalidTag(Exception):
-    pass
 
 
 class DEM:
@@ -67,4 +64,6 @@ class DEM:
         try:
             return xchacha_decrypt(ciphertext, authenticated_data, nonce, self._key)
         except nacl.exceptions.CryptoError:
-            raise ErrorInvalidTag
+            raise GenericError("Decryption of ciphertext failed: "
+                               "either someone tampered with the ciphertext or "
+                               "you are using an incorrect decryption key.")

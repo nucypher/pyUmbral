@@ -3,13 +3,13 @@ import pytest
 from umbral import (
     SecretKey,
     PublicKey,
+    GenericError,
     encrypt,
     generate_kfrags,
     decrypt_original,
     reencrypt,
     decrypt_reencrypted,
     )
-from umbral.dem import ErrorInvalidTag
 
 
 def test_public_key_encryption(alices_keys):
@@ -22,7 +22,7 @@ def test_public_key_encryption(alices_keys):
 
     # Wrong secret key
     sk = SecretKey.random()
-    with pytest.raises(ErrorInvalidTag):
+    with pytest.raises(GenericError):
         decrypt_original(sk, capsule, ciphertext)
 
 

@@ -52,6 +52,9 @@ Encryption, re-encryption and decryption
 Utilities
 ---------
 
+.. autoclass:: umbral.GenericError
+    :show-inheritance:
+
 .. autoclass:: umbral.serializable.Serializable
     :members: from_bytes
     :special-members: __bytes__

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Tuple, Sequence
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
+from .errors import GenericError
 from .hashing import hash_capsule_points, hash_to_polynomial_arg, hash_to_shared_secret
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
@@ -24,11 +25,6 @@ class Capsule(Serializable):
     Encapsulated symmetric key.
     """
 
-    class NotValid(ValueError):
-        """
-        raised if the capsule does not pass verification.
-        """
-
     def __init__(self, point_e: CurvePoint, point_v: CurvePoint, signature: CurveScalar):
         self.point_e = point_e
         self.point_v = point_v
@@ -40,7 +36,7 @@ class Capsule(Serializable):
 
         capsule = cls(e, v, sig)
         if not capsule._verify():
-            raise cls.NotValid("Capsule verification failed.")
+            raise GenericError("Capsule self-verification failed. Serialized data may be damaged.")
 
         return capsule, data
 
@@ -111,7 +107,7 @@ class Capsule(Serializable):
         # TODO: check for d == 0? Or just let if fail?
         inv_d = d.invert()
         if orig_pub_key * (s * inv_d) != (e_prime * h) + v_prime:
-            raise ValueError("Internal validation failed")
+            raise GenericError("Internal validation failed")
 
         return (e_prime + v_prime) * d
 

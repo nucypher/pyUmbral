@@ -1,8 +1,7 @@
 import random
 from umbral import (
-    SecretKey, PublicKey,
+    SecretKey, PublicKey, GenericError,
     encrypt, generate_kfrags, reencrypt, decrypt_original, decrypt_reencrypted)
-from umbral.dem import ErrorInvalidTag
 
 # Generate an Umbral key pair
 # ---------------------------
@@ -46,7 +45,7 @@ bob_capsule = capsule
 # Attempt Bob's decryption (fail)
 try:
     fail_decrypted_data = decrypt_original(bobs_secret_key, bob_capsule, ciphertext)
-except ErrorInvalidTag:
+except GenericError:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
 # Alice grants access to Bob by generating kfrags

@@ -182,8 +182,9 @@ def bn_from_bytes(bytes_seq: bytes, set_consttime_flag=True, check_modulus=None,
         with backend._tmp_bn_ctx() as bn_ctx:
             res = backend._lib.BN_mod(bignum, bn, apply_modulus, bn_ctx)
             backend.openssl_assert(res == 1)
-
-    return bn
+        return bignum
+    else:
+        return bn
 
 
 def bn_to_bytes(bn, length: int):

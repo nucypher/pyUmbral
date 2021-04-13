@@ -116,19 +116,16 @@ class Curve:
 #
 
 
-def _bn_new(set_consttime_flag=True):
+def _bn_new():
     """
     Returns a new and initialized OpenSSL BIGNUM.
-    The set_consttime_flag is set to True by default. When this instance of a
-    CurveBN object has BN_FLG_CONSTTIME set, OpenSSL will use constant time
-    operations whenever this CurveBN is passed.
     """
     new_bn = backend._lib.BN_new()
     backend.openssl_assert(new_bn != backend._ffi.NULL)
     new_bn = backend._ffi.gc(new_bn, backend._lib.BN_clear_free)
 
-    if set_consttime_flag:
-        backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
+    # Always use constant time operations.
+    backend._lib.BN_set_flags(new_bn, backend._lib.BN_FLG_CONSTTIME)
     return new_bn
 
 
@@ -144,13 +141,10 @@ def bn_is_normalized(check_bn, modulus):
     return (check_sign == 1 or check_sign == 0) and range_check == -1
 
 
-def bn_from_int(py_int: int, check_modulus=None, set_consttime_flag=True):
+def bn_from_int(py_int: int, check_modulus=None):
     """
     Converts the given Python int to an OpenSSL BIGNUM. If ``modulus`` is
     provided, it will check if the Python integer is within ``[0, modulus)``.
-
-    If set_consttime_flag is set to True, OpenSSL will use constant time
-    operations when using this CurveBN.
     """
     conv_bn = backend._int_to_bn(py_int)
     conv_bn = backend._ffi.gc(conv_bn, backend._lib.BN_clear_free)
@@ -158,18 +152,15 @@ def bn_from_int(py_int: int, check_modulus=None, set_consttime_flag=True):
     if check_modulus and not bn_is_normalized(conv_bn, check_modulus):
         raise ValueError(f"The Python integer given ({py_int}) is not under the provided modulus.")
 
-    if set_consttime_flag:
-        backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
+    backend._lib.BN_set_flags(conv_bn, backend._lib.BN_FLG_CONSTTIME)
     return conv_bn
 
 
-def bn_from_bytes(bytes_seq: bytes, set_consttime_flag=True, check_modulus=None, apply_modulus=None):
+def bn_from_bytes(bytes_seq: bytes, check_modulus=None, apply_modulus=None):
     """
     Converts the given byte sequence to an OpenSSL BIGNUM.
-    If set_consttime_flag is set to True, OpenSSL will use constant time
-    operations when using this BIGNUM.
     """
-    bn = _bn_new(set_consttime_flag)
+    bn = _bn_new()
     backend._lib.BN_bin2bn(bytes_seq, len(bytes_seq), bn)
     backend.openssl_assert(bn != backend._ffi.NULL)
 

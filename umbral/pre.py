@@ -52,7 +52,6 @@ def decrypt_reencrypted(decrypting_sk: SecretKey,
     """
 
     key_seed = capsule.open_reencrypted(decrypting_sk, delegating_pk, cfrags)
-    # TODO: add salt and info here?
     dem = DEM(bytes(key_seed))
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
 

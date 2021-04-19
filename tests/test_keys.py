@@ -57,7 +57,7 @@ def test_secret_key_str():
 def test_secret_key_hash():
     sk = SecretKey.random()
     # Insecure Python hash, shouldn't be available.
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(RuntimeError):
         hash(sk)
 
 
@@ -70,7 +70,7 @@ def test_secret_key_factory_str():
 def test_secret_key_factory_hash():
     skf = SecretKeyFactory.random()
     # Insecure Python hash, shouldn't be available.
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(RuntimeError):
         hash(skf)
 
 

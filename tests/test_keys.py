@@ -95,7 +95,7 @@ def test_public_key_str():
     assert 'PublicKey' in s
 
 
-def test_keying_material_serialization():
+def test_secret_key_factory_serialization():
     factory = SecretKeyFactory.random()
 
     encoded_factory = bytes(factory)

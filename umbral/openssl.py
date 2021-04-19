@@ -15,9 +15,7 @@ class Curve:
     """
 
     _supported_curves = {
-        415: 'secp256r1',
         714: 'secp256k1',
-        715: 'secp384r1'
     }
 
     @staticmethod

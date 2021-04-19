@@ -203,3 +203,34 @@ def test_reencrypt(implementations):
                                                  capsule_bytes, cfrags_bytes, ciphertext, metadata)
 
     assert plaintext_reencrypted == plaintext
+
+
+def _sign_message(umbral, sk_bytes, message):
+    sk = umbral.SecretKey.from_bytes(sk_bytes)
+    signer = umbral.Signer(sk)
+    assert signer.verifying_key() == umbral.PublicKey.from_secret_key(sk)
+    return bytes(signer.sign(message))
+
+
+def _verify_message(umbral, pk_bytes, signature_bytes, message):
+    pk = umbral.PublicKey.from_bytes(pk_bytes)
+    signature = umbral.Signature.from_bytes(signature_bytes)
+    return signature.verify(pk, message)
+
+
+def test_signer(implementations):
+
+    umbral1, umbral2 = implementations
+
+    message = b'peace at dawn'
+
+    sk_bytes, pk_bytes = _create_keypair(umbral1)
+
+    signature1_bytes = _sign_message(umbral1, sk_bytes, message)
+    signature2_bytes = _sign_message(umbral2, sk_bytes, message)
+
+    # Signatures are random, so we can't compare them.
+    # Cross-verify instead
+
+    assert _verify_message(umbral1, pk_bytes, signature2_bytes, message)
+    assert _verify_message(umbral2, pk_bytes, signature1_bytes, message)

@@ -3,7 +3,7 @@ from typing import Sequence, Optional
 from .capsule import Capsule
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .hashing import Hash, hash_to_cfrag_verification, hash_to_cfrag_signature
+from .hashing import Hash, hash_to_cfrag_verification, kfrag_signature_message
 from .keys import PublicKey, SecretKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
@@ -195,8 +195,13 @@ class CapsuleFrag(Serializable):
         precursor = self.precursor
         kfrag_id = self.kfrag_id
 
-        kfrag_signature = hash_to_cfrag_signature(kfrag_id, u1, precursor, delegating_pk, receiving_pk)
-        valid_kfrag_signature = kfrag_signature.verify(signing_pk, self.proof.kfrag_signature)
+        kfrag_message = kfrag_signature_message(kfrag_id=self.kfrag_id,
+                                                commitment=self.proof.kfrag_commitment,
+                                                precursor=self.precursor,
+                                                maybe_delegating_pk=delegating_pk,
+                                                maybe_receiving_pk=receiving_pk)
+
+        valid_kfrag_signature = self.proof.kfrag_signature.verify(signing_pk, kfrag_message)
 
         z3 = self.proof.signature
         correct_reencryption_of_e = e * z3 == e2 + e1 * h

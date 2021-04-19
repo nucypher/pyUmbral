@@ -22,6 +22,11 @@ Keys
 .. autoclass:: Signer
     :members:
 
+.. autoclass:: Signature()
+    :members:
+    :special-members: __eq__, __hash__
+    :show-inheritance:
+
 Intermediate objects
 --------------------
 

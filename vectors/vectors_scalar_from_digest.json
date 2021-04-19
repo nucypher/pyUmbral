@@ -24,69 +24,69 @@
       "input": [
         {
           "class": "CurvePoint",
-          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+          "bytes": "029826b0595c6fcf4e85a6ef01b18442578e65feca6d70075514b49bdfc4bd0cda"
         }
       ],
-      "output": "cd175898869252f3d6c6e77eaed94a72e74410d99534b349f27df2362c35745a"
+      "output": "d8754b9193c42118c4d81c4d3f19321f5d2a5ade39576334806a8f37d22741a1"
     },
     {
       "input": [
         {
           "class": "CurveScalar",
-          "bytes": "5e8601ee29241f263bf49b9999594413f863193fa1b8a985fff981cda7cc9087"
+          "bytes": "0f2985b7084e0c18b0aeeb1c7fec28cbf146058a0693580c110fd632368cacd1"
         }
       ],
-      "output": "2b83903fedca70169024365a4a5b387536a9ba38bd7b9fa0462f5f932f41a493"
+      "output": "348a38cd3062f4ea15a51fb8f56bbb83e404cc3f11847d104988ac4ab2197a71"
     },
     {
       "input": [
         {
           "class": "CurvePoint",
-          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+          "bytes": "029826b0595c6fcf4e85a6ef01b18442578e65feca6d70075514b49bdfc4bd0cda"
         },
         {
           "class": "CurveScalar",
-          "bytes": "5e8601ee29241f263bf49b9999594413f863193fa1b8a985fff981cda7cc9087"
+          "bytes": "0f2985b7084e0c18b0aeeb1c7fec28cbf146058a0693580c110fd632368cacd1"
         }
       ],
-      "output": "9f7cea094a5ed29ab2ec83391527db31850f915781c07c0b13853869e9885968"
+      "output": "c87108632be4386c4d6572ba8be6c5910cae86163f08a6911ade9a3e07d3e50b"
     },
     {
       "input": [
         {
           "class": "CurvePoint",
-          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+          "bytes": "029826b0595c6fcf4e85a6ef01b18442578e65feca6d70075514b49bdfc4bd0cda"
         },
         {
           "class": "CurvePoint",
-          "bytes": "02ecbc4dc0aed60efa211c7bf0e238593d292a042373b891928bcee459151c2f44"
+          "bytes": "022c521249ed649e35e2607313d21633a64cf7ba7a0b0eb10da102cbdf30a39b9e"
         },
         {
           "class": "CurvePoint",
-          "bytes": "02aa6a09c61286e36d82f6371038f1c33b2095b3b6dc8d09de7489f516c2dfe49a"
+          "bytes": "03692496ee3b4cb503d7d8f52e2e9683ed7b38856857cf95c5754d9333fdb94728"
         },
         {
           "class": "CurvePoint",
-          "bytes": "028da9ebf8cc0966bc010152fd3917a8f12dfff0af3b06e34e17f300d622893159"
+          "bytes": "031b8b7b6be11ab59918c5297f533096b795fb769166cca3e217a378f00dc14fb3"
         },
         {
           "class": "CurvePoint",
-          "bytes": "0281171b7e330ebd097575dadb210e8a405bc162e293881457a301da03f7571c7a"
+          "bytes": "020926d5571798f392acc25cb7523c7244570bb503ff7453baac200805f6bdb11c"
         },
         {
           "class": "CurvePoint",
-          "bytes": "03e2869b26bbf46a2e1f46116d8d9eeeb45f18acf4a808defee52040221dd08af9"
+          "bytes": "02f305433a902bf070044950673a59c52bd00420146eab81eed8640da2c25c3139"
         },
         {
           "class": "CurvePoint",
-          "bytes": "0374d2e59ea274c8011f6bf26ca8fe8eb8e7837cafed8547485e3fde6ffe0368e9"
+          "bytes": "02515dea317370e1dd7c266eb7da9a7b05904afa5c79f8461271803120ba74204b"
         },
         {
           "class": "CurvePoint",
-          "bytes": "024526ff9ab3c9c4cf619166ff897b8c023a6ff01f54c42a921ec1ab564d5a65eb"
+          "bytes": "034c9429b21772cd266882614f298912c18254c0ba93f9a6df1aedc10dbad13009"
         }
       ],
-      "output": "072c408c4631491eb12b00b38b8f7f20080b802e3e7c5c421f89887055248b1a"
+      "output": "51a250014c68f3faea29782d201855d43c0ee96fdadaacceee5e675dacd491c4"
     }
   ]
 }

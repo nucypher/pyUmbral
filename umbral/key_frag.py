@@ -3,7 +3,7 @@ from typing import Tuple, List, Optional
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .hashing import hash_to_shared_secret, hash_to_cfrag_signature, hash_to_polynomial_arg
+from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
 from .serializable import Serializable, serialize_bool, take_bool
@@ -53,21 +53,25 @@ class KeyFragProof(Serializable):
 
         commitment = params.u * kfrag_key
 
-        signature_for_receiver = hash_to_cfrag_signature(kfrag_id,
-                                                         commitment,
-                                                         kfrag_precursor,
-                                                         delegating_pk,
-                                                         receiving_pk,
-                                                         ).sign(Signer(signing_sk))
+        signer = Signer(signing_sk)
+
+        message_for_receiver = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                       commitment=commitment,
+                                                       precursor=kfrag_precursor,
+                                                       maybe_delegating_pk=delegating_pk,
+                                                       maybe_receiving_pk=receiving_pk,
+                                                       )
+        signature_for_receiver = signer.sign(message_for_receiver)
 
         maybe_delegating_pk = delegating_pk if sign_delegating_key else None
         maybe_receiving_pk = receiving_pk if sign_receiving_key else None
-        signature_for_proxy = hash_to_cfrag_signature(kfrag_id,
-                                                      commitment,
-                                                      kfrag_precursor,
-                                                      maybe_delegating_pk,
-                                                      maybe_receiving_pk
-                                                      ).sign(Signer(signing_sk))
+        message_for_proxy = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                    commitment=commitment,
+                                                    precursor=kfrag_precursor,
+                                                    maybe_delegating_pk=maybe_delegating_pk,
+                                                    maybe_receiving_pk=maybe_receiving_pk,
+                                                    )
+        signature_for_proxy = signer.sign(message_for_proxy)
 
         return cls(commitment,
                    signature_for_proxy,
@@ -226,12 +230,12 @@ class KeyFrag(Serializable):
 
         delegating_pk = delegating_pk if self.proof.delegating_key_signed else None
         receiving_pk = receiving_pk if self.proof.receiving_key_signed else None
-        sig = hash_to_cfrag_signature(kfrag_id,
-                                      commitment,
-                                      precursor,
-                                      delegating_pk,
-                                      receiving_pk)
-        return sig.verify(signing_pk, self.proof.signature_for_proxy)
+        kfrag_message = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                commitment=commitment,
+                                                precursor=precursor,
+                                                maybe_delegating_pk=delegating_pk,
+                                                maybe_receiving_pk=receiving_pk)
+        return self.proof.signature_for_proxy.verify(signing_pk, kfrag_message)
 
 
 class KeyFragBase:

@@ -4,6 +4,7 @@ from typing import Tuple
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .dem import kdf
+from .hashing import Hash
 from .serializable import Serializable
 
 
@@ -114,7 +115,6 @@ class SecretKeyFactory(Serializable):
         tag = b"KEY_DERIVATION/" + label
         key = kdf(self.__key_seed, self._DERIVED_KEY_SIZE, info=tag)
 
-        from .hashing import Hash
         digest = Hash(tag)
         digest.update(key)
         scalar_key = CurveScalar.from_digest(digest)

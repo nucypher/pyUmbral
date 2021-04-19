@@ -12,15 +12,9 @@ def test_sign_and_verify(execution_number):
     signer = Signer(sk)
 
     message = b"peace at dawn" + str(execution_number).encode()
-    dst = b"dst"
 
-    digest = Hash(dst)
-    digest.update(message)
-    signature = signer.sign_digest(digest)
-
-    digest = Hash(dst)
-    digest.update(message)
-    assert signature.verify_digest(pk, digest)
+    signature = signer.sign(message)
+    assert signature.verify(pk, message)
 
 
 @pytest.mark.parametrize('execution_number', range(20))  # Run this test 20 times.
@@ -30,18 +24,13 @@ def test_sign_serialize_and_verify(execution_number):
     signer = Signer(sk)
 
     message = b"peace at dawn" + str(execution_number).encode()
-    dst = b"dst"
 
-    digest = Hash(dst)
-    digest.update(message)
-    signature = signer.sign_digest(digest)
+    signature = signer.sign(message)
 
     signature_bytes = bytes(signature)
     signature_restored = Signature.from_bytes(signature_bytes)
 
-    digest = Hash(dst)
-    digest.update(message)
-    assert signature_restored.verify_digest(pk, digest)
+    assert signature_restored.verify(pk, message)
 
 
 def test_verification_fail():
@@ -50,47 +39,48 @@ def test_verification_fail():
     signer = Signer(sk)
 
     message = b"peace at dawn"
-    dst = b"dst"
-
-    digest = Hash(dst)
-    digest.update(message)
-    signature = signer.sign_digest(digest)
-
-    # wrong DST
-    digest = Hash(b"other dst")
-    digest.update(message)
-    assert not signature.verify_digest(pk, digest)
+    signature = signer.sign(message)
 
     # wrong message
-    digest = Hash(dst)
-    digest.update(b"no peace at dawn")
-    assert not signature.verify_digest(pk, digest)
+    wrong_message = b"no peace at dawn"
+    assert not signature.verify(pk, wrong_message)
 
     # bad signature
     signature_bytes = bytes(signature)
     signature_bytes = b'\x00' + signature_bytes[1:]
     signature_restored = Signature.from_bytes(signature_bytes)
 
-    digest = Hash(dst)
-    digest.update(message)
-    assert not signature_restored.verify_digest(pk, digest)
+    assert not signature_restored.verify(pk, message)
 
 
-def test_signature_repr():
+def test_signature_str():
+    sk = SecretKey.random()
+    pk = PublicKey.from_secret_key(sk)
+    signer = Signer(sk)
+    signature = signer.sign(b'peace at dawn')
+    s = str(signature)
+    assert 'Signature' in s
 
+
+def test_signature_is_hashable():
     sk = SecretKey.random()
     pk = PublicKey.from_secret_key(sk)
     signer = Signer(sk)
 
-    message = b"peace at dawn"
-    dst = b"dst"
+    message = b'peace at dawn'
+    message2 = b'no peace at dawn'
 
-    digest = Hash(dst)
-    digest.update(message)
-    signature = signer.sign_digest(digest)
+    signature = signer.sign(message)
+    signature2 = signer.sign(message2)
 
-    s = repr(signature)
-    assert 'Signature' in s
+    assert hash(signature) != hash(signature2)
+
+    signature_restored = Signature.from_bytes(bytes(signature))
+    assert hash(signature) == hash(signature_restored)
+
+    # Different hash, since signing involves some randomness
+    signature3 = signer.sign(message)
+    assert hash(signature) != hash(signature3)
 
 
 def test_signer_str():

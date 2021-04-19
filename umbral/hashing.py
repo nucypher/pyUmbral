@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Type, Iterable, Union
+from typing import TYPE_CHECKING, Optional, Type, Iterable, Union, List, cast
 
 from cryptography.hazmat.primitives import hashes
 
@@ -6,12 +6,11 @@ from .openssl import backend, ErrorInvalidCompressedPoint
 from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
-from .keys import PublicKey, SecretKey
 from .serializable import Serializable, serialize_bool
-from .signing import Signature, Signer
 
 if TYPE_CHECKING: # pragma: no cover
     from .key_frag import KeyFragID
+    from .keys import PublicKey
 
 
 class Hash:
@@ -63,7 +62,6 @@ def hash_to_shared_secret(precursor: CurvePoint,
     return CurveScalar.from_digest(digest)
 
 
-
 def hash_to_cfrag_verification(points: Iterable[CurvePoint], metadata: Optional[bytes] = None) -> CurveScalar:
     digest = Hash(b"CFRAG_VERIFICATION")
     for point in points:
@@ -73,46 +71,27 @@ def hash_to_cfrag_verification(points: Iterable[CurvePoint], metadata: Optional[
     return CurveScalar.from_digest(digest)
 
 
-def hash_to_cfrag_signature(kfrag_id: 'KeyFragID',
+def kfrag_signature_message(kfrag_id: 'KeyFragID',
                             commitment: CurvePoint,
                             precursor: CurvePoint,
-                            maybe_delegating_pk: Optional[PublicKey],
-                            maybe_receiving_pk: Optional[PublicKey],
-                            ) -> 'SignatureDigest':
+                            maybe_delegating_pk: Optional['PublicKey'],
+                            maybe_receiving_pk: Optional['PublicKey'],
+                            ) -> bytes:
 
-    digest = SignatureDigest(b"CFRAG_SIGNATURE")
-    digest.update(kfrag_id)
-    digest.update(commitment)
-    digest.update(precursor)
+    # Have to convert to bytes manually because `mypy` is not smart enough to resolve types.
 
-    if maybe_delegating_pk:
-        digest.update(serialize_bool(True))
-        digest.update(maybe_delegating_pk)
-    else:
-        digest.update(serialize_bool(False))
+    delegating_part = ([serialize_bool(True), bytes(maybe_delegating_pk)]
+                        if maybe_delegating_pk
+                        else [serialize_bool(False)])
+    cast(List[Serializable], delegating_part)
 
-    if maybe_receiving_pk:
-        digest.update(serialize_bool(True))
-        digest.update(maybe_receiving_pk)
-    else:
-        digest.update(serialize_bool(False))
+    receiving_part = ([serialize_bool(True), bytes(maybe_receiving_pk)]
+                       if maybe_receiving_pk
+                       else [serialize_bool(False)])
 
-    return digest
+    components = [bytes(kfrag_id), bytes(commitment), bytes(precursor)] + delegating_part + receiving_part
 
-
-class SignatureDigest:
-
-    def __init__(self, dst: bytes):
-        self._digest = Hash(dst)
-
-    def update(self, value):
-        self._digest.update(value)
-
-    def sign(self, signer: Signer) -> Signature:
-        return signer.sign_digest(self._digest)
-
-    def verify(self, pk: PublicKey, sig: Signature):
-        return sig.verify_digest(pk, self._digest)
+    return b''.join(components)
 
 
 def unsafe_hash_to_point(dst: bytes, data: bytes) -> CurvePoint:

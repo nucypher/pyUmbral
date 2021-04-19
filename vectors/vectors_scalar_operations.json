@@ -1,24 +1,24 @@
 {
   "name": "Test vectors for CurveScalar operations",
   "params": "default",
-  "first operand": "7a5b030ff619edf55dbb7a96d93e9de0bf932e86af1acb88bac0f85cb1ff4685",
-  "second operand": "698b307e4443a1e6fa53acc85ff321c42c2829c56a6469e0fa2a79ba73fa3904",
+  "first operand": "0a686fbc44fdc4713b7901c88fe416cc9b187501e671a4c70781742f3bcef1ec",
+  "second operand": "6af63df254cc9dd5728e098ffe9ad3cc1e0252b2e3562522907cab1a41656895",
   "vectors": [
     {
       "operation": "Addition",
-      "result": "e3e6338e3a5d8fdc580f275f3931bfa4ebbb584c197f3569b4eb721725f97f89"
+      "result": "755eadae99ca6246ae070b588e7eea98b91ac7b4c9c7c9e997fe1f497d345a81"
     },
     {
       "operation": "Subtraction",
-      "result": "10cfd291b1d64c0e6367cdce794b7c1c936b04c144b661a7c0967ea23e050d81"
+      "result": "9f7231c9f031269bc8eaf838914942ff37c4ff35b2641fe036d727a1ca9fca98"
     },
     {
       "operation": "Multiplication",
-      "result": "fa5e067f4d13a27ba6eb93bc78c651415dfef933fd1f9004e65bd54cc570c119"
+      "result": "a0bc896003f0e4feca2176f978b2cfa99ca73af19bf38782064bc137d9f00169"
     },
     {
       "operation": "Inverse",
-      "result": "e5974405f4da2448eef97c9d8f73075f2cf7a6849b53a71bcbf5d9474cf1f0e9"
+      "result": "e84f604508a66bfa6df07529238588040aee19b38c68330c031715f478426873"
     }
   ]
 }

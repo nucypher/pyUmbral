@@ -17,12 +17,13 @@ class Hash:
 
     OUTPUT_SIZE = 32
 
-    def __init__(self, dst: bytes):
+    def __init__(self, dst: Optional[bytes] = None):
         self._backend_hash_algorithm = hashes.SHA256()
         self._hash = hashes.Hash(self._backend_hash_algorithm, backend=backend)
 
-        len_dst = len(dst).to_bytes(4, byteorder='big')
-        self.update(len_dst + dst)
+        if dst is not None:
+            len_dst = len(dst).to_bytes(4, byteorder='big')
+            self.update(len_dst + dst)
 
     def update(self, data: Union[bytes, Serializable]) -> None:
         self._hash.update(bytes(data))

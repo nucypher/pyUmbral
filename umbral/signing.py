@@ -11,7 +11,8 @@ from .serializable import Serializable
 
 
 def digest_for_signing(message: bytes) -> Hash:
-    digest = Hash(b'SIGNER')
+    # Not using a DST here to make life easier for third-party verifiers
+    digest = Hash()
     digest.update(message)
     return digest
 

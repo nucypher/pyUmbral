@@ -179,9 +179,9 @@ using Alice's public keys.
 .. doctest:: capsule_story
 
     >>> all(cfrag.verify(capsule,
+    ...                  verifying_pk=alices_verifying_key,
     ...                  delegating_pk=alices_public_key,
-    ...                  receiving_pk=bobs_public_key,
-    ...                  verifying_pk=alices_verifying_key)
+    ...                  receiving_pk=bobs_public_key)
     ...     for cfrag in cfrags)
     True
 

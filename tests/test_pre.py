@@ -91,9 +91,10 @@ def test_simple_api(num_kfrags, threshold):
 
     # Bob checks that the received cfrags are valid
     assert all(cfrag.verify(capsule=capsule,
+                            verifying_pk=verifying_pk,
                             delegating_pk=delegating_pk,
                             receiving_pk=receiving_pk,
-                            verifying_pk=verifying_pk) for cfrag in cfrags)
+                            ) for cfrag in cfrags)
 
     # Decryption by Bob
     plaintext_reenc = decrypt_reencrypted(receiving_sk,

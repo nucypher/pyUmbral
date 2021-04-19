@@ -90,9 +90,10 @@ assert len(cfrags) == 10
 # using Alice's public keys.
 
 assert all(cfrag.verify(capsule,
+                        verifying_pk=alices_verifying_key,
                         delegating_pk=alices_public_key,
                         receiving_pk=bobs_public_key,
-                        verifying_pk=alices_verifying_key)
+                        )
            for cfrag in cfrags)
 
 # Bob opens the capsule

@@ -160,7 +160,11 @@ def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verify
     capsule = umbral.Capsule.from_bytes(bytes(capsule_bytes))
     cfrags = [umbral.CapsuleFrag.from_bytes(cfrag_bytes) for cfrag_bytes in cfrags_bytes]
 
-    assert all(cfrag.verify(capsule, delegating_pk, receiving_pk, verifying_pk, metadata=metadata)
+    assert all(cfrag.verify(capsule,
+                            verifying_pk=verifying_pk,
+                            delegating_pk=delegating_pk,
+                            receiving_pk=receiving_pk,
+                            metadata=metadata)
                for cfrag in cfrags)
 
     # Decryption by Bob

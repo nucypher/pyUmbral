@@ -19,44 +19,50 @@ def test_cfrag_serialization(alices_keys, bobs_keys, capsule, kfrags):
         assert new_cfrag == cfrag
 
         assert new_cfrag.verify(capsule,
+                                verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk,
-                                verifying_pk=verifying_pk,
-                                metadata=metadata)
+                                metadata=metadata,
+                                )
 
         # No metadata
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    verifying_pk=verifying_pk)
+                                    )
 
         # Wrong metadata
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    verifying_pk=verifying_pk,
-                                    metadata=b'Not the same metadata')
+                                    metadata=b'Not the same metadata',
+                                    )
 
         # Wrong delegating key
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=verifying_pk,
                                     delegating_pk=receiving_pk,
                                     receiving_pk=receiving_pk,
-                                    verifying_pk=verifying_pk,
-                                    metadata=metadata)
+                                    metadata=metadata,
+                                    )
 
         # Wrong receiving key
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=delegating_pk,
-                                    verifying_pk=verifying_pk,
-                                    metadata=metadata)
+                                    metadata=metadata,
+                                    )
 
         # Wrong signing key
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=receiving_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    verifying_pk=receiving_pk,
-                                    metadata=metadata)
+                                    metadata=metadata,
+                                    )
 
 
 def test_cfrag_serialization_no_metadata(alices_keys, bobs_keys, capsule, kfrags):
@@ -75,15 +81,17 @@ def test_cfrag_serialization_no_metadata(alices_keys, bobs_keys, capsule, kfrags
         new_cfrag = CapsuleFrag.from_bytes(cfrag_bytes)
 
         assert new_cfrag.verify(capsule,
+                                verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk,
-                                verifying_pk=verifying_pk)
+                                )
 
         assert not new_cfrag.verify(capsule,
+                                    verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    verifying_pk=verifying_pk,
-                                    metadata=b'some metadata')
+                                    metadata=b'some metadata',
+                                    )
 
 
 def test_cfrag_with_wrong_capsule(alices_keys, bobs_keys,
@@ -103,10 +111,11 @@ def test_cfrag_with_wrong_capsule(alices_keys, bobs_keys,
     cfrag = reencrypt(capsule_alice2, kfrags[0], metadata=metadata)
 
     assert not cfrag.verify(capsule_alice1,
+                            verifying_pk=PublicKey.from_secret_key(signing_sk),
                             delegating_pk=delegating_pk,
                             receiving_pk=receiving_pk,
-                            verifying_pk=PublicKey.from_secret_key(signing_sk),
-                            metadata=metadata)
+                            metadata=metadata,
+                            )
 
 
 def test_cfrag_with_wrong_data(kfrags, alices_keys, bobs_keys, capsule_and_ciphertext, message):
@@ -126,10 +135,11 @@ def test_cfrag_with_wrong_data(kfrags, alices_keys, bobs_keys, capsule_and_ciphe
     cfrag.point_v1 = CurvePoint.random()
 
     assert not cfrag.verify(capsule,
+                            verifying_pk=PublicKey.from_secret_key(signing_sk),
                             delegating_pk=delegating_pk,
                             receiving_pk=receiving_pk,
-                            verifying_pk=PublicKey.from_secret_key(signing_sk),
-                            metadata=metadata)
+                            metadata=metadata,
+                            )
 
 
 def test_cfrag_is_hashable(capsule, kfrags):

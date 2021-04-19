@@ -1,7 +1,7 @@
 import json
 import os
 
-from umbral import SecretKey, PublicKey, encrypt, generate_kfrags, reencrypt
+from umbral import SecretKey, PublicKey, Signer, encrypt, generate_kfrags, reencrypt
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
 from umbral.hashing import Hash, unsafe_hash_to_point
@@ -50,7 +50,7 @@ receiving_pk = PublicKey.from_secret_key(receiving_sk)
 
 kfrags = generate_kfrags(delegating_sk=delegating_sk,
                          receiving_pk=receiving_pk,
-                         signing_sk=signing_sk,
+                         signer=Signer(signing_sk),
                          threshold=6,
                          num_kfrags=10,
                          )

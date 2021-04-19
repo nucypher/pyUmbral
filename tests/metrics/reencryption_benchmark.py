@@ -41,6 +41,7 @@ def __standard_encryption_api(umbral) -> tuple:
     delegating_pk = umbral.PublicKey.from_secret_key(delegating_sk)
 
     signing_sk = umbral.SecretKey.random()
+    signer = umbral.Signer(signing_sk)
 
     receiving_sk = umbral.SecretKey.random()
     receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
@@ -48,7 +49,7 @@ def __standard_encryption_api(umbral) -> tuple:
     plain_data = os.urandom(32)
     capsule, ciphertext = umbral.encrypt(delegating_pk, plain_data)
 
-    return delegating_sk, receiving_pk, signing_sk, ciphertext, capsule
+    return delegating_sk, receiving_pk, signer, ciphertext, capsule
 
 
 #
@@ -64,8 +65,8 @@ def __standard_encryption_api(umbral) -> tuple:
 def test_generate_kfrags_performance(benchmark, m: int, n: int, umbral) -> None:
 
     def __setup():
-        delegating_sk, receiving_pk, signing_sk, ciphertext, capsule = __standard_encryption_api(umbral)
-        return (delegating_sk, receiving_pk, signing_sk, m, n, True, True), {}
+        delegating_sk, receiving_pk, signer, ciphertext, capsule = __standard_encryption_api(umbral)
+        return (delegating_sk, receiving_pk, signer, m, n, True, True), {}
 
     benchmark.pedantic(umbral.generate_kfrags, setup=__setup, rounds=1000)
     assert True  # ensure function finishes and succeeds.
@@ -84,8 +85,8 @@ def test_generate_kfrags_performance(benchmark, m: int, n: int, umbral) -> None:
 def test_random_frag_reencryption_performance(benchmark, m: int, n: int, umbral) -> None:
 
     def __setup():
-        delegating_sk, receiving_pk, signing_sk, ciphertext, capsule = __standard_encryption_api(umbral)
-        kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signing_sk, m, n, True, True)
+        delegating_sk, receiving_pk, signer, ciphertext, capsule = __standard_encryption_api(umbral)
+        kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signer, m, n, True, True)
         one_kfrag, *remaining_kfrags = kfrags
         return (capsule, one_kfrag), {}
 
@@ -104,8 +105,8 @@ def test_random_frag_reencryption_performance(benchmark, m: int, n: int, umbral)
 @pytest.mark.parametrize("m, n", ((6, 10), ))
 def test_single_frag_reencryption_performance(benchmark, m: int, n: int, umbral) -> None:
 
-    delegating_sk, receiving_pk, signing_sk, ciphertext, capsule = __standard_encryption_api(umbral)
-    kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signing_sk, m, n, True, True)
+    delegating_sk, receiving_pk, signer, ciphertext, capsule = __standard_encryption_api(umbral)
+    kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signer, m, n, True, True)
     one_kfrag, *remaining_kfrags = kfrags
     args, kwargs = (capsule, one_kfrag), {}
 

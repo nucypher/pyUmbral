@@ -1,6 +1,6 @@
 import random
 from umbral import (
-    SecretKey, PublicKey, GenericError,
+    SecretKey, PublicKey, Signer, GenericError,
     encrypt, generate_kfrags, reencrypt, decrypt_original, decrypt_reencrypted)
 
 # Generate an Umbral key pair
@@ -13,6 +13,7 @@ alices_public_key = PublicKey.from_secret_key(alices_secret_key)
 
 alices_signing_key = SecretKey.random()
 alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
+alices_signer = Signer(alices_signing_key)
 
 # Encrypt some data for Alice
 # ---------------------------
@@ -58,7 +59,7 @@ except GenericError:
 
 kfrags = generate_kfrags(delegating_sk=alices_secret_key,
                          receiving_pk=bobs_public_key,
-                         signing_sk=alices_signing_key,
+                         signer=alices_signer,
                          threshold=10,
                          num_kfrags=20)
 
@@ -91,7 +92,7 @@ assert len(cfrags) == 10
 assert all(cfrag.verify(capsule,
                         delegating_pk=alices_public_key,
                         receiving_pk=bobs_public_key,
-                        signing_pk=alices_verifying_key)
+                        verifying_pk=alices_verifying_key)
            for cfrag in cfrags)
 
 # Bob opens the capsule

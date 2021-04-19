@@ -47,13 +47,11 @@ class KeyFragProof(Serializable):
         params = PARAMETERS
 
         kfrag_precursor = base.precursor
-        signing_sk = base.signing_sk
+        signer = base.signer
         delegating_pk = base.delegating_pk
         receiving_pk = base.receiving_pk
 
         commitment = params.u * kfrag_key
-
-        signer = Signer(signing_sk)
 
         message_for_receiver = kfrag_signature_message(kfrag_id=kfrag_id,
                                                        commitment=commitment,
@@ -199,7 +197,7 @@ class KeyFrag(Serializable):
         return cls(kfrag_id, rk, base.precursor, proof)
 
     def verify(self,
-               signing_pk: PublicKey,
+               verifying_pk: PublicKey,
                delegating_pk: Optional[PublicKey] = None,
                receiving_pk: Optional[PublicKey] = None,
                ) -> bool:
@@ -235,7 +233,7 @@ class KeyFrag(Serializable):
                                                 precursor=precursor,
                                                 maybe_delegating_pk=delegating_pk,
                                                 maybe_receiving_pk=receiving_pk)
-        return self.proof.signature_for_proxy.verify(signing_pk, kfrag_message)
+        return self.proof.signature_for_proxy.verify(verifying_pk, kfrag_message)
 
 
 class KeyFragBase:
@@ -243,7 +241,7 @@ class KeyFragBase:
     def __init__(self,
                  delegating_sk: SecretKey,
                  receiving_pk: PublicKey,
-                 signing_sk: SecretKey,
+                 signer: Signer,
                  threshold: int,
                  ):
 
@@ -278,7 +276,7 @@ class KeyFragBase:
             delegating_sk.secret_scalar() * d.invert(),
             *[CurveScalar.random_nonzero() for _ in range(threshold-1)]]
 
-        self.signing_sk = signing_sk
+        self.signer = signer
         self.precursor = precursor
         self.dh_point = dh_point
         self.delegating_pk = delegating_pk
@@ -288,7 +286,7 @@ class KeyFragBase:
 
 def generate_kfrags(delegating_sk: SecretKey,
                     receiving_pk: PublicKey,
-                    signing_sk: SecretKey,
+                    signer: Signer,
                     threshold: int,
                     num_kfrags: int,
                     sign_delegating_key: bool = True,
@@ -301,7 +299,7 @@ def generate_kfrags(delegating_sk: SecretKey,
     the corresponding keys will have to be provided to :py:meth:`KeyFrag.verify`.
     """
 
-    base = KeyFragBase(delegating_sk, receiving_pk, signing_sk, threshold)
+    base = KeyFragBase(delegating_sk, receiving_pk, signer, threshold)
 
     # Technically we could allow it, but what would be the use of these kfrags?
     if num_kfrags < threshold:

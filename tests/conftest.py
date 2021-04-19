@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import SecretKey, PublicKey, generate_kfrags, encrypt
+from umbral import SecretKey, PublicKey, Signer, generate_kfrags, encrypt
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def kfrags(alices_keys, bobs_keys):
     delegating_sk, signing_sk = alices_keys
     receiving_sk, receiving_pk = bobs_keys
     yield generate_kfrags(delegating_sk=delegating_sk,
-                          signing_sk=signing_sk,
+                          signer=Signer(signing_sk),
                           receiving_pk=receiving_pk,
                           threshold=6, num_kfrags=10)
 

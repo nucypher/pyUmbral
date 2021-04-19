@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import KeyFrag, PublicKey, generate_kfrags
+from umbral import KeyFrag, PublicKey, Signer, generate_kfrags
 from umbral.key_frag import KeyFragID
 from umbral.curve_scalar import CurveScalar
 
@@ -10,14 +10,14 @@ def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     for kfrag in kfrags:
         kfrag_bytes = bytes(kfrag)
         new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
 
-        assert new_kfrag.verify(signing_pk=signing_pk,
+        assert new_kfrag.verify(verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk)
 
@@ -29,7 +29,7 @@ def test_kfrag_verification(alices_keys, bobs_keys, kfrags):
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     # Wrong signature
@@ -37,7 +37,7 @@ def test_kfrag_verification(alices_keys, bobs_keys, kfrags):
     kfrag.id = KeyFragID.random()
     kfrag_bytes = bytes(kfrag)
     new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
-    assert not new_kfrag.verify(signing_pk=signing_pk,
+    assert not new_kfrag.verify(verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk)
 
@@ -46,7 +46,7 @@ def test_kfrag_verification(alices_keys, bobs_keys, kfrags):
     kfrag.key = CurveScalar.random_nonzero()
     kfrag_bytes = bytes(kfrag)
     new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
-    assert not new_kfrag.verify(signing_pk=signing_pk,
+    assert not new_kfrag.verify(verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk)
 
@@ -62,11 +62,11 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     kfrags = generate_kfrags(delegating_sk=delegating_sk,
-                             signing_sk=signing_sk,
+                             signer=Signer(signing_sk),
                              receiving_pk=receiving_pk,
                              threshold=6,
                              num_kfrags=10,
@@ -84,7 +84,7 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
         receiving_key_ok = (not sign_receiving_key) or pass_receiving_key
         should_verify = delegating_key_ok and receiving_key_ok
 
-        result = kfrag.verify(signing_pk=signing_pk,
+        result = kfrag.verify(verifying_pk=verifying_pk,
                               delegating_pk=delegating_pk if pass_delegating_key else None,
                               receiving_pk=receiving_pk if pass_receiving_key else None)
 
@@ -120,7 +120,7 @@ def test_wrong_threshold_and_num_kfrags(num_kfrags, threshold, alices_keys, bobs
 
     with pytest.raises(ValueError):
         generate_kfrags(delegating_sk=delegating_sk,
-                        signing_sk=signing_sk,
+                        signer=Signer(signing_sk),
                         receiving_pk=receiving_pk,
                         threshold=threshold,
                         num_kfrags=num_kfrags)

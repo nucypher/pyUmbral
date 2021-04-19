@@ -93,30 +93,32 @@ def test_encrypt_decrypt(implementations):
 
 
 def _generate_kfrags(umbral, delegating_sk_bytes, receiving_pk_bytes,
-                     signing_sk_bytes, threshold, num_frags):
+                     signing_sk_bytes, threshold, num_kfrags):
 
     delegating_sk = umbral.SecretKey.from_bytes(delegating_sk_bytes)
     receiving_pk = umbral.PublicKey.from_bytes(receiving_pk_bytes)
     signing_sk = umbral.SecretKey.from_bytes(signing_sk_bytes)
 
-    kfrags = umbral.generate_kfrags(delegating_sk,
-                                    receiving_pk,
-                                    signing_sk,
-                                    threshold,
-                                    num_frags,
-                                    True,
-                                    True,
+    kfrags = umbral.generate_kfrags(delegating_sk=delegating_sk,
+                                    receiving_pk=receiving_pk,
+                                    signer=umbral.Signer(signing_sk),
+                                    threshold=threshold,
+                                    num_kfrags=num_kfrags,
+                                    sign_delegating_key=True,
+                                    sign_receiving_key=True,
                                     )
 
     return [bytes(kfrag) for kfrag in kfrags]
 
 
-def _verify_kfrags(umbral, kfrags_bytes, signing_pk_bytes, delegating_pk_bytes, receiving_pk_bytes):
+def _verify_kfrags(umbral, kfrags_bytes, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes):
     kfrags = [umbral.KeyFrag.from_bytes(kfrag_bytes) for kfrag_bytes in kfrags_bytes]
-    signing_pk = umbral.PublicKey.from_bytes(signing_pk_bytes)
+    verifying_pk = umbral.PublicKey.from_bytes(verifying_pk_bytes)
     delegating_pk = umbral.PublicKey.from_bytes(delegating_pk_bytes)
     receiving_pk = umbral.PublicKey.from_bytes(receiving_pk_bytes)
-    assert all(kfrag.verify(signing_pk, delegating_pk, receiving_pk) for kfrag in kfrags)
+    assert all(kfrag.verify(verifying_pk=verifying_pk,
+                            delegating_pk=delegating_pk,
+                            receiving_pk=receiving_pk) for kfrag in kfrags)
 
 
 def test_kfrags(implementations):
@@ -124,20 +126,20 @@ def test_kfrags(implementations):
     umbral1, umbral2 = implementations
 
     threshold = 2
-    num_frags = 3
+    num_kfrags = 3
     plaintext = b'peace at dawn'
 
     # On client 1
 
     receiving_sk_bytes, receiving_pk_bytes = _create_keypair(umbral1)
     delegating_sk_bytes, delegating_pk_bytes = _create_keypair(umbral1)
-    signing_sk_bytes, signing_pk_bytes = _create_keypair(umbral1)
+    signing_sk_bytes, verifying_pk_bytes = _create_keypair(umbral1)
     kfrags_bytes = _generate_kfrags(umbral1, delegating_sk_bytes, receiving_pk_bytes,
-                                    signing_sk_bytes, threshold, num_frags)
+                                    signing_sk_bytes, threshold, num_kfrags)
 
     # On client 2
 
-    _verify_kfrags(umbral2, kfrags_bytes, signing_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
+    _verify_kfrags(umbral2, kfrags_bytes, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
 
 
 def _reencrypt(umbral, capsule_bytes, kfrags_bytes, threshold, metadata):
@@ -147,18 +149,18 @@ def _reencrypt(umbral, capsule_bytes, kfrags_bytes, threshold, metadata):
     return [bytes(cfrag) for cfrag in cfrags]
 
 
-def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, signing_pk_bytes,
+def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
                          capsule_bytes, cfrags_bytes, ciphertext, metadata):
 
     receiving_sk = umbral.SecretKey.from_bytes(receiving_sk_bytes)
     receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
     delegating_pk = umbral.PublicKey.from_bytes(delegating_pk_bytes)
-    signing_pk = umbral.PublicKey.from_bytes(signing_pk_bytes)
+    verifying_pk = umbral.PublicKey.from_bytes(verifying_pk_bytes)
 
     capsule = umbral.Capsule.from_bytes(bytes(capsule_bytes))
     cfrags = [umbral.CapsuleFrag.from_bytes(cfrag_bytes) for cfrag_bytes in cfrags_bytes]
 
-    assert all(cfrag.verify(capsule, delegating_pk, receiving_pk, signing_pk, metadata=metadata)
+    assert all(cfrag.verify(capsule, delegating_pk, receiving_pk, verifying_pk, metadata=metadata)
                for cfrag in cfrags)
 
     # Decryption by Bob
@@ -178,19 +180,19 @@ def test_reencrypt(implementations):
 
     metadata = b'metadata'
     threshold = 2
-    num_frags = 3
+    num_kfrags = 3
     plaintext = b'peace at dawn'
 
     # On client 1
 
     receiving_sk_bytes, receiving_pk_bytes = _create_keypair(umbral1)
     delegating_sk_bytes, delegating_pk_bytes = _create_keypair(umbral1)
-    signing_sk_bytes, signing_pk_bytes = _create_keypair(umbral1)
+    signing_sk_bytes, verifying_pk_bytes = _create_keypair(umbral1)
 
     capsule_bytes, ciphertext = _encrypt(umbral1, plaintext, delegating_pk_bytes)
 
     kfrags_bytes = _generate_kfrags(umbral1, delegating_sk_bytes, receiving_pk_bytes,
-                                    signing_sk_bytes, threshold, num_frags)
+                                    signing_sk_bytes, threshold, num_kfrags)
 
     # On client 2
 
@@ -199,7 +201,7 @@ def test_reencrypt(implementations):
     # On client 1
 
     plaintext_reencrypted = _decrypt_reencrypted(umbral1,
-                                                 receiving_sk_bytes, delegating_pk_bytes, signing_pk_bytes,
+                                                 receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
                                                  capsule_bytes, cfrags_bytes, ciphertext, metadata)
 
     assert plaintext_reencrypted == plaintext

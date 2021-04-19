@@ -3,6 +3,7 @@ import pytest
 from umbral import (
     SecretKey,
     PublicKey,
+    Signer,
     GenericError,
     encrypt,
     generate_kfrags,
@@ -52,7 +53,8 @@ def test_simple_api(num_kfrags, threshold):
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     signing_sk = SecretKey.random()
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    signer = Signer(signing_sk)
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
 
     # Key Generation (Bob)
     receiving_sk = SecretKey.random()
@@ -67,13 +69,19 @@ def test_simple_api(num_kfrags, threshold):
     assert plaintext_decrypted == plaintext
 
     # Split Re-Encryption Key Generation (aka Delegation)
-    kfrags = generate_kfrags(delegating_sk, receiving_pk, signing_sk, threshold, num_kfrags)
+    kfrags = generate_kfrags(delegating_sk=delegating_sk,
+                             receiving_pk=receiving_pk,
+                             signer=signer,
+                             threshold=threshold,
+                             num_kfrags=num_kfrags)
 
     # Bob requests re-encryption to some set of M ursulas
     cfrags = list()
     for kfrag in kfrags[:threshold]:
         # Ursula checks that the received kfrag is valid
-        assert kfrag.verify(signing_pk, delegating_pk, receiving_pk)
+        assert kfrag.verify(verifying_pk=verifying_pk,
+                            delegating_pk=delegating_pk,
+                            receiving_pk=receiving_pk)
 
         # Re-encryption by an Ursula
         cfrag = reencrypt(capsule, kfrag)
@@ -82,7 +90,10 @@ def test_simple_api(num_kfrags, threshold):
         cfrags.append(cfrag)
 
     # Bob checks that the received cfrags are valid
-    assert all(cfrag.verify(capsule, delegating_pk, receiving_pk, signing_pk) for cfrag in cfrags)
+    assert all(cfrag.verify(capsule=capsule,
+                            delegating_pk=delegating_pk,
+                            receiving_pk=receiving_pk,
+                            verifying_pk=verifying_pk) for cfrag in cfrags)
 
     # Decryption by Bob
     plaintext_reenc = decrypt_reencrypted(receiving_sk,

@@ -161,7 +161,7 @@ class CapsuleFrag(Serializable):
                capsule: Capsule,
                delegating_pk: PublicKey,
                receiving_pk: PublicKey,
-               signing_pk: PublicKey,
+               verifying_pk: PublicKey,
                metadata: Optional[bytes] = None,
                ) -> bool:
         """
@@ -201,7 +201,7 @@ class CapsuleFrag(Serializable):
                                                 maybe_delegating_pk=delegating_pk,
                                                 maybe_receiving_pk=receiving_pk)
 
-        valid_kfrag_signature = self.proof.kfrag_signature.verify(signing_pk, kfrag_message)
+        valid_kfrag_signature = self.proof.kfrag_signature.verify(verifying_pk, kfrag_message)
 
         z3 = self.proof.signature
         correct_reencryption_of_e = e * z3 == e2 + e1 * h

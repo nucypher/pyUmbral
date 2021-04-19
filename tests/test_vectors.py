@@ -122,7 +122,7 @@ def test_kfrags():
 
     for json_kfrag in vector_suite['vectors']:
         kfrag = KeyFrag.from_bytes(bytes.fromhex(json_kfrag['kfrag']))
-        assert kfrag.verify(signing_pk=verifying_pk,
+        assert kfrag.verify(verifying_pk=verifying_pk,
                             delegating_pk=delegating_pk,
                             receiving_pk=receiving_pk), \
             'Invalid KeyFrag {}'.format(bytes(kfrag).hex())
@@ -150,7 +150,7 @@ def test_cfrags():
     metadata = bytes.fromhex(vector_suite['metadata'])
 
     for kfrag, cfrag in kfrags_n_cfrags:
-        assert kfrag.verify(signing_pk=verifying_pk,
+        assert kfrag.verify(verifying_pk=verifying_pk,
                             delegating_pk=delegating_pk,
                             receiving_pk=receiving_pk), \
             'Invalid KeyFrag {}'.format(bytes(kfrag.to_bytes).hex())
@@ -161,7 +161,7 @@ def test_cfrags():
         assert new_cfrag.kfrag_id == cfrag.kfrag_id
         assert new_cfrag.precursor == cfrag.precursor
         assert new_cfrag.verify(capsule,
-                                signing_pk=verifying_pk,
+                                verifying_pk=verifying_pk,
                                 delegating_pk=delegating_pk,
                                 receiving_pk=receiving_pk,
                                 metadata=metadata)

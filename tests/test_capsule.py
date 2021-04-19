@@ -4,6 +4,7 @@ from umbral import (
     Capsule,
     SecretKey,
     PublicKey,
+    Signer,
     GenericError,
     encrypt,
     decrypt_original,
@@ -66,12 +67,12 @@ def test_open_reencrypted(alices_keys, bobs_keys):
     delegating_sk, signing_sk = alices_keys
     receiving_sk, receiving_pk = bobs_keys
 
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    signer = Signer(signing_sk)
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     capsule, key = Capsule.from_public_key(delegating_pk)
     kfrags = generate_kfrags(delegating_sk=delegating_sk,
-                             signing_sk=signing_sk,
+                             signer=signer,
                              receiving_pk=receiving_pk,
                              threshold=threshold,
                              num_kfrags=num_kfrags)
@@ -94,7 +95,7 @@ def test_open_reencrypted(alices_keys, bobs_keys):
 
     # Mismatched cfrags
     kfrags2 = generate_kfrags(delegating_sk=delegating_sk,
-                              signing_sk=signing_sk,
+                              signer=signer,
                               receiving_pk=receiving_pk,
                               threshold=threshold,
                               num_kfrags=num_kfrags)

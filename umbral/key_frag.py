@@ -4,9 +4,10 @@ from typing import Tuple, List, Optional
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
 from .hashing import hash_to_shared_secret, hash_to_cfrag_signature, hash_to_polynomial_arg
-from .keys import PublicKey, SecretKey, Signature
+from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
 from .serializable import Serializable, serialize_bool, take_bool
+from .signing import Signature
 
 
 class KeyFragID(Serializable):

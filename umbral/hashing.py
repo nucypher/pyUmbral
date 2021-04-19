@@ -6,8 +6,9 @@ from .openssl import backend, ErrorInvalidCompressedPoint
 from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
-from .keys import PublicKey, SecretKey, Signature
+from .keys import PublicKey, SecretKey
 from .serializable import Serializable, serialize_bool
+from .signing import Signature
 
 if TYPE_CHECKING: # pragma: no cover
     from .key_frag import KeyFragID

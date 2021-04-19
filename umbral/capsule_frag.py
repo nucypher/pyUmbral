@@ -4,10 +4,11 @@ from .capsule import Capsule
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
 from .hashing import Hash, hash_to_cfrag_verification, hash_to_cfrag_signature
-from .keys import PublicKey, SecretKey, Signature
+from .keys import PublicKey, SecretKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
 from .serializable import Serializable
+from .signing import Signature
 
 
 class CapsuleFragProof(Serializable):

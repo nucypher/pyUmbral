@@ -8,6 +8,7 @@ from .errors import GenericError
 from .key_frag import KeyFrag, generate_kfrags
 from .keys import SecretKey, PublicKey, SecretKeyFactory
 from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt
+from .signing import Signature
 
 __all__ = [
     "__title__",
@@ -21,6 +22,7 @@ __all__ = [
     "SecretKey",
     "PublicKey",
     "SecretKeyFactory",
+    "Signature",
     "Capsule",
     "KeyFrag",
     "CapsuleFrag",

@@ -1,18 +1,10 @@
 import os
-from typing import TYPE_CHECKING, Tuple
+from typing import Tuple
 
-from cryptography.hazmat.primitives.asymmetric import utils
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-
-from . import openssl
-from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .dem import kdf
 from .serializable import Serializable
-
-if TYPE_CHECKING: # pragma: no cover
-    from .hashing import Hash
 
 
 class SecretKey(Serializable):
@@ -56,27 +48,6 @@ class SecretKey(Serializable):
 
     def __bytes__(self) -> bytes:
         return bytes(self._scalar_key)
-
-    def sign_digest(self, digest: 'Hash') -> 'Signature':
-
-        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
-        message = digest.finalize()
-
-        backend_sk = openssl.bn_to_privkey(CURVE, self._scalar_key._backend_bignum)
-        signature_der_bytes = backend_sk.sign(message, signature_algorithm)
-        r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
-
-        # Normalize s
-        # s is public, so no constant-timeness required here
-        if s_int > (CURVE.order >> 1):
-            s_int = CURVE.order - s_int
-
-        # Already normalized, don't waste time
-        r = CurveScalar.from_int(r_int, check_normalization=False)
-        s = CurveScalar.from_int(s_int, check_normalization=False)
-
-        from .signing import Signature
-        return Signature(r, s)
 
 
 class PublicKey(Serializable):

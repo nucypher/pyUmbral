@@ -19,6 +19,9 @@ Keys
     :members:
     :show-inheritance:
 
+.. autoclass:: Signer
+    :members:
+
 Intermediate objects
 --------------------
 

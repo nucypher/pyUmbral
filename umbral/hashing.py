@@ -8,7 +8,7 @@ from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .keys import PublicKey, SecretKey
 from .serializable import Serializable, serialize_bool
-from .signing import Signature
+from .signing import Signature, Signer
 
 if TYPE_CHECKING: # pragma: no cover
     from .key_frag import KeyFragID
@@ -108,8 +108,8 @@ class SignatureDigest:
     def update(self, value):
         self._digest.update(value)
 
-    def sign(self, sk: SecretKey) -> Signature:
-        return sk.sign_digest(self._digest)
+    def sign(self, signer: Signer) -> Signature:
+        return signer.sign_digest(self._digest)
 
     def verify(self, pk: PublicKey, sig: Signature):
         return sig.verify_digest(pk, self._digest)

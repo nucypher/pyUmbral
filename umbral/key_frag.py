@@ -7,7 +7,7 @@ from .hashing import hash_to_shared_secret, hash_to_cfrag_signature, hash_to_pol
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
 from .serializable import Serializable, serialize_bool, take_bool
-from .signing import Signature
+from .signing import Signature, Signer
 
 
 class KeyFragID(Serializable):
@@ -58,7 +58,7 @@ class KeyFragProof(Serializable):
                                                          kfrag_precursor,
                                                          delegating_pk,
                                                          receiving_pk,
-                                                         ).sign(signing_sk)
+                                                         ).sign(Signer(signing_sk))
 
         maybe_delegating_pk = delegating_pk if sign_delegating_key else None
         maybe_receiving_pk = receiving_pk if sign_receiving_key else None
@@ -67,7 +67,7 @@ class KeyFragProof(Serializable):
                                                       kfrag_precursor,
                                                       maybe_delegating_pk,
                                                       maybe_receiving_pk
-                                                      ).sign(signing_sk)
+                                                      ).sign(Signer(signing_sk))
 
         return cls(commitment,
                    signature_for_proxy,

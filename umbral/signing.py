@@ -34,7 +34,10 @@ class Signer:
         signature_der_bytes = backend_sk.sign(message, signature_algorithm)
         r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
 
-        # Normalize s
+        # Normalize s. This is a non-malleability measure, which OpenSSL doesn't do.
+        # See Bitcoin's BIP-0062 for more details:
+        # https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+
         # s is public, so no constant-timeness required here
         if s_int > (CURVE.order >> 1):
             s_int = CURVE.order - s_int

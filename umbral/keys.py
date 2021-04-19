@@ -44,7 +44,7 @@ class SecretKey(Serializable):
         return f"{self.__class__.__name__}:..."
 
     def __hash__(self):
-        raise NotImplementedError("Hashing secret objects is insecure")
+        raise NotImplementedError("Hashing secret objects is not secure")
 
     def secret_scalar(self):
         return self._scalar_key
@@ -162,4 +162,4 @@ class SecretKeyFactory(Serializable):
         return f"{self.__class__.__name__}:..."
 
     def __hash__(self):
-        raise NotImplementedError("Hashing secret objects is insecure")
+        raise NotImplementedError("Hashing secret objects is not secure")

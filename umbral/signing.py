@@ -1,7 +1,3 @@
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import utils
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-
 from . import openssl
 from .curve import CURVE
 from .curve_scalar import CurveScalar
@@ -28,12 +24,10 @@ class Signer:
 
     def sign_digest(self, digest: 'Hash') -> 'Signature':
 
-        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
-        message = digest.finalize()
-
-        backend_sk = openssl.bn_to_privkey(CURVE, self.__secret_key.secret_scalar()._backend_bignum)
-        signature_der_bytes = backend_sk.sign(message, signature_algorithm)
-        r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
+        r_int, s_int = openssl.ecdsa_sign(curve=CURVE,
+                                          secret_bn=self.__secret_key.secret_scalar()._backend_bignum,
+                                          prehashed_message=digest.finalize(),
+                                          hash_algorithm=digest._backend_hash_algorithm)
 
         # Normalize s. This is a non-malleability measure, which OpenSSL doesn't do.
         # See Bitcoin's BIP-0062 for more details:
@@ -81,20 +75,12 @@ class Signature(Serializable):
         self.s = s
 
     def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash') -> bool:
-        backend_pk = openssl.point_to_pubkey(CURVE, verifying_key.point()._backend_point)
-        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
-
-        message = digest.finalize()
-        signature_der_bytes = utils.encode_dss_signature(int(self.r), int(self.s))
-
-        # TODO: Raise error instead of returning boolean
-        try:
-            backend_pk.verify(signature=signature_der_bytes,
-                              data=message,
-                              signature_algorithm=signature_algorithm)
-        except InvalidSignature:
-            return False
-        return True
+        return openssl.ecdsa_verify(curve=CURVE,
+                                    sig_r=int(self.r),
+                                    sig_s=int(self.s),
+                                    public_point=verifying_key.point()._backend_point,
+                                    prehashed_message=digest.finalize(),
+                                    hash_algorithm=digest._backend_hash_algorithm)
 
     def verify(self, verifying_key: PublicKey, message: bytes) -> bool:
         """

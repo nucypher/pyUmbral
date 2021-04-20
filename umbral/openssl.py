@@ -1,9 +1,11 @@
 from contextlib import contextmanager
 from typing import Tuple
 
-from cryptography.exceptions import InternalError
+from cryptography.exceptions import InternalError, InvalidSignature
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey, _EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric import utils
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 
 
 class Curve:
@@ -436,3 +438,29 @@ def point_to_pubkey(curve: Curve, point):
 
     evp_pkey = backend._ec_cdata_to_evp_pkey(ec_key)
     return _EllipticCurvePublicKey(backend, ec_key, evp_pkey)
+
+
+#
+# Signing
+#
+
+def ecdsa_sign(curve: Curve, secret_bn, prehashed_message: bytes, hash_algorithm) -> Tuple[int, int]:
+    signature_algorithm = ECDSA(utils.Prehashed(hash_algorithm))
+    private_key = bn_to_privkey(curve, secret_bn)
+    signature_der_bytes = private_key.sign(prehashed_message, signature_algorithm)
+    r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
+    return r_int, s_int
+
+def ecdsa_verify(curve: Curve, sig_r: int, sig_s: int, public_point,
+                 prehashed_message: bytes, hash_algorithm) -> bool:
+    signature_algorithm = ECDSA(utils.Prehashed(hash_algorithm))
+    public_key = point_to_pubkey(curve, public_point)
+    signature_der_bytes = utils.encode_dss_signature(sig_r, sig_s)
+
+    try:
+        public_key.verify(signature=signature_der_bytes,
+                          data=prehashed_message,
+                          signature_algorithm=signature_algorithm)
+    except InvalidSignature:
+        return False
+    return True

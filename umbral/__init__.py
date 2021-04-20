@@ -11,14 +11,6 @@ from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt
 from .signing import Signature, Signer
 
 __all__ = [
-    "__title__",
-    "__summary__",
-    "__version__",
-    "__author__",
-    "__license__",
-    "__copyright__",
-    "__email__",
-    "__url__",
     "SecretKey",
     "PublicKey",
     "SecretKeyFactory",

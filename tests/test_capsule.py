@@ -77,7 +77,7 @@ def test_open_reencrypted(alices_keys, bobs_keys):
                              threshold=threshold,
                              num_kfrags=num_kfrags)
 
-    cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
+    cfrags = [reencrypt(capsule, kfrag).cfrag for kfrag in kfrags]
     key_back = capsule.open_reencrypted(receiving_sk, delegating_pk, cfrags[:threshold])
     assert key_back == key
 
@@ -99,7 +99,7 @@ def test_open_reencrypted(alices_keys, bobs_keys):
                               receiving_pk=receiving_pk,
                               threshold=threshold,
                               num_kfrags=num_kfrags)
-    cfrags2 = [reencrypt(capsule, kfrag) for kfrag in kfrags2]
+    cfrags2 = [reencrypt(capsule, kfrag).cfrag for kfrag in kfrags2]
     with pytest.raises(ValueError, match="CapsuleFrags are not pairwise consistent"):
         capsule.open_reencrypted(receiving_sk, delegating_pk, [cfrags2[0]] + cfrags[:threshold-1])
 

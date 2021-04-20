@@ -173,17 +173,20 @@ Decryption
 
 Bob checks the capsule fragments
 --------------------------------
-Bob can verify that the capsule fragments are valid and really originate from Alice,
+If Bob received the capsule fragments in serialized form,
+he can verify that they are valid and really originate from Alice,
 using Alice's public keys.
 
 .. doctest:: capsule_story
 
-    >>> all(cfrag.verify(capsule,
-    ...                  verifying_pk=alices_verifying_key,
-    ...                  delegating_pk=alices_public_key,
-    ...                  receiving_pk=bobs_public_key)
-    ...     for cfrag in cfrags)
-    True
+    >>> from umbral import CapsuleFrag
+    >>> suspicious_cfrags = [CapsuleFrag.from_bytes(bytes(cfrag)) for cfrag in cfrags]
+    >>> cfrags = [cfrag.verify(capsule,
+    ...                        verifying_pk=alices_verifying_key,
+    ...                        delegating_pk=alices_public_key,
+    ...                        receiving_pk=bobs_public_key,
+    ...                        )
+    ...           for cfrag in suspicious_cfrags]
 
 
 Bob opens the capsule
@@ -196,7 +199,7 @@ Finally, Bob decrypts the re-encrypted ciphertext using his key.
     >>> cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
     ...                                 delegating_pk=alices_public_key,
     ...                                 capsule=capsule,
-    ...                                 cfrags=cfrags,
+    ...                                 verified_cfrags=cfrags,
     ...                                 ciphertext=ciphertext)
 
 

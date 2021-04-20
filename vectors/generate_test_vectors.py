@@ -1,7 +1,7 @@
 import json
 import os
 
-from umbral import SecretKey, PublicKey, Signer, KeyFrag, encrypt, generate_kfrags, reencrypt
+from umbral import SecretKey, PublicKey, Signer, KeyFrag, CapsuleFrag, encrypt, generate_kfrags, reencrypt
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
 from umbral.hashing import Hash, unsafe_hash_to_point
@@ -59,7 +59,7 @@ plain_data = b'peace at dawn'
 
 capsule, ciphertext = encrypt(delegating_pk, plain_data)
 
-cfrag = reencrypt(capsule, kfrags[0])
+cfrag = CapsuleFrag.from_bytes(bytes(reencrypt(capsule, kfrags[0])))
 points = [capsule.point_e, cfrag.point_e1, cfrag.proof.point_e2,
           capsule.point_v, cfrag.point_v1, cfrag.proof.point_v2,
           cfrag.proof.kfrag_commitment, cfrag.proof.kfrag_pok]

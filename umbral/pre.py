@@ -1,7 +1,7 @@
 from typing import Tuple, Optional, Sequence
 
 from .capsule import Capsule
-from .capsule_frag import CapsuleFrag
+from .capsule_frag import VerifiedCapsuleFrag, CapsuleFrag
 from .dem import DEM
 from .keys import PublicKey, SecretKey
 from .key_frag import VerifiedKeyFrag, KeyFrag
@@ -33,7 +33,7 @@ def decrypt_original(sk: SecretKey, capsule: Capsule, ciphertext: bytes) -> byte
 def reencrypt(capsule: Capsule,
               kfrag: VerifiedKeyFrag,
               metadata: Optional[bytes] = None
-              ) -> CapsuleFrag:
+              ) -> VerifiedCapsuleFrag:
     """
     Creates a capsule fragment using the given key fragment.
     Capsule fragments can later be used to decrypt the ciphertext.
@@ -46,19 +46,25 @@ def reencrypt(capsule: Capsule,
     if isinstance(kfrag, KeyFrag) and not isinstance(kfrag, VerifiedKeyFrag):
         raise TypeError("KeyFrag must be verified before reencryption")
 
-    return CapsuleFrag.reencrypted(capsule, kfrag.kfrag, metadata)
+    return VerifiedCapsuleFrag(CapsuleFrag.reencrypted(capsule, kfrag.kfrag, metadata))
 
 
 def decrypt_reencrypted(decrypting_sk: SecretKey,
                         delegating_pk: PublicKey,
                         capsule: Capsule,
-                        cfrags: Sequence[CapsuleFrag],
+                        verified_cfrags: Sequence[VerifiedCapsuleFrag],
                         ciphertext: bytes,
                         ) -> bytes:
     """
     Decrypts the ciphertext using the original capsule and the reencrypted capsule fragments.
     """
+    # We could let duck typing do its work,
+    # but it's better to make a common error more understandable.
+    for cfrag in verified_cfrags:
+        if isinstance(cfrag, CapsuleFrag) and not isinstance(cfrag, VerifiedCapsuleFrag):
+            raise TypeError("All CapsuleFrags must be verified before decryption")
 
+    cfrags = [vcfrag.cfrag for vcfrag in verified_cfrags]
     key_seed = capsule.open_reencrypted(decrypting_sk, delegating_pk, cfrags)
     dem = DEM(bytes(key_seed))
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))

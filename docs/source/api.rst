@@ -47,6 +47,9 @@ Intermediate objects
     :special-members: __eq__, __hash__
     :show-inheritance:
 
+.. autoclass:: VerifiedCapsuleFrag()
+    :special-members: __eq__, __hash__
+
 Encryption, re-encryption and decryption
 ----------------------------------------
 

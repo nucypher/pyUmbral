@@ -6,6 +6,7 @@ from umbral import (
     Signer,
     GenericError,
     KeyFrag,
+    CapsuleFrag,
     encrypt,
     generate_kfrags,
     decrypt_original,
@@ -77,28 +78,14 @@ def test_simple_api(num_kfrags, threshold):
                              num_kfrags=num_kfrags)
 
     # Bob requests re-encryption to some set of M ursulas
-    cfrags = list()
-    for kfrag in kfrags[:threshold]:
-
-        # Re-encryption by an Ursula
-        cfrag = reencrypt(capsule, kfrag)
-
-        # Bob collects the result
-        cfrags.append(cfrag)
-
-    # Bob checks that the received cfrags are valid
-    assert all(cfrag.verify(capsule=capsule,
-                            verifying_pk=verifying_pk,
-                            delegating_pk=delegating_pk,
-                            receiving_pk=receiving_pk,
-                            ) for cfrag in cfrags)
+    cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
 
     # Decryption by Bob
-    plaintext_reenc = decrypt_reencrypted(receiving_sk,
-                                          delegating_pk,
-                                          capsule,
-                                          cfrags[:threshold],
-                                          ciphertext,
+    plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+                                          delegating_pk=delegating_pk,
+                                          capsule=capsule,
+                                          verified_cfrags=cfrags[:threshold],
+                                          ciphertext=ciphertext,
                                           )
 
     assert plaintext_reenc == plaintext
@@ -108,3 +95,19 @@ def test_reencrypt_unverified_kfrag(capsule, kfrags):
     kfrag = KeyFrag.from_bytes(bytes(kfrags[0]))
     with pytest.raises(TypeError):
         reencrypt(capsule, kfrag)
+
+
+def test_decrypt_unverified_cfrag(verification_keys, bobs_keys, capsule_and_ciphertext, kfrags):
+    verifying_pk, delegating_pk, receiving_pk = verification_keys
+    receiving_sk, _receiving_pk = bobs_keys
+    capsule, ciphertext = capsule_and_ciphertext
+
+    cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
+    cfrags[0] = CapsuleFrag.from_bytes(bytes(cfrags[0]))
+    with pytest.raises(TypeError):
+        plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+                                              delegating_pk=delegating_pk,
+                                              capsule=capsule,
+                                              verified_cfrags=cfrags,
+                                              ciphertext=ciphertext,
+                                              )

@@ -3,6 +3,7 @@ from typing import Sequence, Optional, Tuple
 from .capsule import Capsule
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
+from .errors import VerificationError
 from .hashing import Hash, hash_to_cfrag_verification, kfrag_signature_message
 from .keys import PublicKey, SecretKey
 from .key_frag import KeyFrag, KeyFragID
@@ -163,7 +164,7 @@ class CapsuleFrag(Serializable):
                delegating_pk: PublicKey,
                receiving_pk: PublicKey,
                metadata: Optional[bytes] = None,
-               ) -> bool:
+               ) -> 'VerifiedCapsuleFrag':
         """
         Verifies the validity of this fragment.
 
@@ -203,7 +204,7 @@ class CapsuleFrag(Serializable):
                                                 maybe_receiving_pk=receiving_pk)
 
         if not self.proof.kfrag_signature.verify(verifying_pk, kfrag_message):
-            return False
+            raise VerificationError("Invalid KeyFrag signature")
 
         z = self.proof.signature
 
@@ -215,6 +216,30 @@ class CapsuleFrag(Serializable):
         correct_reencryption_of_v = v * z == v2 + v1 * h
         correct_rk_commitment = u * z == u2 + u1 * h
 
-        return (correct_reencryption_of_e
-                and correct_reencryption_of_v
-                and correct_rk_commitment)
+        if not (correct_reencryption_of_e and correct_reencryption_of_v and correct_rk_commitment):
+            raise VerificationError("Failed to verify reencryption proof")
+
+        return VerifiedCapsuleFrag(self)
+
+
+class VerifiedCapsuleFrag:
+    """
+    Verified capsule frag, good for decryption.
+    Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
+    It can only be obtained from :py:meth:`CapsuleFrag.verify`.
+    """
+
+    def __init__(self, cfrag: CapsuleFrag):
+        self.cfrag = cfrag
+
+    def __bytes__(self):
+        return bytes(self.cfrag)
+
+    def __eq__(self, other):
+        return self.cfrag == other.cfrag
+
+    def __hash__(self):
+        return hash((self.__class__, bytes(self)))
+
+    def __str__(self):
+        return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"

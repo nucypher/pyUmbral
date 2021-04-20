@@ -3,7 +3,7 @@ from .__about__ import (
 )
 
 from .capsule import Capsule
-from .capsule_frag import CapsuleFrag
+from .capsule_frag import CapsuleFrag, VerifiedCapsuleFrag
 from .errors import GenericError, VerificationError
 from .key_frag import KeyFrag, VerifiedKeyFrag, generate_kfrags
 from .keys import SecretKey, PublicKey, SecretKeyFactory
@@ -28,6 +28,7 @@ __all__ = [
     "KeyFrag",
     "VerifiedKeyFrag",
     "CapsuleFrag",
+    "VerifiedCapsuleFrag",
     "GenericError",
     "VerificationError",
     "encrypt",

@@ -1,7 +1,7 @@
 import pytest
 
-from umbral import KeyFrag, PublicKey, Signer, generate_kfrags, VerificationError
-from umbral.key_frag import KeyFragID
+from umbral import KeyFrag, PublicKey, Signer, VerificationError
+from umbral.key_frag import KeyFragID, KeyFragBase
 from umbral.curve_scalar import CurveScalar
 
 
@@ -59,15 +59,14 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
     verifying_pk = PublicKey.from_secret_key(signing_sk)
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
-    kfrags = generate_kfrags(delegating_sk=delegating_sk,
-                             signer=Signer(signing_sk),
-                             receiving_pk=receiving_pk,
-                             threshold=6,
-                             num_kfrags=10,
-                             sign_delegating_key=sign_delegating_key,
-                             sign_receiving_key=sign_receiving_key)
+    base = KeyFragBase(delegating_sk=delegating_sk,
+                       receiving_pk=receiving_pk,
+                       signer=Signer(signing_sk),
+                       threshold=6)
 
-    kfrag = kfrags[0]
+    kfrag = KeyFrag.from_base(base=base,
+                              sign_delegating_key=sign_delegating_key,
+                              sign_receiving_key=sign_receiving_key)
 
     # serialize/deserialize to make sure sign_* fields are serialized correctly
     kfrag = KeyFrag.from_bytes(bytes(kfrag))
@@ -87,6 +86,17 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
             verification_passed = False
 
         assert verification_passed == should_verify
+
+
+def test_wrong_threshold(alices_keys, bobs_keys):
+    delegating_sk, signing_sk = alices_keys
+    _receiving_sk, receiving_pk = bobs_keys
+
+    with pytest.raises(ValueError):
+        KeyFragBase(delegating_sk=delegating_sk,
+                    receiving_pk=receiving_pk,
+                    signer=Signer(signing_sk),
+                    threshold=0)
 
 
 def test_kfrag_is_hashable(verification_keys, kfrags):
@@ -114,25 +124,3 @@ def test_kfrag_str(kfrags):
     s = str(KeyFrag.from_bytes(bytes(kfrags[0])))
     assert "VerifiedKeyFrag" not in s
     assert "KeyFrag" in s
-
-
-WRONG_PARAMETERS = (
-    # (num_kfrags, threshold)
-    (-1, -1),   (-1, 0),    (-1, 5),
-    (0, -1),    (0, 0),     (0, 5),
-    (1, -1),    (1, 0),     (1, 5),
-    (5, -1),    (5, 0),     (5, 10)
-)
-
-@pytest.mark.parametrize("num_kfrags, threshold", WRONG_PARAMETERS)
-def test_wrong_threshold_and_num_kfrags(num_kfrags, threshold, alices_keys, bobs_keys):
-
-    delegating_sk, signing_sk = alices_keys
-    _receiving_sk, receiving_pk = bobs_keys
-
-    with pytest.raises(ValueError):
-        generate_kfrags(delegating_sk=delegating_sk,
-                        signer=Signer(signing_sk),
-                        receiving_pk=receiving_pk,
-                        threshold=threshold,
-                        num_kfrags=num_kfrags)

@@ -5,9 +5,9 @@ from .__about__ import (
 from .capsule import Capsule
 from .capsule_frag import CapsuleFrag, VerifiedCapsuleFrag
 from .errors import GenericError, VerificationError
-from .key_frag import KeyFrag, VerifiedKeyFrag, generate_kfrags
+from .key_frag import KeyFrag, VerifiedKeyFrag
 from .keys import SecretKey, PublicKey, SecretKeyFactory
-from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt
+from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt, generate_kfrags
 from .signing import Signature, Signer
 
 __all__ = [

@@ -111,3 +111,16 @@ def test_decrypt_unverified_cfrag(verification_keys, bobs_keys, capsule_and_ciph
                                               verified_cfrags=cfrags,
                                               ciphertext=ciphertext,
                                               )
+
+
+def test_wrong_num_kfrags(alices_keys, bobs_keys):
+    delegating_sk, signing_sk = alices_keys
+    _receiving_sk, receiving_pk = bobs_keys
+
+    # Trying to create less kfrags than the threshold
+    with pytest.raises(ValueError):
+        generate_kfrags(delegating_sk=delegating_sk,
+                        signer=Signer(signing_sk),
+                        receiving_pk=receiving_pk,
+                        threshold=3,
+                        num_kfrags=2)

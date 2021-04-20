@@ -116,9 +116,9 @@ def _verify_kfrags(umbral, kfrags_bytes, verifying_pk_bytes, delegating_pk_bytes
     verifying_pk = umbral.PublicKey.from_bytes(verifying_pk_bytes)
     delegating_pk = umbral.PublicKey.from_bytes(delegating_pk_bytes)
     receiving_pk = umbral.PublicKey.from_bytes(receiving_pk_bytes)
-    assert all(kfrag.verify(verifying_pk=verifying_pk,
-                            delegating_pk=delegating_pk,
-                            receiving_pk=receiving_pk) for kfrag in kfrags)
+    return [kfrag.verify(verifying_pk=verifying_pk,
+                         delegating_pk=delegating_pk,
+                         receiving_pk=receiving_pk) for kfrag in kfrags]
 
 
 def test_kfrags(implementations):
@@ -142,10 +142,12 @@ def test_kfrags(implementations):
     _verify_kfrags(umbral2, kfrags_bytes, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
 
 
-def _reencrypt(umbral, capsule_bytes, kfrags_bytes, threshold, metadata):
+def _reencrypt(umbral, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
+               capsule_bytes, kfrags_bytes, threshold, metadata):
     capsule = umbral.Capsule.from_bytes(bytes(capsule_bytes))
-    kfrags = [umbral.KeyFrag.from_bytes(kfrag_bytes) for kfrag_bytes in kfrags_bytes]
-    cfrags = [umbral.reencrypt(capsule, kfrag, metadata=metadata) for kfrag in kfrags[:threshold]]
+    verified_kfrags = _verify_kfrags(umbral, kfrags_bytes,
+                                     verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
+    cfrags = [umbral.reencrypt(capsule, kfrag, metadata=metadata) for kfrag in verified_kfrags[:threshold]]
     return [bytes(cfrag) for cfrag in cfrags]
 
 
@@ -200,7 +202,8 @@ def test_reencrypt(implementations):
 
     # On client 2
 
-    cfrags_bytes = _reencrypt(umbral2, capsule_bytes, kfrags_bytes, threshold, metadata)
+    cfrags_bytes = _reencrypt(umbral2, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
+                              capsule_bytes, kfrags_bytes, threshold, metadata)
 
     # On client 1
 

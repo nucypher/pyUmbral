@@ -18,6 +18,17 @@ def bobs_keys():
 
 
 @pytest.fixture
+def verification_keys(alices_keys, bobs_keys):
+    delegating_sk, signing_sk = alices_keys
+    _receiving_sk, receiving_pk = bobs_keys
+
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
+    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+
+    return verifying_pk, delegating_pk, receiving_pk
+
+
+@pytest.fixture
 def kfrags(alices_keys, bobs_keys):
     delegating_sk, signing_sk = alices_keys
     receiving_sk, receiving_pk = bobs_keys

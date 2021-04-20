@@ -3,6 +3,7 @@ from typing import Tuple, List, Optional
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
+from .errors import VerificationError
 from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
@@ -200,7 +201,7 @@ class KeyFrag(Serializable):
                verifying_pk: PublicKey,
                delegating_pk: Optional[PublicKey] = None,
                receiving_pk: Optional[PublicKey] = None,
-               ) -> bool:
+               ) -> 'VerifiedKeyFrag':
         """
         Verifies the validity of this fragment.
 
@@ -215,16 +216,16 @@ class KeyFrag(Serializable):
         commitment = self.proof.commitment
         precursor = self.precursor
 
-        # We check that the commitment is well-formed
         if commitment != u * key:
-            return False
+            raise VerificationError("Invalid kfrag commitment")
 
-        # A shortcut, perhaps not necessary
-        delegating_key_missing = self.proof.delegating_key_signed and not bool(delegating_pk)
-        receiving_key_missing = self.proof.receiving_key_signed and not bool(receiving_pk)
+        if self.proof.delegating_key_signed and not bool(delegating_pk):
+            raise VerificationError("A signature of a delegating key was included in this kfrag, "
+                                    "but the key is not provided")
 
-        if delegating_key_missing or receiving_key_missing:
-            return False
+        if self.proof.receiving_key_signed and not bool(receiving_pk):
+            raise VerificationError("A signature of a receiving key was included in this kfrag, "
+                                    "but the key is not provided")
 
         delegating_pk = delegating_pk if self.proof.delegating_key_signed else None
         receiving_pk = receiving_pk if self.proof.receiving_key_signed else None
@@ -233,7 +234,33 @@ class KeyFrag(Serializable):
                                                 precursor=precursor,
                                                 maybe_delegating_pk=delegating_pk,
                                                 maybe_receiving_pk=receiving_pk)
-        return self.proof.signature_for_proxy.verify(verifying_pk, kfrag_message)
+        if not self.proof.signature_for_proxy.verify(verifying_pk, kfrag_message):
+            raise VerificationError("Failed to verify the kfrag signature")
+
+        return VerifiedKeyFrag(self)
+
+
+class VerifiedKeyFrag:
+    """
+    Verified kfrag, good for reencryption.
+    Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
+    It can only be obtained from :py:meth:`KeyFrag.verify`.
+    """
+
+    def __init__(self, kfrag: KeyFrag):
+        self.kfrag = kfrag
+
+    def __bytes__(self):
+        return bytes(self.kfrag)
+
+    def __eq__(self, other):
+        return self.kfrag == other.kfrag
+
+    def __hash__(self):
+        return hash((self.__class__, bytes(self)))
+
+    def __str__(self):
+        return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"
 
 
 class KeyFragBase:
@@ -291,7 +318,7 @@ def generate_kfrags(delegating_sk: SecretKey,
                     num_kfrags: int,
                     sign_delegating_key: bool = True,
                     sign_receiving_key: bool = True,
-                    ) -> List[KeyFrag]:
+                    ) -> List[VerifiedKeyFrag]:
     """
     Generates ``num_kfrags`` key fragments to pass to proxies for re-encryption.
     At least ``threshold`` of them will be needed for decryption.
@@ -305,4 +332,8 @@ def generate_kfrags(delegating_sk: SecretKey,
     if num_kfrags < threshold:
         raise ValueError(f"Creating less kfrags ({num_kfrags}) than threshold ({threshold}) makes them useless")
 
-    return [KeyFrag.from_base(base, sign_delegating_key, sign_receiving_key) for _ in range(num_kfrags)]
+    kfrags = [KeyFrag.from_base(base, sign_delegating_key, sign_receiving_key)
+              for _ in range(num_kfrags)]
+
+    # Make them verified - we know they're good.
+    return [VerifiedKeyFrag(kfrag) for kfrag in kfrags]

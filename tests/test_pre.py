@@ -5,6 +5,7 @@ from umbral import (
     PublicKey,
     Signer,
     GenericError,
+    KeyFrag,
     encrypt,
     generate_kfrags,
     decrypt_original,
@@ -78,10 +79,6 @@ def test_simple_api(num_kfrags, threshold):
     # Bob requests re-encryption to some set of M ursulas
     cfrags = list()
     for kfrag in kfrags[:threshold]:
-        # Ursula checks that the received kfrag is valid
-        assert kfrag.verify(verifying_pk=verifying_pk,
-                            delegating_pk=delegating_pk,
-                            receiving_pk=receiving_pk)
 
         # Re-encryption by an Ursula
         cfrag = reencrypt(capsule, kfrag)
@@ -105,3 +102,9 @@ def test_simple_api(num_kfrags, threshold):
                                           )
 
     assert plaintext_reenc == plaintext
+
+
+def test_reencrypt_unverified_kfrag(capsule, kfrags):
+    kfrag = KeyFrag.from_bytes(bytes(kfrags[0]))
+    with pytest.raises(TypeError):
+        reencrypt(capsule, kfrag)

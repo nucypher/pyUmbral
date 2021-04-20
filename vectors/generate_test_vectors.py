@@ -1,7 +1,7 @@
 import json
 import os
 
-from umbral import SecretKey, PublicKey, Signer, encrypt, generate_kfrags, reencrypt
+from umbral import SecretKey, PublicKey, Signer, KeyFrag, encrypt, generate_kfrags, reencrypt
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
 from umbral.hashing import Hash, unsafe_hash_to_point
@@ -207,7 +207,8 @@ create_test_vector_file(vector_suite, 'vectors_unsafe_hash_to_point.json', gener
 
 vectors = list()
 for kfrag in kfrags:
-    assert kfrag.verify(verifying_pk, delegating_pk, receiving_pk)
+    kfrag = KeyFrag.from_bytes(bytes(kfrag))
+    kfrag.verify(verifying_pk, delegating_pk, receiving_pk)
 
     json_input = {'kfrag': hexlify(kfrag)}
 

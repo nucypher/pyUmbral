@@ -4,7 +4,7 @@ from .capsule import Capsule
 from .capsule_frag import CapsuleFrag
 from .dem import DEM
 from .keys import PublicKey, SecretKey
-from .key_frag import KeyFrag
+from .key_frag import VerifiedKeyFrag, KeyFrag
 
 
 def encrypt(pk: PublicKey, plaintext: bytes) -> Tuple[Capsule, bytes]:
@@ -30,7 +30,10 @@ def decrypt_original(sk: SecretKey, capsule: Capsule, ciphertext: bytes) -> byte
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
 
 
-def reencrypt(capsule: Capsule, kfrag: KeyFrag, metadata: Optional[bytes] = None) -> CapsuleFrag:
+def reencrypt(capsule: Capsule,
+              kfrag: VerifiedKeyFrag,
+              metadata: Optional[bytes] = None
+              ) -> CapsuleFrag:
     """
     Creates a capsule fragment using the given key fragment.
     Capsule fragments can later be used to decrypt the ciphertext.
@@ -38,7 +41,12 @@ def reencrypt(capsule: Capsule, kfrag: KeyFrag, metadata: Optional[bytes] = None
     If `metadata` is provided, it will have to be used for verification in
     :py:meth:`CapsuleFrag.verify`.
     """
-    return CapsuleFrag.reencrypted(capsule, kfrag, metadata)
+    # We could let duck typing do its work,
+    # but it's better to make a common error more understandable.
+    if isinstance(kfrag, KeyFrag) and not isinstance(kfrag, VerifiedKeyFrag):
+        raise TypeError("KeyFrag must be verified before reencryption")
+
+    return CapsuleFrag.reencrypted(capsule, kfrag.kfrag, metadata)
 
 
 def decrypt_reencrypted(decrypting_sk: SecretKey,

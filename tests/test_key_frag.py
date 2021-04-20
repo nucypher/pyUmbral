@@ -1,54 +1,48 @@
 import pytest
 
-from umbral import KeyFrag, PublicKey, Signer, generate_kfrags
+from umbral import KeyFrag, PublicKey, Signer, generate_kfrags, VerificationError
 from umbral.key_frag import KeyFragID
 from umbral.curve_scalar import CurveScalar
 
 
-def test_kfrag_serialization(alices_keys, bobs_keys, kfrags):
+def test_kfrag_serialization(verification_keys, kfrags):
 
-    delegating_sk, signing_sk = alices_keys
-    _receiving_sk, receiving_pk = bobs_keys
-
-    verifying_pk = PublicKey.from_secret_key(signing_sk)
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    verifying_pk, delegating_pk, receiving_pk = verification_keys
 
     for kfrag in kfrags:
         kfrag_bytes = bytes(kfrag)
         new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
 
-        assert new_kfrag.verify(verifying_pk=verifying_pk,
-                                delegating_pk=delegating_pk,
-                                receiving_pk=receiving_pk)
+        new_kfrag = new_kfrag.verify(verifying_pk=verifying_pk,
+                                     delegating_pk=delegating_pk,
+                                     receiving_pk=receiving_pk)
 
         assert new_kfrag == kfrag
 
 
-def test_kfrag_verification(alices_keys, bobs_keys, kfrags):
+def test_kfrag_verification(verification_keys, kfrags):
 
-    delegating_sk, signing_sk = alices_keys
-    _receiving_sk, receiving_pk = bobs_keys
-
-    verifying_pk = PublicKey.from_secret_key(signing_sk)
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    verifying_pk, delegating_pk, receiving_pk = verification_keys
 
     # Wrong signature
     kfrag = kfrags[0]
-    kfrag.id = KeyFragID.random()
+    kfrag.kfrag.id = KeyFragID.random()
     kfrag_bytes = bytes(kfrag)
     new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
-    assert not new_kfrag.verify(verifying_pk=verifying_pk,
-                                delegating_pk=delegating_pk,
-                                receiving_pk=receiving_pk)
+    with pytest.raises(VerificationError):
+        new_kfrag.verify(verifying_pk=verifying_pk,
+                         delegating_pk=delegating_pk,
+                         receiving_pk=receiving_pk)
 
     # Wrong key
     kfrag = kfrags[1]
-    kfrag.key = CurveScalar.random_nonzero()
+    kfrag.kfrag.key = CurveScalar.random_nonzero()
     kfrag_bytes = bytes(kfrag)
     new_kfrag = KeyFrag.from_bytes(kfrag_bytes)
-    assert not new_kfrag.verify(verifying_pk=verifying_pk,
-                                delegating_pk=delegating_pk,
-                                receiving_pk=receiving_pk)
+    with pytest.raises(VerificationError):
+        new_kfrag.verify(verifying_pk=verifying_pk,
+                         delegating_pk=delegating_pk,
+                         receiving_pk=receiving_pk)
 
 
 @pytest.mark.parametrize('sign_delegating_key',
@@ -84,23 +78,41 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
         receiving_key_ok = (not sign_receiving_key) or pass_receiving_key
         should_verify = delegating_key_ok and receiving_key_ok
 
-        result = kfrag.verify(verifying_pk=verifying_pk,
-                              delegating_pk=delegating_pk if pass_delegating_key else None,
-                              receiving_pk=receiving_pk if pass_receiving_key else None)
+        verification_passed = True
+        try:
+            kfrag.verify(verifying_pk=verifying_pk,
+                         delegating_pk=delegating_pk if pass_delegating_key else None,
+                         receiving_pk=receiving_pk if pass_receiving_key else None)
+        except VerificationError:
+            verification_passed = False
 
-        assert result == should_verify
+        assert verification_passed == should_verify
 
 
-def test_kfrag_is_hashable(kfrags):
+def test_kfrag_is_hashable(verification_keys, kfrags):
+
+    verifying_pk, delegating_pk, receiving_pk = verification_keys
 
     assert hash(kfrags[0]) != hash(kfrags[1])
 
     new_kfrag = KeyFrag.from_bytes(bytes(kfrags[0]))
-    assert hash(new_kfrag) == hash(kfrags[0])
+
+    # Not verified yet
+    assert hash(new_kfrag) != hash(kfrags[0])
+
+    verified_kfrag = new_kfrag.verify(verifying_pk=verifying_pk,
+                                      delegating_pk=delegating_pk,
+                                      receiving_pk=receiving_pk)
+
+    assert hash(verified_kfrag) == hash(kfrags[0])
 
 
 def test_kfrag_str(kfrags):
     s = str(kfrags[0])
+    assert "VerifiedKeyFrag" in s
+
+    s = str(KeyFrag.from_bytes(bytes(kfrags[0])))
+    assert "VerifiedKeyFrag" not in s
     assert "KeyFrag" in s
 
 

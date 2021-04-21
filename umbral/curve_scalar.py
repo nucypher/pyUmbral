@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Union, Tuple
 
 from . import openssl
 from .curve import CURVE
@@ -66,7 +66,7 @@ class CurveScalar(Serializable):
         """
         Compares the two BIGNUMS or int.
         """
-        if type(other) == int:
+        if isinstance(other, int):
             other = CurveScalar.from_int(other)
         return openssl.bn_cmp(self._backend_bignum, other._backend_bignum) == 0
 
@@ -83,7 +83,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_mul(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_mul(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def __add__(self, other : Union[int, 'CurveScalar']) -> 'CurveScalar':
         """
@@ -91,7 +93,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_add(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_add(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def __sub__(self, other : Union[int, 'CurveScalar']) -> 'CurveScalar':
         """
@@ -99,7 +103,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_sub(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_sub(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def invert(self) -> 'CurveScalar':
         """

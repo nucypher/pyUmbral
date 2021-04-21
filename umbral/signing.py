@@ -24,8 +24,9 @@ class Signer:
 
     def sign_digest(self, digest: 'Hash') -> 'Signature':
 
+        secret_bn = self.__secret_key.secret_scalar()._backend_bignum
         r_int, s_int = openssl.ecdsa_sign(curve=CURVE,
-                                          secret_bn=self.__secret_key.secret_scalar()._backend_bignum,
+                                          secret_bn=secret_bn,
                                           prehashed_message=digest.finalize(),
                                           hash_algorithm=digest._backend_hash_algorithm)
 

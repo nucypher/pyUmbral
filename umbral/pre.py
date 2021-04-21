@@ -50,7 +50,8 @@ def generate_kfrags(delegating_sk: SecretKey,
 
     # Technically we could allow it, but what would be the use of these kfrags?
     if num_kfrags < threshold:
-        raise ValueError(f"Creating less kfrags ({num_kfrags}) than threshold ({threshold}) makes them useless")
+        raise ValueError(f"Creating less kfrags ({num_kfrags}) "
+                         f"than threshold ({threshold}) makes them useless")
 
     kfrags = [KeyFrag.from_base(base, sign_delegating_key, sign_receiving_key)
               for _ in range(num_kfrags)]
@@ -97,4 +98,3 @@ def decrypt_reencrypted(decrypting_sk: SecretKey,
     key_seed = capsule.open_reencrypted(decrypting_sk, delegating_pk, cfrags)
     dem = DEM(bytes(key_seed))
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
-

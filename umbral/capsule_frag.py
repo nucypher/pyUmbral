@@ -1,11 +1,11 @@
-from typing import Sequence, Optional, Tuple
+from typing import Optional, Tuple
 
 from .capsule import Capsule
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
 from .errors import VerificationError
-from .hashing import Hash, hash_to_cfrag_verification, kfrag_signature_message
-from .keys import PublicKey, SecretKey
+from .hashing import hash_to_cfrag_verification, kfrag_signature_message
+from .keys import PublicKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
 from .serializable import Serializable
@@ -170,7 +170,6 @@ class CapsuleFrag(Serializable):
 
         ``metadata`` should coincide with the one given to :py:func:`reencrypt`.
         """
-
 
         params = PARAMETERS
 

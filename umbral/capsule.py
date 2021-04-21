@@ -5,7 +5,6 @@ from .curve_scalar import CurveScalar
 from .errors import GenericError
 from .hashing import hash_capsule_points, hash_to_polynomial_arg, hash_to_shared_secret
 from .keys import PublicKey, SecretKey
-from .params import PARAMETERS
 from .serializable import Serializable
 if TYPE_CHECKING: # pragma: no cover
     from .capsule_frag import CapsuleFrag
@@ -13,10 +12,10 @@ if TYPE_CHECKING: # pragma: no cover
 
 def lambda_coeff(xs: Sequence[CurveScalar], i: int) -> CurveScalar:
     res = CurveScalar.one()
-    for j in range(len(xs)):
+    for j, xs_j in enumerate(xs):
         if j != i:
-            inv_diff = (xs[j] - xs[i]).invert()
-            res = (res * xs[j]) * inv_diff
+            inv_diff = (xs_j - xs[i]).invert()
+            res = (res * xs_j) * inv_diff
     return res
 
 

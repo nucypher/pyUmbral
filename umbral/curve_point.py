@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Tuple
 
 from . import openssl
 from .curve import CURVE
@@ -80,7 +80,7 @@ class CurvePoint(Serializable):
         """
         Performs subtraction by adding the inverse of the `other` to the point.
         """
-        return (self + (-other))
+        return self + (-other)
 
     def __neg__(self) -> 'CurvePoint':
         """

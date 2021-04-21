@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Type, Iterable, Union, List, cast
+from typing import TYPE_CHECKING, Optional, Iterable, Union, List, cast
 
 from cryptography.hazmat.primitives import hashes
 
@@ -63,7 +63,9 @@ def hash_to_shared_secret(precursor: CurvePoint,
     return CurveScalar.from_digest(digest)
 
 
-def hash_to_cfrag_verification(points: Iterable[CurvePoint], metadata: Optional[bytes] = None) -> CurveScalar:
+def hash_to_cfrag_verification(points: Iterable[CurvePoint],
+                               metadata: Optional[bytes] = None
+                               ) -> CurveScalar:
     digest = Hash(b"CFRAG_VERIFICATION")
     for point in points:
         digest.update(point)
@@ -90,7 +92,9 @@ def kfrag_signature_message(kfrag_id: 'KeyFragID',
                        if maybe_receiving_pk
                        else [serialize_bool(False)])
 
-    components = [bytes(kfrag_id), bytes(commitment), bytes(precursor)] + delegating_part + receiving_part
+    components = ([bytes(kfrag_id), bytes(commitment), bytes(precursor)] +
+                  delegating_part +
+                  receiving_part)
 
     return b''.join(components)
 

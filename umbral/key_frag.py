@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List, Optional
+from typing import List, Optional
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar

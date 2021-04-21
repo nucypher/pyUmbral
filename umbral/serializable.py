@@ -25,7 +25,8 @@ class Serializable(ABC):
         Takes ``size`` bytes from the bytestring and returns them along with the remainder.
         """
         if len(data) < size:
-            raise ValueError(f"{cls} cannot take {size} bytes from a bytestring of size {len(data)}")
+            raise ValueError(f"{cls} cannot take {size} bytes "
+                             f"from a bytestring of size {len(data)}")
         return data[:size], data[size:]
 
     @classmethod
@@ -70,5 +71,6 @@ def take_bool(data: bytes) -> Tuple[bool, bytes]:
     elif bool_bytes == b'\x00':
         b = False
     else:
-        raise ValueError(f"Incorrectly serialized boolean; expected b'\\x00' or b'\\x01', got {repr(bool_bytes)}")
+        raise ValueError("Incorrectly serialized boolean; "
+                         f"expected b'\\x00' or b'\\x01', got {repr(bool_bytes)}")
     return b, data

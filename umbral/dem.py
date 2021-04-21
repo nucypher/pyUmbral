@@ -52,18 +52,18 @@ class DEM:
     def decrypt(self, nonce_and_ciphertext: bytes, authenticated_data: bytes = b"") -> bytes:
 
         if len(nonce_and_ciphertext) < self.NONCE_SIZE:
-            raise ValueError(f"The ciphertext must include the nonce")
+            raise ValueError("The ciphertext must include the nonce")
 
         nonce = nonce_and_ciphertext[:self.NONCE_SIZE]
         ciphertext = nonce_and_ciphertext[self.NONCE_SIZE:]
 
         # Prevent an out of bounds error deep in NaCl
         if len(ciphertext) < self.TAG_SIZE:
-            raise ValueError(f"The authentication tag is missing or malformed")
+            raise ValueError("The authentication tag is missing or malformed")
 
         try:
             return xchacha_decrypt(ciphertext, authenticated_data, nonce, self._key)
-        except nacl.exceptions.CryptoError:
+        except nacl.exceptions.CryptoError as e:
             raise GenericError("Decryption of ciphertext failed: "
                                "either someone tampered with the ciphertext or "
-                               "you are using an incorrect decryption key.")
+                               "you are using an incorrect decryption key.") from e

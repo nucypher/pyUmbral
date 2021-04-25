@@ -76,6 +76,7 @@ def test_signature_is_hashable():
     assert hash(signature) != hash(signature2)
 
     signature_restored = Signature.from_bytes(bytes(signature))
+    assert signature == signature_restored
     assert hash(signature) == hash(signature_restored)
 
     # Different hash, since signing involves some randomness

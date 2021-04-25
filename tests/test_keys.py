@@ -17,6 +17,11 @@ def test_gen_key():
     assert pk == pk2
 
 
+def test_secret_scalar():
+    sk = SecretKey.random()
+    assert sk.secret_scalar() == sk._scalar_key
+
+
 def test_derive_key_from_label():
     factory = SecretKeyFactory.random()
 

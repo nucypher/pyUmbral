@@ -19,7 +19,7 @@ import os
 import sys
 import time
 
-from passlib.hash import argon2, pbkdf2_sha256, scrypt
+from passlib.hash import argon2, pbkdf2_sha512, scrypt, bcrypt_sha256
 
 from umbral.keys import Scrypt
 
@@ -35,7 +35,8 @@ SCRYPT_COST_SENSITIVE = 20
 def run_argon2(password, salt):
     argon2.using(
         salt=salt,
-        rounds=2
+        rounds=2,
+        type='ID'
     ).hash(password)
 
 
@@ -70,14 +71,17 @@ def run_passlib_scrypt_sensitive(password, salt):
 
 
 def run_bcrypt(password, salt):
-    scrypt.using(
-        salt=salt,
-        rounds=12  # default
+    bcrypt_sha256.using(
+        # salt=salt, # generate salt
+        rounds=12
     ).hash(password)
 
 
 def run_pbkdf2_sha512(password, salt):
-    pbkdf2_sha256.using(salt=salt).hash(password)
+    pbkdf2_sha512.using(
+        salt=salt,
+        rounds=100_000
+    ).hash(password)
 
 
 ALGOS = [
@@ -99,5 +103,5 @@ ALGOS = [
 @pytest.mark.parametrize("func", ALGOS)
 def test_kdf_algos_benchmark(benchmark, func) -> None:
     args, kwargs = tuple(), {'salt': b'salt-salt', 'password': b'password'}
-    benchmark.pedantic(func, args=args, kwargs=kwargs, iterations=1, rounds=5)
+    benchmark.pedantic(func, args=args, kwargs=kwargs, iterations=5, rounds=10)
     assert True  # ensure function finishes and succeeds.

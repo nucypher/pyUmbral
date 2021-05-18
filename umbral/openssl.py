@@ -233,7 +233,7 @@ def _bn_size(bn):
     return BACKEND_LIB.BN_num_bytes(bn)
 
 
-def bn_to_int(bn):
+def bn_to_int(bn) -> int:
     return backend._bn_to_int(bn)
 
 
@@ -316,23 +316,6 @@ def _point_new(ec_group):
     return new_point
 
 
-def point_from_affine_coords(curve: Curve, affine_x: int, affine_y: int):
-    """
-    Returns an EC_POINT given the group of a curve and the affine coordinates
-    provided.
-    """
-    bn_affine_x = bn_from_int(affine_x)
-    bn_affine_y = bn_from_int(affine_y)
-
-    new_point = _point_new(curve.ec_group)
-    with tmp_bn_ctx() as bn_ctx:
-        res = BACKEND_LIB.EC_POINT_set_affine_coordinates_GFp(
-            curve.ec_group, new_point, bn_affine_x, bn_affine_y, bn_ctx
-        )
-        backend.openssl_assert(res == 1)
-    return new_point
-
-
 def point_to_affine_coords(curve: Curve, point) -> Tuple[int, int]:
     """
     Returns the affine coordinates of a given point on the provided ec_group.
@@ -340,11 +323,14 @@ def point_to_affine_coords(curve: Curve, point) -> Tuple[int, int]:
     affine_x = _bn_new()
     affine_y = _bn_new()
 
-    with tmp_bn_ctx() as bn_ctx:
-        res = BACKEND_LIB.EC_POINT_get_affine_coordinates_GFp(
-            curve.ec_group, point, affine_x, affine_y, bn_ctx
-        )
-        backend.openssl_assert(res == 1)
+    try:
+        with tmp_bn_ctx() as bn_ctx:
+            res = BACKEND_LIB.EC_POINT_get_affine_coordinates_GFp(
+                curve.ec_group, point, affine_x, affine_y, bn_ctx
+            )
+            backend.openssl_assert(res == 1)
+    except InternalError as e:
+        raise ValueError("Cannot get affine coordinates of an identity point")
 
     return bn_to_int(affine_x), bn_to_int(affine_y)
 

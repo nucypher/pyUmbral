@@ -1,7 +1,9 @@
 import json
 import os
 
-from umbral import SecretKey, PublicKey, Signer, KeyFrag, CapsuleFrag, encrypt, generate_kfrags, reencrypt
+from umbral import (
+    SecretKey, PublicKey, Signer, KeyFrag, CapsuleFrag,
+    encrypt, generate_kfrags, reencrypt)
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
 from umbral.hashing import Hash, unsafe_hash_to_point
@@ -15,9 +17,7 @@ from umbral.dem import DEM, kdf
 def hexlify(data):
     if isinstance(data, int):
         return hex(data)[2:]
-    try:
-        return data.to_bytes().hex()
-    except AttributeError:
+    else:
         return bytes(data).hex()
 
 

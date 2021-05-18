@@ -26,15 +26,6 @@ class CurvePoint(Serializable):
         """
         return cls.generator() * CurveScalar.random_nonzero()
 
-    @classmethod
-    def from_affine(cls, affine_x: int, affine_y: int) -> 'CurvePoint':
-        """
-        Returns a CurvePoint object from the given affine coordinates in a tuple in
-        the format of (x, y) and a given curve.
-        """
-        backend_point = openssl.point_from_affine_coords(CURVE, affine_x, affine_y)
-        return cls(backend_point)
-
     def to_affine(self) -> Tuple[int, int]:
         """
         Returns a tuple of Python ints in the format of (x, y) that represents

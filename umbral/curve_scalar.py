@@ -37,12 +37,12 @@ class CurveScalar(Serializable):
 
     @classmethod
     def from_digest(cls, digest: 'Hash') -> 'CurveScalar':
-        # TODO (#39): to be replaced by the standard algroithm.
-        # Currently just matching what we have in RustCrypto stack
+        # TODO (#39): this is used in Umbral scheme itself,
+        # and needs to be able to return a guaranteed nonzero scalar.
+        # Currently just matching what we have in rust-umbral
         # (taking bytes modulo curve order).
         # Can produce zeros!
-        bn = openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order)
-        return cls(bn)
+        return cls(openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order))
 
     @classmethod
     def __take__(cls, data: bytes) -> Tuple['CurveScalar', bytes]:

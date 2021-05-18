@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Tuple
 
 from .capsule import Capsule
 from .curve_point import CurvePoint
@@ -170,6 +170,7 @@ class CapsuleFrag(Serializable):
         ``metadata`` should coincide with the one given to :py:func:`reencrypt`.
         """
 
+
         params = PARAMETERS
 
         # Here are the formulaic constituents shared with
@@ -201,14 +202,19 @@ class CapsuleFrag(Serializable):
                                                 maybe_delegating_pk=delegating_pk,
                                                 maybe_receiving_pk=receiving_pk)
 
-        valid_kfrag_signature = self.proof.kfrag_signature.verify(verifying_pk, kfrag_message)
+        if not self.proof.kfrag_signature.verify(verifying_pk, kfrag_message):
+            return False
 
-        z3 = self.proof.signature
-        correct_reencryption_of_e = e * z3 == e2 + e1 * h
-        correct_reencryption_of_v = v * z3 == v2 + v1 * h
-        correct_rk_commitment = u * z3 == u2 + u1 * h
+        z = self.proof.signature
 
-        return (valid_kfrag_signature
-                and correct_reencryption_of_e
+        # TODO: if one or more of the values here are incorrect,
+        # we'll get the wrong `h` (since they're all hashed into it),
+        # so perhaps it's enough to check only one of these equations.
+        # See https://github.com/nucypher/rust-umbral/issues/46 for details.
+        correct_reencryption_of_e = e * z == e2 + e1 * h
+        correct_reencryption_of_v = v * z == v2 + v1 * h
+        correct_rk_commitment = u * z == u2 + u1 * h
+
+        return (correct_reencryption_of_e
                 and correct_reencryption_of_v
                 and correct_rk_commitment)

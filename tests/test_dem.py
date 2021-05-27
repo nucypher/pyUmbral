@@ -1,31 +1,14 @@
-"""
-This file is part of pyUmbral.
-
-pyUmbral is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-pyUmbral is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with pyUmbral. If not, see <https://www.gnu.org/licenses/>.
-"""
-
 import pytest
 import os
 
-from umbral.dem import UmbralDEM, DEM_KEYSIZE, DEM_NONCE_SIZE
-from cryptography.exceptions import InvalidTag
+from umbral import GenericError
+from umbral.dem import DEM
 
 
 def test_encrypt_decrypt():
-    key = os.urandom(32)
 
-    dem = UmbralDEM(key)
+    key = os.urandom(DEM.KEY_SIZE)
+    dem = DEM(key)
 
     plaintext = b'peace at dawn'
 
@@ -39,7 +22,7 @@ def test_encrypt_decrypt():
     assert ciphertext0 != ciphertext1
 
     # Nonce should be different
-    assert ciphertext0[:DEM_NONCE_SIZE] != ciphertext1[:DEM_NONCE_SIZE]
+    assert ciphertext0[:DEM.NONCE_SIZE] != ciphertext1[:DEM.NONCE_SIZE]
 
     cleartext0 = dem.decrypt(ciphertext0)
     cleartext1 = dem.decrypt(ciphertext1)
@@ -48,11 +31,32 @@ def test_encrypt_decrypt():
     assert cleartext1 == plaintext
 
 
+def test_malformed_ciphertext():
+
+    key = os.urandom(DEM.KEY_SIZE)
+    dem = DEM(key)
+
+    plaintext = b'peace at dawn'
+    ciphertext = dem.encrypt(plaintext)
+
+    # So short it we can tell right away it doesn't even contain a nonce
+    with pytest.raises(ValueError, match="The ciphertext must include the nonce"):
+        dem.decrypt(ciphertext[:DEM.NONCE_SIZE-1])
+
+    # Too short to contain a tag
+    with pytest.raises(ValueError, match="The authentication tag is missing or malformed"):
+        dem.decrypt(ciphertext[:DEM.NONCE_SIZE + DEM.TAG_SIZE - 1])
+
+    # Too long
+    with pytest.raises(GenericError):
+        dem.decrypt(ciphertext + b'abcd')
+
+
 def test_encrypt_decrypt_associated_data():
     key = os.urandom(32)
     aad = b'secret code 1234'
 
-    dem = UmbralDEM(key)
+    dem = DEM(key)
 
     plaintext = b'peace at dawn'
 
@@ -64,7 +68,7 @@ def test_encrypt_decrypt_associated_data():
 
     assert ciphertext0 != ciphertext1
 
-    assert ciphertext0[:DEM_NONCE_SIZE] != ciphertext1[:DEM_NONCE_SIZE]
+    assert ciphertext0[:DEM.NONCE_SIZE] != ciphertext1[:DEM.NONCE_SIZE]
 
     cleartext0 = dem.decrypt(ciphertext0, authenticated_data=aad)
     cleartext1 = dem.decrypt(ciphertext1, authenticated_data=aad)
@@ -73,5 +77,5 @@ def test_encrypt_decrypt_associated_data():
     assert cleartext1 == plaintext
 
     # Attempt decryption with invalid associated data
-    with pytest.raises(InvalidTag):
+    with pytest.raises(GenericError):
         cleartext2 = dem.decrypt(ciphertext0, authenticated_data=b'wrong data')

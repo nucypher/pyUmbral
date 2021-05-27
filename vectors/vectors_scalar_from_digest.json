@@ -1,0 +1,92 @@
+{
+  "name": "Test vectors for umbral.curvebn.CurveScalar.from_digest()",
+  "params": "default",
+  "vectors": [
+    {
+      "input": [
+        {
+          "class": "bytes",
+          "bytes": ""
+        }
+      ],
+      "output": "42184a0ea1e39037cad1ed7f3bb0cd8b7fe978e6d8b94f965e47d582cbdb8208"
+    },
+    {
+      "input": [
+        {
+          "class": "bytes",
+          "bytes": "616263"
+        }
+      ],
+      "output": "02e2c58350c30e80f9deea1ae19e21a0baa7761f4448c792f205b8e9b7ac1ab3"
+    },
+    {
+      "input": [
+        {
+          "class": "CurvePoint",
+          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+        }
+      ],
+      "output": "cd175898869252f3d6c6e77eaed94a72e74410d99534b349f27df2362c35745a"
+    },
+    {
+      "input": [
+        {
+          "class": "CurveScalar",
+          "bytes": "5e8601ee29241f263bf49b9999594413f863193fa1b8a985fff981cda7cc9087"
+        }
+      ],
+      "output": "2b83903fedca70169024365a4a5b387536a9ba38bd7b9fa0462f5f932f41a493"
+    },
+    {
+      "input": [
+        {
+          "class": "CurvePoint",
+          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+        },
+        {
+          "class": "CurveScalar",
+          "bytes": "5e8601ee29241f263bf49b9999594413f863193fa1b8a985fff981cda7cc9087"
+        }
+      ],
+      "output": "9f7cea094a5ed29ab2ec83391527db31850f915781c07c0b13853869e9885968"
+    },
+    {
+      "input": [
+        {
+          "class": "CurvePoint",
+          "bytes": "02a03893438c0502dd13818f65c039b2ef4fce33bfed150c6ad166554b4e8a51c2"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "02ecbc4dc0aed60efa211c7bf0e238593d292a042373b891928bcee459151c2f44"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "02aa6a09c61286e36d82f6371038f1c33b2095b3b6dc8d09de7489f516c2dfe49a"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "028da9ebf8cc0966bc010152fd3917a8f12dfff0af3b06e34e17f300d622893159"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "0281171b7e330ebd097575dadb210e8a405bc162e293881457a301da03f7571c7a"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "03e2869b26bbf46a2e1f46116d8d9eeeb45f18acf4a808defee52040221dd08af9"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "0374d2e59ea274c8011f6bf26ca8fe8eb8e7837cafed8547485e3fde6ffe0368e9"
+        },
+        {
+          "class": "CurvePoint",
+          "bytes": "024526ff9ab3c9c4cf619166ff897b8c023a6ff01f54c42a921ec1ab564d5a65eb"
+        }
+      ],
+      "output": "072c408c4631491eb12b00b38b8f7f20080b802e3e7c5c421f89887055248b1a"
+    }
+  ]
+}

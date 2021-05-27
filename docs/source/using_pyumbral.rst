@@ -12,30 +12,24 @@ Using pyUmbral
     sys.path.append(os.path.abspath(os.getcwd()))
 
 
-.. testcleanup:: capsule_story
+Elliptic Curves
+===============
 
-    from umbral import config
-    config._CONFIG.___CONFIG__curve = None
-    config._CONFIG.___CONFIG__params = None
+The matter of which curve to use is the subject of some debate.  If you aren't sure, you might start here:
+https://safecurves.cr.yp.to/
 
+A number of curves are available in the Cryptography.io_ library, on which pyUmbral depends.
+You can find them in the ``cryptography.hazmat.primitives.asymmetric.ec`` module.
 
-Configuration
-==============
+.. _Cryptography.io: https://cryptography.io/en/latest/
 
+.. important::
 
-Setting the default curve
---------------------------
+    Be careful when choosing a curve - the security of your application depends on it.
 
-The best way to start using pyUmbral is to decide on an elliptic curve to use and set it as your default.
-
-
-.. doctest:: capsule_story
-
-    >>> from umbral import config
-    >>> from umbral.curve import SECP256K1
-    >>> config.set_default_curve(SECP256K1)
-
-For more information on curves, see :doc:`choosing_and_using_curves`.
+We provide curve ``SECP256K1`` as a default because it is the basis for a number of crypto-blockchain projects;
+we don't otherwise endorse its security.
+We additionally support curves ``SECP256R1`` (also known as "NIST P-256") and ``SECP384R1`` ("NIST P-384"), but they cannot currently be selected via the public API.
 
 
 Encryption
@@ -49,28 +43,27 @@ A delegating key pair and a signing key pair.
 
 .. doctest:: capsule_story
 
-    >>> from umbral import keys, signing
+    >>> from umbral import SecretKey, PublicKey
 
-    >>> alices_private_key = keys.UmbralPrivateKey.gen_key()
-    >>> alices_public_key = alices_private_key.get_pubkey()
+    >>> alices_secret_key = SecretKey.random()
+    >>> alices_public_key = PublicKey.from_secret_key(alices_secret_key)
 
-    >>> alices_signing_key = keys.UmbralPrivateKey.gen_key()
-    >>> alices_verifying_key = alices_signing_key.get_pubkey()
-    >>> alices_signer = signing.Signer(private_key=alices_signing_key)
+    >>> alices_signing_key = SecretKey.random()
+    >>> alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
 
 
 Encrypt with a public key
 --------------------------
 Now let's encrypt data with Alice's public key.
-Invocation of ``pre.encrypt`` returns both the ``ciphertext`` and a ``capsule``.
+Invocation of :py:func:`encrypt` returns both a ``capsule`` and a ``ciphertext``.
 Note that anyone with Alice's public key can perform this operation.
 
 
 .. doctest:: capsule_story
 
-    >>> from umbral import pre
+    >>> from umbral import encrypt
     >>> plaintext = b'Proxy Re-encryption is cool!'
-    >>> ciphertext, capsule = pre.encrypt(alices_public_key, plaintext)
+    >>> capsule, ciphertext = encrypt(alices_public_key, plaintext)
 
 
 Decrypt with a private key
@@ -80,9 +73,8 @@ Alice can open the capsule and decrypt the ciphertext with her private key.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
-    ...                         capsule=capsule,
-    ...                         decrypting_key=alices_private_key)
+    >>> from umbral import decrypt_original
+    >>> cleartext = decrypt_original(alices_secret_key, capsule, ciphertext)
 
 
 Threshold Re-Encryption
@@ -93,29 +85,29 @@ Bob Exists
 
 .. doctest:: capsule_story
 
-    >>> from umbral import keys
-    >>> bobs_private_key = keys.UmbralPrivateKey.gen_key()
-    >>> bobs_public_key = bobs_private_key.get_pubkey()
+    >>> bobs_secret_key = SecretKey.random()
+    >>> bobs_public_key = PublicKey.from_secret_key(bobs_secret_key)
 
 
-Alice grants access to Bob by generating kfrags 
+Alice grants access to Bob by generating kfrags
 -----------------------------------------------
-When Alice wants to grant Bob access to open her encrypted messages, 
+When Alice wants to grant Bob access to view her encrypted data,
 she creates *re-encryption key fragments*, or *"kfrags"*,
 which are next sent to N proxies or *Ursulas*.
 
-Alice must specify ``N`` (the total number of kfrags),
+Alice must specify ``num_kfrags`` (the total number of kfrags),
 and a ``threshold`` (the minimum number of kfrags needed to activate a capsule).
 In the following example, Alice creates 20 kfrags,
 but Bob needs to get only 10 re-encryptions to activate the capsule.
 
 .. doctest:: capsule_story
 
-    >>> kfrags = pre.generate_kfrags(delegating_privkey=alices_private_key,
-    ...                              signer=alices_signer,
-    ...                              receiving_pubkey=bobs_public_key,
-    ...                              threshold=10,
-    ...                              N=20)
+    >>> from umbral import generate_kfrags
+    >>> kfrags = generate_kfrags(delegating_sk=alices_secret_key,
+    ...                          receiving_pk=bobs_public_key,
+    ...                          signing_sk=alices_signing_key,
+    ...                          threshold=10,
+    ...                          num_kfrags=20)
 
 
 Bob receives a capsule
@@ -137,25 +129,24 @@ or re-encrypted for him by Ursula, he will not be able to open it.
 
 .. doctest:: capsule_story
 
-    >>> fail = pre.decrypt(ciphertext=ciphertext,
-    ...                    capsule=capsule,
-    ...                    decrypting_key=bobs_private_key)
+    >>> fail = decrypt_original(sk=bobs_secret_key,
+    ...                         capsule=capsule,
+    ...                         ciphertext=ciphertext)
     Traceback (most recent call last):
         ...
-    umbral.pre.UmbralDecryptionError
+    umbral.GenericError
 
 
 Ursulas perform re-encryption
 ------------------------------
-Bob asks several Ursulas to re-encrypt the capsule so he can open it. 
+Bob asks several Ursulas to re-encrypt the capsule so he can open it.
 Each Ursula performs re-encryption on the capsule using the ``kfrag``
 provided by Alice, obtaining this way a "capsule fragment", or ``cfrag``.
 Let's mock a network or transport layer by sampling ``threshold`` random kfrags,
-one for each required Ursula. Note that each Ursula must prepare the received 
-capsule before re-encryption by setting the proper correctness keys.
+one for each required Ursula.
 
 Bob collects the resulting cfrags from several Ursulas.
-Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
+Bob must gather at least ``threshold`` cfrags in order to open the capsule.
 
 
 .. doctest:: capsule_story
@@ -164,14 +155,10 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
     >>> kfrags = random.sample(kfrags,  # All kfrags from above
     ...                        10)      # M - Threshold
 
-    >>> capsule.set_correctness_keys(delegating=alices_public_key,
-    ...                              receiving=bobs_public_key,
-    ...                              verifying=alices_verifying_key)
-    (True, True, True)
-
+    >>> from umbral import reencrypt
     >>> cfrags = list()                 # Bob's cfrag collection
     >>> for kfrag in kfrags:
-    ...     cfrag = pre.reencrypt(kfrag=kfrag, capsule=capsule)
+    ...     cfrag = reencrypt(capsule=capsule, kfrag=kfrag)
     ...     cfrags.append(cfrag)        # Bob collects a cfrag
 
 .. doctest:: capsule_story
@@ -183,32 +170,34 @@ Bob must gather at least ``threshold`` cfrags in order to activate the capsule.
 Decryption
 ==================================
 
-Bob attaches cfrags to the capsule
-----------------------------------
-Bob attaches at least ``threshold`` cfrags to the capsule,
-which has to be prepared in advance with the necessary correctness keys. 
-Only then it can become *activated*.
+Bob checks the capsule fragments
+--------------------------------
+Bob can verify that the capsule fragments are valid and really originate from Alice,
+using Alice's public keys.
 
 .. doctest:: capsule_story
 
-    >>> capsule.set_correctness_keys(delegating=alices_public_key,
-    ...                              receiving=bobs_public_key,
-    ...                              verifying=alices_verifying_key)
-    (False, False, False)
+    >>> all(cfrag.verify(capsule,
+    ...                  delegating_pk=alices_public_key,
+    ...                  receiving_pk=bobs_public_key,
+    ...                  signing_pk=alices_verifying_key)
+    ...     for cfrag in cfrags)
+    True
 
-    >>> for cfrag in cfrags:
-    ...     capsule.attach_cfrag(cfrag)
 
-
-Bob activates and opens the capsule
-------------------------------------
-Finally, Bob decrypts the re-encrypted ciphertext using the activated capsule.
+Bob opens the capsule
+---------------------
+Finally, Bob decrypts the re-encrypted ciphertext using his key.
 
 .. doctest:: capsule_story
 
-    >>> cleartext = pre.decrypt(ciphertext=ciphertext,
-    ...                         capsule=capsule,
-    ...                         decrypting_key=bobs_private_key)
+    >>> from umbral import decrypt_reencrypted
+    >>> cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+    ...                                 delegating_pk=alices_public_key,
+    ...                                 capsule=capsule,
+    ...                                 cfrags=cfrags,
+    ...                                 ciphertext=ciphertext)
+
 
 .. doctest:: capsule_story
    :hide:

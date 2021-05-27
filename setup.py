@@ -60,9 +60,6 @@ INSTALL_REQUIRES = [
     'setuptools',
     'cryptography>=2.3',
     'pynacl',
-    'pysha3',
-    'constant-sorrow>=0.1.0a7',
-    'bytestring-splitter',
 ]
 
 DEV_INSTALL_REQUIRES = [
@@ -82,7 +79,7 @@ DEV_INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'testing': DEV_INSTALL_REQUIRES,
-    'docs': ['sphinx', 'sphinx-autobuild'],
+    'docs': ['sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme'],
     'benchmarks': ['pytest-benchmark'],
 }
 
@@ -105,7 +102,6 @@ setup(name=ABOUT['__title__'],
           "Natural Language :: English",
           "Programming Language :: Python :: Implementation",
           "Programming Language :: Python :: 3 :: Only",
-          "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
           "Topic :: Scientific/Engineering",

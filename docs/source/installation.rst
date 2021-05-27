@@ -1,7 +1,6 @@
-
 Installing pyUmbral
 ====================
-v0.1.3-alpha.2
+
 
 Using pip
 -------------------------

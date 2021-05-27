@@ -1,86 +1,86 @@
 {
-  "name": "Test vectors for umbral.point.Point.unsafe_hash_to_point",
+  "name": "Test vectors for unsafe_hash_to_point()",
   "params": "default",
   "vectors": [
     {
       "data": "",
-      "label": "",
-      "point": "03bb27bd2a7b7ff7500284bc44285d80ce5527448c79e7ef25843d1209c5df40c3"
+      "dst": "",
+      "point": "0215ec7bf0b50732b49f8228e07d24365338f9e3ab994b00af08e5a3bffe55fd8b"
     },
     {
       "data": "",
-      "label": "616263",
-      "point": "03eec257593bbefd7f617350bd2aea9b14cc14a93528bad07b6e39c5db433adbd8"
+      "dst": "616263",
+      "point": "0297427e8f434c897d66d7ad40b51e0a11f8bdfed31e724ca4ac86c14fb5e2668f"
     },
     {
       "data": "",
-      "label": "4e75437970686572",
-      "point": "0352184687070d943946f5da637b8e2aa00640b0da2231e7598ceea0286657a7cb"
+      "dst": "4e75437970686572",
+      "point": "025aa967c88c73854f4f4d9286a7ce4292898dfa42c7593b75cf823cd1b6dada96"
     },
     {
       "data": "",
-      "label": "4e75637970686572",
-      "point": "0290c2fff33ad722da7cc813f57153afbcf33fc2acd1607f188770f9dcc7c00a0d"
+      "dst": "4e75637970686572",
+      "point": "02f3fcae4fb3596fbb34feaf3e2fff938b177b55d89c66f728e51fef220d9b702f"
     },
     {
       "data": "616263",
-      "label": "",
-      "point": "02a79e7fe8a6559b5de0614702a4e13d97a672a899d5943e5c6b1a0c45fca933b0"
+      "dst": "",
+      "point": "0204c19746f60b6c4abbce9dbe31f2e0df9b22d8130cc0844cbf67db154d944db3"
     },
     {
       "data": "616263",
-      "label": "616263",
-      "point": "0234cb950681a734bc29feaa5c1dd029a9062352488bae035acd56c0ebe99f0b7f"
+      "dst": "616263",
+      "point": "024c70ca862edba77a8265ee46e0137729826a79721855888bf7791feea42b9990"
     },
     {
       "data": "616263",
-      "label": "4e75437970686572",
-      "point": "032106a37075e17b6f01b4ab63d5c84622efe5111843155c7d53e34548f287115d"
+      "dst": "4e75437970686572",
+      "point": "02357334755ceedaef03cb81b6dbbebd8399e0cf40a122a586069ae241e34fc869"
     },
     {
       "data": "616263",
-      "label": "4e75637970686572",
-      "point": "034b4db429ccf36858718cb864c0c27520fb16218992a3290d1fc4758756ee0bef"
+      "dst": "4e75637970686572",
+      "point": "0256ec5dbf81d55fbdad3c2095177982a068bb0043dd2cf2834cc6a53e538157bf"
     },
     {
       "data": "4e75437970686572",
-      "label": "",
-      "point": "03828335c1f3ccac7ec40d6dd4771e9ba527b039d7104fa0477a96cdccbf16c7cf"
+      "dst": "",
+      "point": "02b0cd14ef08638d57804c768d3b0a171461268f6faede586751f2919bdd7490b6"
     },
     {
       "data": "4e75437970686572",
-      "label": "616263",
-      "point": "03193846a6ba4d9dab59990e53317050fe301477d3ac699f8cc260dd33cbc2c9c5"
+      "dst": "616263",
+      "point": "02a1c3e1c00f45a059fcf7749e31c5206388aa72bcc7c10195907e9c70c2a0a700"
     },
     {
       "data": "4e75437970686572",
-      "label": "4e75437970686572",
-      "point": "0324215e7df37205a23c0b7f0a7e168c7984d9109ef31ebe7b37edc7d81ede4b55"
+      "dst": "4e75437970686572",
+      "point": "02100c656eed3ed2e175e5430bbd644ac86f24fa69fc1c5b3fd65ece562b480764"
     },
     {
       "data": "4e75437970686572",
-      "label": "4e75637970686572",
-      "point": "03d5744667f3f2ff36217380a5d1701edf939d70b79d17d78a3969b533acb7c326"
+      "dst": "4e75637970686572",
+      "point": "0227a46bc66817fcaa803535a1c109674d300de5df0d8d11f6588325cf6cedf2b1"
     },
     {
       "data": "4e75637970686572",
-      "label": "",
-      "point": "03f31c20a8264446d224c4ae6368193ac8b97247cf386bafe2cc27ffb6783ace19"
+      "dst": "",
+      "point": "02483315691815818fa1f1804406fc4246940cc8cb39405401e2aa5fd8d94bfa64"
     },
     {
       "data": "4e75637970686572",
-      "label": "616263",
-      "point": "0347b4a8559bf9eb00cdc4c183ee4ff0a5c3a12692988d88927b07157c3fdd50a1"
+      "dst": "616263",
+      "point": "02dc01829e4725f8cacf6990c12ab0a5f837770b21e41bdd9964bb0f1ad52fcc31"
     },
     {
       "data": "4e75637970686572",
-      "label": "4e75437970686572",
-      "point": "02b158ccb0b3384c2a8af92ac3e0e59ed9d0647fb62715fefdc9c0796c0b28bebb"
+      "dst": "4e75437970686572",
+      "point": "02b6653e2ed79579380104598cf83fc2b119dd8b91afae2a2a8077ffdca0b212ad"
     },
     {
       "data": "4e75637970686572",
-      "label": "4e75637970686572",
-      "point": "0356b5aa5ef6be8229f3611095a47842aad8a3e54b3aa1f6caea696fa4bfdfe95e"
+      "dst": "4e75637970686572",
+      "point": "02192de02d9c15a52d90ef7192794a2fc925c09f7dcdb4b584b8c7fab33bbda1df"
     }
   ]
 }

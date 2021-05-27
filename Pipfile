@@ -5,13 +5,8 @@ name = "pypi"
 
 [packages]
 setuptools = "*"
-# Third Party
 cryptography = ">=2.3"
 pynacl = "*"
-pysha3 = "*"
-# NuCypher
-bytestring-splitter = "*"
-constant-sorrow = ">=0.1.0a7"
 
 [dev-packages]
 bumpversion = "*"

@@ -1,13 +1,15 @@
-from typing import Sequence, Optional
+from typing import Optional, Tuple
 
 from .capsule import Capsule
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .hashing import Hash, hash_to_cfrag_verification, hash_to_cfrag_signature
-from .keys import PublicKey, SecretKey, Signature
+from .errors import VerificationError
+from .hashing import hash_to_cfrag_verification, kfrag_signature_message
+from .keys import PublicKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
 from .serializable import Serializable
+from .signing import Signature
 
 
 class CapsuleFragProof(Serializable):
@@ -158,11 +160,11 @@ class CapsuleFrag(Serializable):
 
     def verify(self,
                capsule: Capsule,
+               verifying_pk: PublicKey,
                delegating_pk: PublicKey,
                receiving_pk: PublicKey,
-               signing_pk: PublicKey,
                metadata: Optional[bytes] = None,
-               ) -> bool:
+               ) -> 'VerifiedCapsuleFrag':
         """
         Verifies the validity of this fragment.
 
@@ -194,15 +196,49 @@ class CapsuleFrag(Serializable):
         precursor = self.precursor
         kfrag_id = self.kfrag_id
 
-        kfrag_signature = hash_to_cfrag_signature(kfrag_id, u1, precursor, delegating_pk, receiving_pk)
-        valid_kfrag_signature = kfrag_signature.verify(signing_pk, self.proof.kfrag_signature)
+        kfrag_message = kfrag_signature_message(kfrag_id=self.kfrag_id,
+                                                commitment=self.proof.kfrag_commitment,
+                                                precursor=self.precursor,
+                                                maybe_delegating_pk=delegating_pk,
+                                                maybe_receiving_pk=receiving_pk)
 
-        z3 = self.proof.signature
-        correct_reencryption_of_e = e * z3 == e2 + e1 * h
-        correct_reencryption_of_v = v * z3 == v2 + v1 * h
-        correct_rk_commitment = u * z3 == u2 + u1 * h
+        if not self.proof.kfrag_signature.verify(verifying_pk, kfrag_message):
+            raise VerificationError("Invalid KeyFrag signature")
 
-        return (valid_kfrag_signature
-                and correct_reencryption_of_e
-                and correct_reencryption_of_v
-                and correct_rk_commitment)
+        z = self.proof.signature
+
+        # TODO: if one or more of the values here are incorrect,
+        # we'll get the wrong `h` (since they're all hashed into it),
+        # so perhaps it's enough to check only one of these equations.
+        # See https://github.com/nucypher/rust-umbral/issues/46 for details.
+        correct_reencryption_of_e = e * z == e2 + e1 * h
+        correct_reencryption_of_v = v * z == v2 + v1 * h
+        correct_rk_commitment = u * z == u2 + u1 * h
+
+        if not (correct_reencryption_of_e and correct_reencryption_of_v and correct_rk_commitment):
+            raise VerificationError("Failed to verify reencryption proof")
+
+        return VerifiedCapsuleFrag(self)
+
+
+class VerifiedCapsuleFrag:
+    """
+    Verified capsule frag, good for decryption.
+    Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
+    It can only be obtained from :py:meth:`CapsuleFrag.verify`.
+    """
+
+    def __init__(self, cfrag: CapsuleFrag):
+        self.cfrag = cfrag
+
+    def __bytes__(self):
+        return bytes(self.cfrag)
+
+    def __eq__(self, other):
+        return self.cfrag == other.cfrag
+
+    def __hash__(self):
+        return hash((self.__class__, bytes(self)))
+
+    def __str__(self):
+        return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"

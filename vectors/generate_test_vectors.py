@@ -1,7 +1,9 @@
 import json
 import os
 
-from umbral import SecretKey, PublicKey, encrypt, generate_kfrags, reencrypt
+from umbral import (
+    SecretKey, PublicKey, Signer, KeyFrag, CapsuleFrag,
+    encrypt, generate_kfrags, reencrypt)
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
 from umbral.hashing import Hash, unsafe_hash_to_point
@@ -15,9 +17,7 @@ from umbral.dem import DEM, kdf
 def hexlify(data):
     if isinstance(data, int):
         return hex(data)[2:]
-    try:
-        return data.to_bytes().hex()
-    except AttributeError:
+    else:
         return bytes(data).hex()
 
 
@@ -50,7 +50,7 @@ receiving_pk = PublicKey.from_secret_key(receiving_sk)
 
 kfrags = generate_kfrags(delegating_sk=delegating_sk,
                          receiving_pk=receiving_pk,
-                         signing_sk=signing_sk,
+                         signer=Signer(signing_sk),
                          threshold=6,
                          num_kfrags=10,
                          )
@@ -59,7 +59,7 @@ plain_data = b'peace at dawn'
 
 capsule, ciphertext = encrypt(delegating_pk, plain_data)
 
-cfrag = reencrypt(capsule, kfrags[0])
+cfrag = CapsuleFrag.from_bytes(bytes(reencrypt(capsule, kfrags[0])))
 points = [capsule.point_e, cfrag.point_e1, cfrag.proof.point_e2,
           capsule.point_v, cfrag.point_v1, cfrag.proof.point_v2,
           cfrag.proof.kfrag_commitment, cfrag.proof.kfrag_pok]
@@ -207,7 +207,8 @@ create_test_vector_file(vector_suite, 'vectors_unsafe_hash_to_point.json', gener
 
 vectors = list()
 for kfrag in kfrags:
-    assert kfrag.verify(verifying_pk, delegating_pk, receiving_pk)
+    kfrag = KeyFrag.from_bytes(bytes(kfrag))
+    kfrag.verify(verifying_pk, delegating_pk, receiving_pk)
 
     json_input = {'kfrag': hexlify(kfrag)}
 

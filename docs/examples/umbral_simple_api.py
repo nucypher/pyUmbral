@@ -1,6 +1,6 @@
 import random
 from umbral import (
-    SecretKey, PublicKey, GenericError,
+    SecretKey, PublicKey, Signer, GenericError, CapsuleFrag,
     encrypt, generate_kfrags, reencrypt, decrypt_original, decrypt_reencrypted)
 
 # Generate an Umbral key pair
@@ -13,6 +13,7 @@ alices_public_key = PublicKey.from_secret_key(alices_secret_key)
 
 alices_signing_key = SecretKey.random()
 alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
+alices_signer = Signer(alices_signing_key)
 
 # Encrypt some data for Alice
 # ---------------------------
@@ -58,7 +59,7 @@ except GenericError:
 
 kfrags = generate_kfrags(delegating_sk=alices_secret_key,
                          receiving_pk=bobs_public_key,
-                         signing_sk=alices_signing_key,
+                         signer=alices_signer,
                          threshold=10,
                          num_kfrags=20)
 
@@ -85,14 +86,18 @@ assert len(cfrags) == 10
 
 # Bob checks the capsule fragments
 # --------------------------------
-# Bob can verify that the capsule fragments are valid and really originate from Alice,
+# If Bob received the capsule fragments in serialized form,
+# he can verify that they are valid and really originate from Alice,
 # using Alice's public keys.
 
-assert all(cfrag.verify(capsule,
-                        delegating_pk=alices_public_key,
-                        receiving_pk=bobs_public_key,
-                        signing_pk=alices_verifying_key)
-           for cfrag in cfrags)
+suspicious_cfrags = [CapsuleFrag.from_bytes(bytes(cfrag)) for cfrag in cfrags]
+
+cfrags = [cfrag.verify(capsule,
+                       verifying_pk=alices_verifying_key,
+                       delegating_pk=alices_public_key,
+                       receiving_pk=bobs_public_key,
+                       )
+          for cfrag in suspicious_cfrags]
 
 # Bob opens the capsule
 # ------------------------------------
@@ -101,7 +106,7 @@ assert all(cfrag.verify(capsule,
 bob_cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
                                     delegating_pk=alices_public_key,
                                     capsule=bob_capsule,
-                                    cfrags=cfrags,
+                                    verified_cfrags=cfrags,
                                     ciphertext=ciphertext)
 print(bob_cleartext)
 assert bob_cleartext == plaintext

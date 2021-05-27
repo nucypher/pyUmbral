@@ -24,16 +24,6 @@ def test_generator_point():
     assert g1 == g2
 
 
-def test_to_and_from_affine():
-
-    x = 17004608369308732328368332205668001941491834793934321461466076545247324070015
-    y = 69725941631324401609944843130171147910924748427773762412028916504484868631573
-
-    p = CurvePoint.from_affine(x, y)
-
-    assert p.to_affine() == (x, y)
-
-
 def test_invalid_serialized_points():
 
     field_order = 2**256 - 0x1000003D1
@@ -72,19 +62,15 @@ def test_serialize_point_at_infinity():
     assert bytes_point_at_infinity == b'\x00'
 
 
-def test_coords_with_special_characteristics():
+def test_to_affine():
+    p = CurvePoint.generator()
+    x_ref = 0x79BE667E_F9DCBBAC_55A06295_CE870B07_029BFCDB_2DCE28D9_59F2815B_16F81798
+    y_ref = 0x483ADA77_26A3C465_5DA4FBFC_0E1108A8_FD17B448_A6855419_9C47D08F_FB10D4B8
+    assert p.to_affine() == (x_ref, y_ref)
 
-    # Testing that a point with x coordinate greater than the curve order is still valid.
-    # In particular, we will test the last valid point from the default curve (secp256k1)
-    # whose x coordinate is `field_order - 3` and is greater than the order of the curve
 
-    field_order = 2**256 - 0x1000003D1
-    compressed = b'\x02' + (field_order-3).to_bytes(32, 'big')
-
-    last_point = CurvePoint.from_bytes(compressed)
-
-    # The same point, but obtained through the from_affine method
-    x = 115792089237316195423570985008687907853269984665640564039457584007908834671660
-    y = 109188863561374057667848968960504138135859662956057034999983532397866404169138
-
-    assert last_point == CurvePoint.from_affine(x, y)
+def test_identity_to_affine():
+    p = CurvePoint.generator()
+    identity = p - p
+    with pytest.raises(ValueError):
+        identity.to_affine()

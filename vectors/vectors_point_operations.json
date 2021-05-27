@@ -1,37 +1,37 @@
 {
   "name": "Test vectors for CurvePoint operations",
   "params": "default",
-  "first CurvePoint operand": "02eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0",
-  "second CurvePoint operand": "02b925f594ea60040f470195c72fc7aa8caeac7161af3abe65dceb2908bc866754",
-  "CurveScalar operand": "d63d8806eba7bfc2f5fd77d21aa5d7cc7cffcee26ac096f7c5904629c0db1c12",
+  "first CurvePoint operand": "03945c237f3b4cab9638d89bba3a098d37a8f4c981788969c2846e988748315bfd",
+  "second CurvePoint operand": "03d495c93def84d2b7c709d5896d64339129a28db5a6a2cd4c686c895da538228e",
+  "CurveScalar operand": "0a686fbc44fdc4713b7901c88fe416cc9b187501e671a4c70781742f3bcef1ec",
   "vectors": [
     {
       "operation": "Addition",
-      "result": "02de2d20749111f538575c81e0abc406c71cf6d4c7c1b3555476d6f8778f271d5a"
+      "result": "02338b0a976b3701353558685966d2b166174dbce6d697d2e50069833a06157bf9"
     },
     {
       "operation": "Subtraction",
-      "result": "031bd3e6f5b33b3f94601d3a243efaf2c359c3b097aff1aa3fa8fbf5210f110b8d"
+      "result": "02864a1ee4df38dffb51940819fca1a89624521ed14b8ec873e4b701fa6d8c1f5b"
     },
     {
       "operation": "Multiplication",
-      "result": "020fd46d21ec56d94a787c6d717222489b7a070a4f57065f442f588789d1feed87"
+      "result": "03e7882ab867f7006915d16738ef9adebc2a1946fea829478e7e444e6113ecf1f1"
     },
     {
       "operation": "Inversion",
-      "result": "03eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0"
+      "result": "02945c237f3b4cab9638d89bba3a098d37a8f4c981788969c2846e988748315bfd"
     },
     {
       "operation": "To_affine.X",
-      "result": "eb0184eedd9d14e10ad0714afd9915c58b2b40b582283e3e741d0141189246c0"
+      "result": "945c237f3b4cab9638d89bba3a098d37a8f4c981788969c2846e988748315bfd"
     },
     {
       "operation": "To_affine.Y",
-      "result": "d9bed51d198e8ccd919b54a6eabfed2032cc737d410e0364643716986de89afc"
+      "result": "fd0576e382f8f0ce0849c72789c3bd2fe2ee453efc606ff8815108e734e088ef"
     },
     {
       "operation": "kdf",
-      "result": "40b49492ba7924c421dd61ea39bf94ac6566feff43a1ef14e7adc2b9af3f6664"
+      "result": "26f9fa1e3d2bd1fe3b14ea0a6e1276a214b1f5c59ca01cb3b74a7cb74e327f1c"
     }
   ]
 }

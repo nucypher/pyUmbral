@@ -19,6 +19,14 @@ Keys
     :members:
     :show-inheritance:
 
+.. autoclass:: Signer
+    :members:
+
+.. autoclass:: Signature()
+    :members:
+    :special-members: __eq__, __hash__
+    :show-inheritance:
+
 Intermediate objects
 --------------------
 
@@ -31,10 +39,16 @@ Intermediate objects
     :special-members: __eq__, __hash__
     :show-inheritance:
 
+.. autoclass:: VerifiedKeyFrag()
+    :special-members: __eq__, __hash__
+
 .. autoclass:: CapsuleFrag()
-    :members: verify
+    :members:
     :special-members: __eq__, __hash__
     :show-inheritance:
+
+.. autoclass:: VerifiedCapsuleFrag()
+    :special-members: __eq__, __hash__
 
 Encryption, re-encryption and decryption
 ----------------------------------------
@@ -53,6 +67,9 @@ Utilities
 ---------
 
 .. autoclass:: umbral.GenericError
+    :show-inheritance:
+
+.. autoclass:: umbral.VerificationError
     :show-inheritance:
 
 .. autoclass:: umbral.serializable.Serializable

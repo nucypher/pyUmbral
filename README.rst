@@ -62,13 +62,14 @@ Additionally, users that delegate access to their data (like Alice, in this exam
 
 .. code-block:: python
 
-    from umbral import SecretKey, PublicKey
+    from umbral import SecretKey, PublicKey, Signer
 
     # Generate Umbral keys for Alice.
     alices_secret_key = SecretKey.random()
     alices_public_key = PublicKey.from_secret_key(alices_secret_key)
 
     alices_signing_key = SecretKey.random()
+    alices_signer = Signer(alices_signing_key)
     alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
 
     # Generate Umbral keys for Bob.
@@ -112,7 +113,7 @@ which are next sent to N proxies or *Ursulas*.
     # In this example, 10 out of 20.
     kfrags = generate_kfrags(delegating_sk=alices_secret_key,
                              receiving_pk=bobs_public_key,
-                             signing_sk=alices_signing_key,
+                             signer=alices_signer,
                              threshold=10,
                              num_kfrags=20)
 

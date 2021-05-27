@@ -1,12 +1,14 @@
 import os
-from typing import Tuple, List, Optional
+from typing import List, Optional
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .hashing import hash_to_shared_secret, hash_to_cfrag_signature, hash_to_polynomial_arg
-from .keys import PublicKey, SecretKey, Signature
+from .errors import VerificationError
+from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
+from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
 from .serializable import Serializable, serialize_bool, take_bool
+from .signing import Signature, Signer
 
 
 class KeyFragID(Serializable):
@@ -46,27 +48,29 @@ class KeyFragProof(Serializable):
         params = PARAMETERS
 
         kfrag_precursor = base.precursor
-        signing_sk = base.signing_sk
+        signer = base.signer
         delegating_pk = base.delegating_pk
         receiving_pk = base.receiving_pk
 
         commitment = params.u * kfrag_key
 
-        signature_for_receiver = hash_to_cfrag_signature(kfrag_id,
-                                                         commitment,
-                                                         kfrag_precursor,
-                                                         delegating_pk,
-                                                         receiving_pk,
-                                                         ).sign(signing_sk)
+        message_for_receiver = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                       commitment=commitment,
+                                                       precursor=kfrag_precursor,
+                                                       maybe_delegating_pk=delegating_pk,
+                                                       maybe_receiving_pk=receiving_pk,
+                                                       )
+        signature_for_receiver = signer.sign(message_for_receiver)
 
         maybe_delegating_pk = delegating_pk if sign_delegating_key else None
         maybe_receiving_pk = receiving_pk if sign_receiving_key else None
-        signature_for_proxy = hash_to_cfrag_signature(kfrag_id,
-                                                      commitment,
-                                                      kfrag_precursor,
-                                                      maybe_delegating_pk,
-                                                      maybe_receiving_pk
-                                                      ).sign(signing_sk)
+        message_for_proxy = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                    commitment=commitment,
+                                                    precursor=kfrag_precursor,
+                                                    maybe_delegating_pk=maybe_delegating_pk,
+                                                    maybe_receiving_pk=maybe_receiving_pk,
+                                                    )
+        signature_for_proxy = signer.sign(message_for_proxy)
 
         return cls(commitment,
                    signature_for_proxy,
@@ -194,10 +198,10 @@ class KeyFrag(Serializable):
         return cls(kfrag_id, rk, base.precursor, proof)
 
     def verify(self,
-               signing_pk: PublicKey,
+               verifying_pk: PublicKey,
                delegating_pk: Optional[PublicKey] = None,
                receiving_pk: Optional[PublicKey] = None,
-               ) -> bool:
+               ) -> 'VerifiedKeyFrag':
         """
         Verifies the validity of this fragment.
 
@@ -212,25 +216,51 @@ class KeyFrag(Serializable):
         commitment = self.proof.commitment
         precursor = self.precursor
 
-        # We check that the commitment is well-formed
         if commitment != u * key:
-            return False
+            raise VerificationError("Invalid kfrag commitment")
 
-        # A shortcut, perhaps not necessary
-        delegating_key_missing = self.proof.delegating_key_signed and not bool(delegating_pk)
-        receiving_key_missing = self.proof.receiving_key_signed and not bool(receiving_pk)
+        if self.proof.delegating_key_signed and not bool(delegating_pk):
+            raise VerificationError("A signature of a delegating key was included in this kfrag, "
+                                    "but the key is not provided")
 
-        if delegating_key_missing or receiving_key_missing:
-            return False
+        if self.proof.receiving_key_signed and not bool(receiving_pk):
+            raise VerificationError("A signature of a receiving key was included in this kfrag, "
+                                    "but the key is not provided")
 
         delegating_pk = delegating_pk if self.proof.delegating_key_signed else None
         receiving_pk = receiving_pk if self.proof.receiving_key_signed else None
-        sig = hash_to_cfrag_signature(kfrag_id,
-                                      commitment,
-                                      precursor,
-                                      delegating_pk,
-                                      receiving_pk)
-        return sig.verify(signing_pk, self.proof.signature_for_proxy)
+        kfrag_message = kfrag_signature_message(kfrag_id=kfrag_id,
+                                                commitment=commitment,
+                                                precursor=precursor,
+                                                maybe_delegating_pk=delegating_pk,
+                                                maybe_receiving_pk=receiving_pk)
+        if not self.proof.signature_for_proxy.verify(verifying_pk, kfrag_message):
+            raise VerificationError("Failed to verify the kfrag signature")
+
+        return VerifiedKeyFrag(self)
+
+
+class VerifiedKeyFrag:
+    """
+    Verified kfrag, good for reencryption.
+    Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
+    It can only be obtained from :py:meth:`KeyFrag.verify`.
+    """
+
+    def __init__(self, kfrag: KeyFrag):
+        self.kfrag = kfrag
+
+    def __bytes__(self):
+        return bytes(self.kfrag)
+
+    def __eq__(self, other):
+        return self.kfrag == other.kfrag
+
+    def __hash__(self):
+        return hash((self.__class__, bytes(self)))
+
+    def __str__(self):
+        return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"
 
 
 class KeyFragBase:
@@ -238,7 +268,7 @@ class KeyFragBase:
     def __init__(self,
                  delegating_sk: SecretKey,
                  receiving_pk: PublicKey,
-                 signing_sk: SecretKey,
+                 signer: Signer,
                  threshold: int,
                  ):
 
@@ -273,33 +303,9 @@ class KeyFragBase:
             delegating_sk.secret_scalar() * d.invert(),
             *[CurveScalar.random_nonzero() for _ in range(threshold-1)]]
 
-        self.signing_sk = signing_sk
+        self.signer = signer
         self.precursor = precursor
         self.dh_point = dh_point
         self.delegating_pk = delegating_pk
         self.receiving_pk = receiving_pk
         self.coefficients = coefficients
-
-
-def generate_kfrags(delegating_sk: SecretKey,
-                    receiving_pk: PublicKey,
-                    signing_sk: SecretKey,
-                    threshold: int,
-                    num_kfrags: int,
-                    sign_delegating_key: bool = True,
-                    sign_receiving_key: bool = True,
-                    ) -> List[KeyFrag]:
-    """
-    Generates ``num_kfrags`` key fragments to pass to proxies for re-encryption.
-    At least ``threshold`` of them will be needed for decryption.
-    If ``sign_delegating_key`` or ``sign_receiving_key`` are ``True``,
-    the corresponding keys will have to be provided to :py:meth:`KeyFrag.verify`.
-    """
-
-    base = KeyFragBase(delegating_sk, receiving_pk, signing_sk, threshold)
-
-    # Technically we could allow it, but what would be the use of these kfrags?
-    if num_kfrags < threshold:
-        raise ValueError(f"Creating less kfrags ({num_kfrags}) than threshold ({threshold}) makes them useless")
-
-    return [KeyFrag.from_base(base, sign_delegating_key, sign_receiving_key) for _ in range(num_kfrags)]

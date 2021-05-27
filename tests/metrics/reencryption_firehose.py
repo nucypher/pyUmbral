@@ -17,6 +17,7 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[umbral.KeyFrag], 
     delegating_pk = umbral.PublicKey.from_secret_key(delegating_sk)
 
     signing_sk = umbral.SecretKey.random()
+    signer = umbral.Signer(signing_sk)
 
     receiving_sk = umbral.SecretKey.random()
     receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
@@ -24,7 +25,7 @@ def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[umbral.KeyFrag], 
     plain_data = os.urandom(32)
     capsule, ciphertext = umbral.encrypt(delegating_pk, plain_data)
 
-    kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signing_sk, m, n)
+    kfrags = umbral.generate_kfrags(delegating_sk, receiving_pk, signer, m, n)
 
     return kfrags, capsule
 

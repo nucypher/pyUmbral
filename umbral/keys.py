@@ -1,19 +1,11 @@
 import os
-from typing import TYPE_CHECKING, Tuple
+from typing import Tuple
 
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import utils
-from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-
-from . import openssl
-from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .dem import kdf
+from .hashing import Hash
 from .serializable import Serializable
-
-if TYPE_CHECKING: # pragma: no cover
-    from .hashing import Hash
 
 
 class SecretKey(Serializable):
@@ -45,7 +37,7 @@ class SecretKey(Serializable):
         return f"{self.__class__.__name__}:..."
 
     def __hash__(self):
-        raise NotImplementedError("Hashing secret objects is insecure")
+        raise RuntimeError("Hashing secret objects is not secure")
 
     def secret_scalar(self):
         return self._scalar_key
@@ -57,66 +49,6 @@ class SecretKey(Serializable):
 
     def __bytes__(self) -> bytes:
         return bytes(self._scalar_key)
-
-    def sign_digest(self, digest: 'Hash') -> 'Signature':
-
-        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
-        message = digest.finalize()
-
-        backend_sk = openssl.bn_to_privkey(CURVE, self._scalar_key._backend_bignum)
-        signature_der_bytes = backend_sk.sign(message, signature_algorithm)
-        r_int, s_int = utils.decode_dss_signature(signature_der_bytes)
-
-        # Normalize s
-        # s is public, so no constant-timeness required here
-        if s_int > (CURVE.order >> 1):
-            s_int = CURVE.order - s_int
-
-        # Already normalized, don't waste time
-        r = CurveScalar.from_int(r_int, check_normalization=False)
-        s = CurveScalar.from_int(s_int, check_normalization=False)
-
-        return Signature(r, s)
-
-
-class Signature(Serializable):
-    """
-    Wrapper for ECDSA signatures.
-    """
-
-    def __init__(self, r: CurveScalar, s: CurveScalar):
-        self.r = r
-        self.s = s
-
-    def __repr__(self):
-        return f"ECDSA Signature: {bytes(self).hex()[:15]}"
-
-    def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash') -> bool:
-        backend_pk = openssl.point_to_pubkey(CURVE, verifying_key.point()._backend_point)
-        signature_algorithm = ECDSA(utils.Prehashed(digest._backend_hash_algorithm))
-
-        message = digest.finalize()
-        signature_der_bytes = utils.encode_dss_signature(int(self.r), int(self.s))
-
-        # TODO: Raise error instead of returning boolean
-        try:
-            backend_pk.verify(signature=signature_der_bytes,
-                              data=message,
-                              signature_algorithm=signature_algorithm)
-        except InvalidSignature:
-            return False
-        return True
-
-    @classmethod
-    def __take__(cls, data):
-        (r, s), data = cls.__take_types__(data, CurveScalar, CurveScalar)
-        return cls(r, s), data
-
-    def __bytes__(self):
-        return bytes(self.r) + bytes(self.s)
-
-    def __eq__(self, other):
-        return self.r == other.r and self.s == other.s
 
 
 class PublicKey(Serializable):
@@ -183,7 +115,6 @@ class SecretKeyFactory(Serializable):
         tag = b"KEY_DERIVATION/" + label
         key = kdf(self.__key_seed, self._DERIVED_KEY_SIZE, info=tag)
 
-        from .hashing import Hash
         digest = Hash(tag)
         digest.update(key)
         scalar_key = CurveScalar.from_digest(digest)
@@ -202,4 +133,4 @@ class SecretKeyFactory(Serializable):
         return f"{self.__class__.__name__}:..."
 
     def __hash__(self):
-        raise NotImplementedError("Hashing secret objects is insecure")
+        raise RuntimeError("Hashing secret objects is not secure")

@@ -3,7 +3,10 @@ import pytest
 from umbral import (
     SecretKey,
     PublicKey,
+    Signer,
     GenericError,
+    KeyFrag,
+    CapsuleFrag,
     encrypt,
     generate_kfrags,
     decrypt_original,
@@ -52,7 +55,8 @@ def test_simple_api(num_kfrags, threshold):
     delegating_pk = PublicKey.from_secret_key(delegating_sk)
 
     signing_sk = SecretKey.random()
-    signing_pk = PublicKey.from_secret_key(signing_sk)
+    signer = Signer(signing_sk)
+    verifying_pk = PublicKey.from_secret_key(signing_sk)
 
     # Key Generation (Bob)
     receiving_sk = SecretKey.random()
@@ -67,29 +71,56 @@ def test_simple_api(num_kfrags, threshold):
     assert plaintext_decrypted == plaintext
 
     # Split Re-Encryption Key Generation (aka Delegation)
-    kfrags = generate_kfrags(delegating_sk, receiving_pk, signing_sk, threshold, num_kfrags)
+    kfrags = generate_kfrags(delegating_sk=delegating_sk,
+                             receiving_pk=receiving_pk,
+                             signer=signer,
+                             threshold=threshold,
+                             num_kfrags=num_kfrags)
 
     # Bob requests re-encryption to some set of M ursulas
-    cfrags = list()
-    for kfrag in kfrags[:threshold]:
-        # Ursula checks that the received kfrag is valid
-        assert kfrag.verify(signing_pk, delegating_pk, receiving_pk)
-
-        # Re-encryption by an Ursula
-        cfrag = reencrypt(capsule, kfrag)
-
-        # Bob collects the result
-        cfrags.append(cfrag)
-
-    # Bob checks that the received cfrags are valid
-    assert all(cfrag.verify(capsule, delegating_pk, receiving_pk, signing_pk) for cfrag in cfrags)
+    cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
 
     # Decryption by Bob
-    plaintext_reenc = decrypt_reencrypted(receiving_sk,
-                                          delegating_pk,
-                                          capsule,
-                                          cfrags[:threshold],
-                                          ciphertext,
+    plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+                                          delegating_pk=delegating_pk,
+                                          capsule=capsule,
+                                          verified_cfrags=cfrags[:threshold],
+                                          ciphertext=ciphertext,
                                           )
 
     assert plaintext_reenc == plaintext
+
+
+def test_reencrypt_unverified_kfrag(capsule, kfrags):
+    kfrag = KeyFrag.from_bytes(bytes(kfrags[0]))
+    with pytest.raises(TypeError):
+        reencrypt(capsule, kfrag)
+
+
+def test_decrypt_unverified_cfrag(verification_keys, bobs_keys, capsule_and_ciphertext, kfrags):
+    verifying_pk, delegating_pk, receiving_pk = verification_keys
+    receiving_sk, _receiving_pk = bobs_keys
+    capsule, ciphertext = capsule_and_ciphertext
+
+    cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
+    cfrags[0] = CapsuleFrag.from_bytes(bytes(cfrags[0]))
+    with pytest.raises(TypeError):
+        plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+                                              delegating_pk=delegating_pk,
+                                              capsule=capsule,
+                                              verified_cfrags=cfrags,
+                                              ciphertext=ciphertext,
+                                              )
+
+
+def test_wrong_num_kfrags(alices_keys, bobs_keys):
+    delegating_sk, signing_sk = alices_keys
+    _receiving_sk, receiving_pk = bobs_keys
+
+    # Trying to create less kfrags than the threshold
+    with pytest.raises(ValueError):
+        generate_kfrags(delegating_sk=delegating_sk,
+                        signer=Signer(signing_sk),
+                        receiving_pk=receiving_pk,
+                        threshold=3,
+                        num_kfrags=2)

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Union, Tuple
 
 from . import openssl
 from .curve import CURVE
@@ -37,12 +37,12 @@ class CurveScalar(Serializable):
 
     @classmethod
     def from_digest(cls, digest: 'Hash') -> 'CurveScalar':
-        # TODO (#39): to be replaced by the standard algroithm.
-        # Currently just matching what we have in RustCrypto stack
+        # TODO (#39): this is used in Umbral scheme itself,
+        # and needs to be able to return a guaranteed nonzero scalar.
+        # Currently just matching what we have in rust-umbral
         # (taking bytes modulo curve order).
         # Can produce zeros!
-        bn = openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order)
-        return cls(bn)
+        return cls(openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order))
 
     @classmethod
     def __take__(cls, data: bytes) -> Tuple['CurveScalar', bytes]:
@@ -66,7 +66,7 @@ class CurveScalar(Serializable):
         """
         Compares the two BIGNUMS or int.
         """
-        if type(other) == int:
+        if isinstance(other, int):
             other = CurveScalar.from_int(other)
         return openssl.bn_cmp(self._backend_bignum, other._backend_bignum) == 0
 
@@ -83,7 +83,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_mul(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_mul(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def __add__(self, other : Union[int, 'CurveScalar']) -> 'CurveScalar':
         """
@@ -91,7 +93,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_add(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_add(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def __sub__(self, other : Union[int, 'CurveScalar']) -> 'CurveScalar':
         """
@@ -99,7 +103,9 @@ class CurveScalar(Serializable):
         """
         if isinstance(other, int):
             other = CurveScalar.from_int(other)
-        return CurveScalar(openssl.bn_sub(self._backend_bignum, other._backend_bignum, CURVE.bn_order))
+        return CurveScalar(openssl.bn_sub(self._backend_bignum,
+                                          other._backend_bignum,
+                                          CURVE.bn_order))
 
     def invert(self) -> 'CurveScalar':
         """

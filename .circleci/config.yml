@@ -121,9 +121,12 @@ commands:
       - run:
           name: Install Python dependencies with Pipenv
           command: pipenv install --python << parameters.python_version >> --dev --skip-lock --pre
+      # Workaround for pipenv check erroneously requiring pip>=21.1,
+      # even if it is in fact installed and that version is fixed in Pipfile.
+      # See https://github.com/pypa/pipenv/issues/4147
       - run:
           name: Check PEP 508 Requirements
-          command: pipenv check
+          command: pipenv check --ignore 40291
       - persist_to_workspace:
           root: ~/.local/share/virtualenvs/
           paths:

@@ -65,13 +65,9 @@ INSTALL_REQUIRES = [
 DEV_INSTALL_REQUIRES = [
     'pytest',
     'pytest-mypy',
-    'pytest-mock',
     'pytest-cov',
-    'mock',
-    'hypothesis',
     'coverage',
     'codecov',
-    'monkeytype',
     'nbval',
     'mypy',
     'bumpversion',

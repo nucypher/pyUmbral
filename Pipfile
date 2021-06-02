@@ -13,23 +13,19 @@ bumpversion = "*"
 # Pytest Plugins
 pytest = "*"
 pytest-mypy = "*"
-pytest-mock = "*"
 pytest-cov = "*"
 pytest-benchmark = {version = "*",extras = ["histogram"]}
 # Pytest Plugin Subdeps
-mock = "*"
 mypy = "*"
-monkeytype = "*"
 coverage = "*"
 codecov = "*"
-# Testing libraries
-hypothesis = "*"
+# Testing libraries
 nbval = "*"
 # Docs
 sphinx = "*"
 sphinx-autobuild = "*"
 sphinx_rtd_theme = "*"
-# Overrides vulnerable versions allowed by codecov and sphinx:
+# Overrides vulnerable versions allowed by codecov and sphinx:
 requests = ">=2.20.0"
 
 [pipenv]

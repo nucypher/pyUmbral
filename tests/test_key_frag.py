@@ -1,7 +1,7 @@
 import pytest
 
 from umbral import KeyFrag, PublicKey, Signer, VerificationError
-from umbral.key_frag import KeyFragID, KeyFragBase
+from umbral.key_frag import KeyFragID, KeyFragBase, VerifiedKeyFrag
 from umbral.curve_scalar import CurveScalar
 
 
@@ -124,3 +124,9 @@ def test_kfrag_str(kfrags):
     s = str(KeyFrag.from_bytes(bytes(kfrags[0])))
     assert "VerifiedKeyFrag" not in s
     assert "KeyFrag" in s
+
+
+def test_from_verified_bytes(kfrags):
+    kfrag_bytes = bytes(kfrags[0])
+    verified_kfrag = VerifiedKeyFrag.from_verified_bytes(kfrag_bytes)
+    assert verified_kfrag == kfrags[0]

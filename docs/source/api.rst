@@ -40,6 +40,7 @@ Intermediate objects
     :show-inheritance:
 
 .. autoclass:: VerifiedKeyFrag()
+    :members:
     :special-members: __eq__, __hash__
 
 .. autoclass:: CapsuleFrag()

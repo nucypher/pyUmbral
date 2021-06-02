@@ -253,6 +253,18 @@ class VerifiedKeyFrag:
     def __bytes__(self):
         return bytes(self.kfrag)
 
+    @classmethod
+    def from_verified_bytes(cls, data) -> 'VerifiedKeyFrag':
+        """
+        Restores a verified keyfrag directly from serialized bytes,
+        skipping :py:meth:`KeyFrag.verify` call.
+
+        Intended for internal storage;
+        make sure that the bytes come from a trusted source.
+        """
+        kfrag = KeyFrag.from_bytes(data)
+        return cls(kfrag)
+
     def __eq__(self, other):
         return self.kfrag == other.kfrag
 

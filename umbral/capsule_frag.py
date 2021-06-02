@@ -58,7 +58,6 @@ class CapsuleFragProof(Serializable):
                              kfrag: KeyFrag,
                              cfrag_e1: CurvePoint,
                              cfrag_v1: CurvePoint,
-                             metadata: Optional[bytes],
                              ) -> 'CapsuleFragProof':
 
         params = PARAMETERS
@@ -81,7 +80,7 @@ class CapsuleFragProof(Serializable):
         v2 = v * t
         u2 = u * t
 
-        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2], metadata)
+        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2])
 
         ###
 
@@ -141,15 +140,11 @@ class CapsuleFrag(Serializable):
                 bytes(self.proof))
 
     @classmethod
-    def reencrypted(cls,
-                    capsule: Capsule,
-                    kfrag: KeyFrag,
-                    metadata: Optional[bytes] = None,
-                    ) -> 'CapsuleFrag':
+    def reencrypted(cls, capsule: Capsule, kfrag: KeyFrag) -> 'CapsuleFrag':
         rk = kfrag.key
         e1 = capsule.point_e * rk
         v1 = capsule.point_v * rk
-        proof = CapsuleFragProof.from_kfrag_and_cfrag(capsule, kfrag, e1, v1, metadata)
+        proof = CapsuleFragProof.from_kfrag_and_cfrag(capsule, kfrag, e1, v1)
 
         return cls(point_e1=e1,
                    point_v1=v1,
@@ -163,12 +158,9 @@ class CapsuleFrag(Serializable):
                verifying_pk: PublicKey,
                delegating_pk: PublicKey,
                receiving_pk: PublicKey,
-               metadata: Optional[bytes] = None,
                ) -> 'VerifiedCapsuleFrag':
         """
         Verifies the validity of this fragment.
-
-        ``metadata`` should coincide with the one given to :py:func:`reencrypt`.
         """
 
         params = PARAMETERS
@@ -189,7 +181,7 @@ class CapsuleFrag(Serializable):
         v2 = self.proof.point_v2
         u2 = self.proof.kfrag_pok
 
-        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2], metadata)
+        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2])
 
         ###
 

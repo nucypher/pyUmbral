@@ -60,23 +60,17 @@ def generate_kfrags(delegating_sk: SecretKey,
     return [VerifiedKeyFrag(kfrag) for kfrag in kfrags]
 
 
-def reencrypt(capsule: Capsule,
-              kfrag: VerifiedKeyFrag,
-              metadata: Optional[bytes] = None
-              ) -> VerifiedCapsuleFrag:
+def reencrypt(capsule: Capsule, kfrag: VerifiedKeyFrag) -> VerifiedCapsuleFrag:
     """
     Creates a capsule fragment using the given key fragment.
     Capsule fragments can later be used to decrypt the ciphertext.
-
-    If `metadata` is provided, it will have to be used for verification in
-    :py:meth:`CapsuleFrag.verify`.
     """
     # We could let duck typing do its work,
     # but it's better to make a common error more understandable.
     if isinstance(kfrag, KeyFrag) and not isinstance(kfrag, VerifiedKeyFrag):
         raise TypeError("KeyFrag must be verified before reencryption")
 
-    return VerifiedCapsuleFrag(CapsuleFrag.reencrypted(capsule, kfrag.kfrag, metadata))
+    return VerifiedCapsuleFrag(CapsuleFrag.reencrypted(capsule, kfrag.kfrag))
 
 
 def decrypt_reencrypted(decrypting_sk: SecretKey,

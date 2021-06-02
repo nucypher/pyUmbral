@@ -143,16 +143,16 @@ def test_kfrags(implementations):
 
 
 def _reencrypt(umbral, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
-               capsule_bytes, kfrags_bytes, threshold, metadata):
+               capsule_bytes, kfrags_bytes, threshold):
     capsule = umbral.Capsule.from_bytes(bytes(capsule_bytes))
     verified_kfrags = _verify_kfrags(umbral, kfrags_bytes,
                                      verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
-    cfrags = [umbral.reencrypt(capsule, kfrag, metadata=metadata) for kfrag in verified_kfrags[:threshold]]
+    cfrags = [umbral.reencrypt(capsule, kfrag) for kfrag in verified_kfrags[:threshold]]
     return [bytes(cfrag) for cfrag in cfrags]
 
 
 def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
-                         capsule_bytes, cfrags_bytes, ciphertext, metadata):
+                         capsule_bytes, cfrags_bytes, ciphertext):
 
     receiving_sk = umbral.SecretKey.from_bytes(receiving_sk_bytes)
     receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
@@ -166,7 +166,7 @@ def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verify
                                     verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    metadata=metadata)
+                                    )
                        for cfrag in cfrags]
 
     # Decryption by Bob
@@ -184,7 +184,6 @@ def test_reencrypt(implementations):
 
     umbral1, umbral2 = implementations
 
-    metadata = b'metadata'
     threshold = 2
     num_kfrags = 3
     plaintext = b'peace at dawn'
@@ -203,13 +202,13 @@ def test_reencrypt(implementations):
     # On client 2
 
     cfrags_bytes = _reencrypt(umbral2, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
-                              capsule_bytes, kfrags_bytes, threshold, metadata)
+                              capsule_bytes, kfrags_bytes, threshold)
 
     # On client 1
 
     plaintext_reencrypted = _decrypt_reencrypted(umbral1,
                                                  receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
-                                                 capsule_bytes, cfrags_bytes, ciphertext, metadata)
+                                                 capsule_bytes, cfrags_bytes, ciphertext)
 
     assert plaintext_reencrypted == plaintext
 

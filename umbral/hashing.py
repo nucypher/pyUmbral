@@ -63,14 +63,10 @@ def hash_to_shared_secret(precursor: CurvePoint,
     return CurveScalar.from_digest(digest)
 
 
-def hash_to_cfrag_verification(points: Iterable[CurvePoint],
-                               metadata: Optional[bytes] = None
-                               ) -> CurveScalar:
+def hash_to_cfrag_verification(points: Iterable[CurvePoint]) -> CurveScalar:
     digest = Hash(b"CFRAG_VERIFICATION")
     for point in points:
         digest.update(point)
-    if metadata is not None:
-        digest.update(metadata)
     return CurveScalar.from_digest(digest)
 
 

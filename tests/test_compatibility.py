@@ -242,3 +242,30 @@ def test_signer(implementations):
 
     assert _verify_message(umbral1, pk_bytes, signature2_bytes, message)
     assert _verify_message(umbral2, pk_bytes, signature1_bytes, message)
+
+
+def _measure_sizes(umbral):
+
+    sized_types = [
+        umbral.SecretKey,
+        umbral.SecretKeyFactory,
+        umbral.PublicKey,
+        umbral.Signature,
+        umbral.Capsule,
+        umbral.KeyFrag,
+        umbral.VerifiedKeyFrag,
+        umbral.CapsuleFrag,
+        umbral.VerifiedCapsuleFrag,
+        ]
+
+    return {tp.__name__: tp.serialized_size() for tp in sized_types}
+
+
+def test_serialization_size(implementations):
+
+    umbral1, umbral2 = implementations
+
+    sizes1 = _measure_sizes(umbral1)
+    sizes2 = _measure_sizes(umbral1)
+
+    assert sizes1 == sizes2

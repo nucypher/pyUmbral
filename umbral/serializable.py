@@ -3,6 +3,9 @@ from typing import Tuple, Type, List, Any, TypeVar
 
 
 class HasSerializedSize(ABC):
+    """
+    A base serialization mixin, denoting a type with a constant-size serialized representation.
+    """
 
     @classmethod
     @abstractmethod
@@ -16,7 +19,7 @@ class HasSerializedSize(ABC):
 
 class Deserializable(HasSerializedSize):
     """
-    A mixin for composable serialization.
+    A mixin for composable deserialization.
     """
 
     _T = TypeVar('_T', bound='Deserializable')
@@ -70,6 +73,9 @@ class Deserializable(HasSerializedSize):
 
 
 class Serializable(HasSerializedSize):
+    """
+    A mixin for composable serialization.
+    """
 
     @abstractmethod
     def __bytes__(self):

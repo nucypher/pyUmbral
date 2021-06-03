@@ -8,11 +8,11 @@ from .hashing import hash_to_cfrag_verification, kfrag_signature_message
 from .keys import PublicKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 from .signing import Signature
 
 
-class CapsuleFragProof(Serializable):
+class CapsuleFragProof(Serializable, Deserializable):
 
     def __init__(self,
                  point_e2: CurvePoint,
@@ -95,7 +95,7 @@ class CapsuleFragProof(Serializable):
                    )
 
 
-class CapsuleFrag(Serializable):
+class CapsuleFrag(Serializable, Deserializable):
     """
     Re-encrypted fragment of :py:class:`Capsule`.
     """
@@ -215,7 +215,7 @@ class CapsuleFrag(Serializable):
         return VerifiedCapsuleFrag(self)
 
 
-class VerifiedCapsuleFrag:
+class VerifiedCapsuleFrag(Serializable):
     """
     Verified capsule frag, good for decryption.
     Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
@@ -227,6 +227,10 @@ class VerifiedCapsuleFrag:
 
     def __bytes__(self):
         return bytes(self.cfrag)
+
+    @classmethod
+    def serialized_size(cls):
+        return CapsuleFrag.serialized_size()
 
     def __eq__(self, other):
         return self.cfrag == other.cfrag

@@ -3,10 +3,10 @@ from typing import Tuple
 from . import openssl
 from .curve import CURVE
 from .curve_scalar import CurveScalar
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 
 
-class CurvePoint(Serializable):
+class CurvePoint(Serializable, Deserializable):
     """
     Represents an OpenSSL EC_POINT except more Pythonic.
     """

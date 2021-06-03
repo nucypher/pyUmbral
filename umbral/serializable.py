@@ -2,12 +2,24 @@ from abc import abstractmethod, ABC
 from typing import Tuple, Type, List, Any, TypeVar
 
 
-class Serializable(ABC):
+class HasSerializedSize(ABC):
+
+    @classmethod
+    @abstractmethod
+    def serialized_size(cls) -> int:
+        """
+        Returns the size in bytes of the serialized representation of this object
+        (obtained with ``bytes()``).
+        """
+        raise NotImplementedError
+
+
+class Deserializable(HasSerializedSize):
     """
     A mixin for composable serialization.
     """
 
-    _T = TypeVar('_T', bound='Serializable')
+    _T = TypeVar('_T', bound='Deserializable')
 
     @classmethod
     def from_bytes(cls: Type[_T], data: bytes) -> _T:
@@ -22,7 +34,7 @@ class Serializable(ABC):
     @staticmethod
     def _split(data: bytes, *types: Type) -> List[Any]:
         """
-        Given a list of ``Serializable`` types, attempts to deserialize them from the bytestring
+        Given a list of ``Deserializable`` types, attempts to deserialize them from the bytestring
         one by one and returns the list of the resulting objects and the remaining bytestring.
         """
         objs = []
@@ -49,21 +61,15 @@ class Serializable(ABC):
 
     @classmethod
     @abstractmethod
-    def serialized_size(cls) -> int:
-        """
-        Returns the size in bytes of the serialized representation of this object
-        (obtained with ``bytes()``).
-        """
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
     def _from_exact_bytes(cls: Type[_T], data: bytes) -> _T:
         """
         Deserializes the object from a bytestring of exactly the expected length
         (defined by ``serialized_size()``).
         """
         raise NotImplementedError
+
+
+class Serializable(HasSerializedSize):
 
     @abstractmethod
     def __bytes__(self):

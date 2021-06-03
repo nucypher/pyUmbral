@@ -5,7 +5,7 @@ from .curve_scalar import CurveScalar
 from .errors import GenericError
 from .hashing import hash_capsule_points, hash_to_polynomial_arg, hash_to_shared_secret
 from .keys import PublicKey, SecretKey
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 if TYPE_CHECKING: # pragma: no cover
     from .capsule_frag import CapsuleFrag
 
@@ -19,7 +19,7 @@ def lambda_coeff(xs: Sequence[CurveScalar], i: int) -> CurveScalar:
     return res
 
 
-class Capsule(Serializable):
+class Capsule(Serializable, Deserializable):
     """
     Encapsulated symmetric key.
     """

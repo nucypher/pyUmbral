@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING, Union, Tuple
 
 from . import openssl
 from .curve import CURVE
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 if TYPE_CHECKING: # pragma: no cover
     from .hashing import Hash
 
 
-class CurveScalar(Serializable):
+class CurveScalar(Serializable, Deserializable):
     """
     Represents an OpenSSL Bignum modulo the order of a curve. Some of these
     operations will only work with prime numbers.

@@ -7,11 +7,11 @@ from .errors import VerificationError
 from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
-from .serializable import Serializable, bool_bytes, bool_serialized_size
+from .serializable import Serializable, Deserializable, bool_bytes, bool_serialized_size
 from .signing import Signature, Signer
 
 
-class KeyFragID(Serializable):
+class KeyFragID(Serializable, Deserializable):
 
     __SIZE = 32
 
@@ -37,7 +37,7 @@ class KeyFragID(Serializable):
         return self._id
 
 
-class KeyFragProof(Serializable):
+class KeyFragProof(Serializable, Deserializable):
 
     @classmethod
     def from_base(cls,
@@ -135,7 +135,7 @@ def poly_eval(coeffs: List[CurveScalar], x: CurveScalar) -> CurveScalar:
     return result
 
 
-class KeyFrag(Serializable):
+class KeyFrag(Serializable, Deserializable):
     """
     A signed fragment of the delegating key.
     """
@@ -252,7 +252,7 @@ class KeyFrag(Serializable):
         return VerifiedKeyFrag(self)
 
 
-class VerifiedKeyFrag:
+class VerifiedKeyFrag(Serializable):
     """
     Verified kfrag, good for reencryption.
     Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
@@ -264,6 +264,10 @@ class VerifiedKeyFrag:
 
     def __bytes__(self):
         return bytes(self.kfrag)
+
+    @classmethod
+    def serialized_size(cls):
+        return KeyFrag.serialized_size()
 
     @classmethod
     def from_verified_bytes(cls, data) -> 'VerifiedKeyFrag':

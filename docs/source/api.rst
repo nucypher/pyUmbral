@@ -42,6 +42,7 @@ Intermediate objects
 .. autoclass:: VerifiedKeyFrag()
     :members:
     :special-members: __eq__, __hash__
+    :show-inheritance:
 
 .. autoclass:: CapsuleFrag()
     :members:
@@ -50,6 +51,7 @@ Intermediate objects
 
 .. autoclass:: VerifiedCapsuleFrag()
     :special-members: __eq__, __hash__
+    :show-inheritance:
 
 Encryption, re-encryption and decryption
 ----------------------------------------
@@ -73,6 +75,13 @@ Utilities
 .. autoclass:: umbral.VerificationError
     :show-inheritance:
 
+.. autoclass:: umbral.serializable.HasSerializedSize
+    :members: serialized_size
+
 .. autoclass:: umbral.serializable.Serializable
-    :members: from_bytes
     :special-members: __bytes__
+    :show-inheritance:
+
+.. autoclass:: umbral.serializable.Deserializable
+    :members: from_bytes
+    :show-inheritance:

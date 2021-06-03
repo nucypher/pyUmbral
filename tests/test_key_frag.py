@@ -130,3 +130,9 @@ def test_from_verified_bytes(kfrags):
     kfrag_bytes = bytes(kfrags[0])
     verified_kfrag = VerifiedKeyFrag.from_verified_bytes(kfrag_bytes)
     assert verified_kfrag == kfrags[0]
+
+
+def test_serialized_size(kfrags):
+    verified_kfrag = kfrags[0]
+    kfrag = KeyFrag.from_bytes(bytes(verified_kfrag))
+    assert verified_kfrag.serialized_size() == kfrag.serialized_size()

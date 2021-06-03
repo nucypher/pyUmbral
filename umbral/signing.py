@@ -3,7 +3,7 @@ from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .hashing import Hash
 from .keys import SecretKey, PublicKey
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 
 
 def digest_for_signing(message: bytes) -> Hash:
@@ -66,7 +66,7 @@ class Signer:
         raise RuntimeError(f"{self.__class__.__name__} objects do not support serialization")
 
 
-class Signature(Serializable):
+class Signature(Serializable, Deserializable):
     """
     Wrapper for ECDSA signatures.
     """

@@ -2,10 +2,10 @@ import re
 
 import pytest
 
-from umbral.serializable import Serializable, bool_bytes, bool_from_exact_bytes
+from umbral.serializable import Serializable, Deserializable, bool_bytes, bool_from_exact_bytes
 
 
-class A(Serializable):
+class A(Serializable, Deserializable):
 
     def __init__(self, val: int):
         assert 0 <= val < 2**32
@@ -26,7 +26,7 @@ class A(Serializable):
         return isinstance(other, A) and self.val == other.val
 
 
-class B(Serializable):
+class B(Serializable, Deserializable):
 
     def __init__(self, val: int):
         assert 0 <= val < 2**16
@@ -47,7 +47,7 @@ class B(Serializable):
         return isinstance(other, B) and self.val == other.val
 
 
-class C(Serializable):
+class C(Serializable, Deserializable):
 
     def __init__(self, a: A, b: B):
         self.a = a
@@ -106,6 +106,6 @@ def test_split_bool():
     a = A(2**32 - 123)
     b = True
     data = bytes(a) + bool_bytes(b)
-    a_back, b_back = Serializable._split(data, A, bool)
+    a_back, b_back = Deserializable._split(data, A, bool)
     assert a_back == a
     assert b_back == b

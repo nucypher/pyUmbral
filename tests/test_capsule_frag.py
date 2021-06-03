@@ -114,3 +114,9 @@ def test_cfrag_str(capsule, kfrags):
     s = str(CapsuleFrag.from_bytes(bytes(cfrag0)))
     assert "VerifiedCapsuleFrag" not in s
     assert "CapsuleFrag" in s
+
+
+def test_serialized_size(capsule, kfrags):
+    verified_cfrag = reencrypt(capsule, kfrags[0])
+    cfrag = CapsuleFrag.from_bytes(bytes(verified_cfrag))
+    assert verified_cfrag.serialized_size() == cfrag.serialized_size()

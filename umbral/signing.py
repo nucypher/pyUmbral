@@ -92,9 +92,12 @@ class Signature(Serializable):
         return self.verify_digest(verifying_key, digest)
 
     @classmethod
-    def __take__(cls, data):
-        (r, s), data = cls.__take_types__(data, CurveScalar, CurveScalar)
-        return cls(r, s), data
+    def serialized_size(cls):
+        return CurveScalar.serialized_size() * 2
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        return cls(*cls._split(data, CurveScalar, CurveScalar))
 
     def __bytes__(self):
         return bytes(self.r) + bytes(self.s)

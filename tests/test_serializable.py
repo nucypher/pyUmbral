@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from umbral.serializable import Serializable, serialize_bool, take_bool
+from umbral.serializable import Serializable, bool_bytes, bool_from_exact_bytes
 
 
 class A(Serializable):
@@ -12,12 +12,15 @@ class A(Serializable):
         self.val = val
 
     @classmethod
-    def __take__(cls, data):
-        val_bytes, data = cls.__take_bytes__(data, 4)
-        return cls(int.from_bytes(val_bytes, byteorder='big')), data
+    def serialized_size(cls):
+        return 4
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(int.from_bytes(data, byteorder='big'))
 
     def __bytes__(self):
-        return self.val.to_bytes(4, byteorder='big')
+        return self.val.to_bytes(self.serialized_size(), byteorder='big')
 
     def __eq__(self, other):
         return isinstance(other, A) and self.val == other.val
@@ -30,12 +33,15 @@ class B(Serializable):
         self.val = val
 
     @classmethod
-    def __take__(cls, data):
-        val_bytes, data = cls.__take_bytes__(data, 2)
-        return cls(int.from_bytes(val_bytes, byteorder='big')), data
+    def serialized_size(cls):
+        return 2
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(int.from_bytes(data, byteorder='big'))
 
     def __bytes__(self):
-        return self.val.to_bytes(2, byteorder='big')
+        return self.val.to_bytes(self.serialized_size(), byteorder='big')
 
     def __eq__(self, other):
         return isinstance(other, B) and self.val == other.val
@@ -48,9 +54,13 @@ class C(Serializable):
         self.b = b
 
     @classmethod
-    def __take__(cls, data):
-        components, data = cls.__take_types__(data, A, B)
-        return cls(*components), data
+    def serialized_size(cls):
+        return A.serialized_size() + B.serialized_size()
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        components = cls._split(data, A, B)
+        return cls(*components)
 
     def __bytes__(self):
         return bytes(self.a) + bytes(self.b)
@@ -71,7 +81,7 @@ def test_too_many_bytes():
     a = A(2**32 - 123)
     b = B(2**16 - 456)
     c = C(a, b)
-    with pytest.raises(ValueError, match="1 bytes remaining after deserializing"):
+    with pytest.raises(ValueError, match="Expected 6 bytes, got 7"):
         C.from_bytes(bytes(c) + b'\x00')
 
 
@@ -80,13 +90,22 @@ def test_not_enough_bytes():
     b = B(2**16 - 456)
     c = C(a, b)
     # Will happen on deserialization of B - 1 byte missing
-    with pytest.raises(ValueError, match="cannot take 2 bytes from a bytestring of size 1"):
+    with pytest.raises(ValueError, match="Expected 6 bytes, got 5"):
         C.from_bytes(bytes(c)[:-1])
 
 
-def test_serialize_bool():
-    assert take_bool(serialize_bool(True) + b'1234') == (True, b'1234')
-    assert take_bool(serialize_bool(False) + b'12') == (False, b'12')
+def test_bool_bytes():
+    assert bool_from_exact_bytes(bool_bytes(True)) == True
+    assert bool_from_exact_bytes(bool_bytes(False)) == False
     error_msg = re.escape("Incorrectly serialized boolean; expected b'\\x00' or b'\\x01', got b'z'")
     with pytest.raises(ValueError, match=error_msg):
-        take_bool(b'z1234')
+        bool_from_exact_bytes(b'z')
+
+
+def test_split_bool():
+    a = A(2**32 - 123)
+    b = True
+    data = bytes(a) + bool_bytes(b)
+    a_back, b_back = Serializable._split(data, A, bool)
+    assert a_back == a
+    assert b_back == b

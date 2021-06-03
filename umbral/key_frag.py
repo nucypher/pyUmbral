@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple, Type
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
@@ -7,7 +7,7 @@ from .errors import VerificationError
 from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
-from .serializable import Serializable, serialize_bool, take_bool
+from .serializable import Serializable, bool_bytes, bool_serialized_size
 from .signing import Signature, Signer
 
 
@@ -26,9 +26,12 @@ class KeyFragID(Serializable):
         return cls(os.urandom(cls.__SIZE))
 
     @classmethod
-    def __take__(cls, data):
-        id_, data = cls.__take_bytes__(data, cls.__SIZE)
-        return cls(id_), data
+    def serialized_size(cls):
+        return cls.__SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(data)
 
     def __bytes__(self):
         return self._id
@@ -102,22 +105,25 @@ class KeyFragProof(Serializable):
     def __eq__(self, other):
         return self._components() == other._components()
 
-    @classmethod
-    def __take__(cls, data):
-        types = [CurvePoint, Signature, Signature]
-        (commitment, sig_proxy, sig_bob), data = cls.__take_types__(data, *types)
-        delegating_key_signed, data = take_bool(data)
-        receiving_key_signed, data = take_bool(data)
+    _SERIALIZED_SIZE = (CurvePoint.serialized_size() +
+                        Signature.serialized_size() * 2 +
+                        bool_serialized_size() * 2)
 
-        obj = cls(commitment, sig_proxy, sig_bob, delegating_key_signed, receiving_key_signed)
-        return obj, data
+    @classmethod
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        types = [CurvePoint, Signature, Signature, bool, bool]
+        return cls(*cls._split(data, *types))
 
     def __bytes__(self):
         return (bytes(self.commitment) +
                 bytes(self.signature_for_proxy) +
                 bytes(self.signature_for_receiver) +
-                serialize_bool(self.delegating_key_signed) +
-                serialize_bool(self.receiving_key_signed)
+                bool_bytes(self.delegating_key_signed) +
+                bool_bytes(self.receiving_key_signed)
                 )
 
 
@@ -144,17 +150,23 @@ class KeyFrag(Serializable):
         self.precursor = precursor
         self.proof = proof
 
-    @classmethod
-    def __take__(cls, data):
-        types = [KeyFragID, CurveScalar, CurvePoint, KeyFragProof]
-        components, data = cls.__take_types__(data, *types)
-        return cls(*components), data
-
-    def __bytes__(self):
-        return bytes(self.id) + bytes(self.key) + bytes(self.precursor) + bytes(self.proof)
-
     def _components(self):
         return self.id, self.key, self.precursor, self.proof
+
+    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+        KeyFragID, CurveScalar, CurvePoint, KeyFragProof)
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
+    @classmethod
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(*cls._split(data, *cls._COMPONENT_TYPES))
+
+    def __bytes__(self):
+        return b''.join(bytes(comp) for comp in self._components())
 
     def __eq__(self, other):
         return self._components() == other._components()

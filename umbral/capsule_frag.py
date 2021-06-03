@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Type
 
 from .capsule import Capsule
 from .curve_point import CurvePoint
@@ -34,23 +34,23 @@ class CapsuleFragProof(Serializable):
         return (self.point_e2, self.point_v2, self.kfrag_commitment,
                 self.kfrag_pok, self.signature, self.kfrag_signature)
 
+    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+        CurvePoint, CurvePoint, CurvePoint, CurvePoint, CurveScalar, Signature)
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
     def __eq__(self, other):
         return self._components() == other._components()
 
     @classmethod
-    def __take__(cls, data):
-        types = [CurvePoint, CurvePoint, CurvePoint, CurvePoint, CurveScalar, Signature]
-        components, data = cls.__take_types__(data, *types)
-        return cls(*components), data
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(*cls._split(data, *cls._COMPONENT_TYPES))
 
     def __bytes__(self):
-        return (bytes(self.point_e2) +
-                bytes(self.point_v2) +
-                bytes(self.kfrag_commitment) +
-                bytes(self.kfrag_pok) +
-                bytes(self.signature) +
-                bytes(self.kfrag_signature)
-                )
+        return b''.join(bytes(comp) for comp in self._components())
 
     @classmethod
     def from_kfrag_and_cfrag(cls,
@@ -117,6 +117,10 @@ class CapsuleFrag(Serializable):
     def _components(self):
         return (self.point_e1, self.point_v1, self.kfrag_id, self.precursor, self.proof)
 
+    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+        CurvePoint, CurvePoint, KeyFragID, CurvePoint, CapsuleFragProof)
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
     def __eq__(self, other):
         return self._components() == other._components()
 
@@ -127,17 +131,15 @@ class CapsuleFrag(Serializable):
         return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"
 
     @classmethod
-    def __take__(cls, data):
-        types = CurvePoint, CurvePoint, KeyFragID, CurvePoint, CapsuleFragProof
-        components, data = cls.__take_types__(data, *types)
-        return cls(*components), data
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(*cls._split(data, *cls._COMPONENT_TYPES))
 
     def __bytes__(self):
-        return (bytes(self.point_e1) +
-                bytes(self.point_v1) +
-                bytes(self.kfrag_id) +
-                bytes(self.precursor) +
-                bytes(self.proof))
+        return b''.join(bytes(comp) for comp in self._components())
 
     @classmethod
     def reencrypted(cls, capsule: Capsule, kfrag: KeyFrag) -> 'CapsuleFrag':

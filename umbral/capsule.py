@@ -29,17 +29,21 @@ class Capsule(Serializable):
         self.point_v = point_v
         self.signature = signature
 
-    @classmethod
-    def __take__(cls, data: bytes) -> Tuple['Capsule', bytes]:
-        (e, v, sig), data = cls.__take_types__(data, CurvePoint, CurvePoint, CurveScalar)
+    _COMPONENT_TYPES = CurvePoint, CurvePoint, CurveScalar
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
 
-        capsule = cls(e, v, sig)
+    @classmethod
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        capsule = cls(*cls._split(data, *cls._COMPONENT_TYPES))
         if not capsule._verify():
             raise GenericError("Capsule self-verification failed. Serialized data may be damaged.")
+        return capsule
 
-        return capsule, data
-
-    def __bytes__(self) -> bytes:
+    def __bytes__(self):
         return bytes(self.point_e) + bytes(self.point_v) + bytes(self.signature)
 
     @classmethod

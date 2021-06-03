@@ -43,9 +43,12 @@ class SecretKey(Serializable):
         return self._scalar_key
 
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['SecretKey', bytes]:
-        (scalar_key,), data = cls.__take_types__(data, CurveScalar)
-        return cls(scalar_key), data
+    def serialized_size(cls):
+        return CurveScalar.serialized_size()
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        return cls(CurveScalar._from_exact_bytes(data))
 
     def __bytes__(self) -> bytes:
         return bytes(self._scalar_key)
@@ -70,9 +73,12 @@ class PublicKey(Serializable):
         return cls(sk._public_key_point)
 
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['PublicKey', bytes]:
-        (point_key,), data = cls.__take_types__(data, CurvePoint)
-        return cls(point_key), data
+    def serialized_size(cls):
+        return CurvePoint.serialized_size()
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        return cls(CurvePoint._from_exact_bytes(data))
 
     def __bytes__(self) -> bytes:
         return bytes(self._point_key)
@@ -122,9 +128,12 @@ class SecretKeyFactory(Serializable):
         return SecretKey(scalar_key)
 
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['SecretKeyFactory', bytes]:
-        key_seed, data = cls.__take_bytes__(data, cls._KEY_SEED_SIZE)
-        return cls(key_seed), data
+    def serialized_size(cls):
+        return cls._KEY_SEED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        return cls(data)
 
     def __bytes__(self) -> bytes:
         return bytes(self.__key_seed)

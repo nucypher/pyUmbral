@@ -45,10 +45,12 @@ class CurveScalar(Serializable):
         return cls(openssl.bn_from_bytes(digest.finalize(), apply_modulus=CURVE.bn_order))
 
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['CurveScalar', bytes]:
-        scalar_data, data = cls.__take_bytes__(data, CURVE.scalar_size)
-        bignum = openssl.bn_from_bytes(scalar_data, check_modulus=CURVE.bn_order)
-        return cls(bignum), data
+    def serialized_size(cls):
+        return CURVE.scalar_size
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        return cls(openssl.bn_from_bytes(data, check_modulus=CURVE.bn_order))
 
     def __bytes__(self) -> bytes:
         """

@@ -7,7 +7,9 @@ from .errors import VerificationError
 from .hashing import hash_to_shared_secret, kfrag_signature_message, hash_to_polynomial_arg
 from .keys import PublicKey, SecretKey
 from .params import PARAMETERS
-from .serializable import Serializable, Deserializable, bool_bytes, bool_serialized_size
+from .serializable import (
+    Serializable, Deserializable, HasSerializedSize,
+    bool_bytes, bool_serialized_size)
 from .signing import Signature, Signer
 
 
@@ -153,7 +155,7 @@ class KeyFrag(Serializable, Deserializable):
     def _components(self):
         return self.id, self.key, self.precursor, self.proof
 
-    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+    _COMPONENT_TYPES: Tuple[Type[HasSerializedSize], ...] = (
         KeyFragID, CurveScalar, CurvePoint, KeyFragProof)
     _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
 

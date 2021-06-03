@@ -8,7 +8,7 @@ from .hashing import hash_to_cfrag_verification, kfrag_signature_message
 from .keys import PublicKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
-from .serializable import Serializable, Deserializable
+from .serializable import Serializable, Deserializable, HasSerializedSize
 from .signing import Signature
 
 
@@ -34,7 +34,7 @@ class CapsuleFragProof(Serializable, Deserializable):
         return (self.point_e2, self.point_v2, self.kfrag_commitment,
                 self.kfrag_pok, self.signature, self.kfrag_signature)
 
-    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+    _COMPONENT_TYPES: Tuple[Type[HasSerializedSize], ...] = (
         CurvePoint, CurvePoint, CurvePoint, CurvePoint, CurveScalar, Signature)
     _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
 
@@ -117,7 +117,7 @@ class CapsuleFrag(Serializable, Deserializable):
     def _components(self):
         return (self.point_e1, self.point_v1, self.kfrag_id, self.precursor, self.proof)
 
-    _COMPONENT_TYPES: Tuple[Type[Serializable], ...] = (
+    _COMPONENT_TYPES: Tuple[Type[HasSerializedSize], ...] = (
         CurvePoint, CurvePoint, KeyFragID, CurvePoint, CapsuleFragProof)
     _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
 

@@ -170,7 +170,7 @@ def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verify
                        for cfrag in cfrags]
 
     # Decryption by Bob
-    plaintext = umbral.decrypt_reencrypted(decrypting_sk=receiving_sk,
+    plaintext = umbral.decrypt_reencrypted(receiving_sk=receiving_sk,
                                            delegating_pk=delegating_pk,
                                            capsule=capsule,
                                            verified_cfrags=verified_cfrags,

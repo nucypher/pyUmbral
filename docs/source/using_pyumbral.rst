@@ -130,7 +130,7 @@ or re-encrypted for him by Ursula, he will not be able to open it.
 
 .. doctest:: capsule_story
 
-    >>> fail = decrypt_original(sk=bobs_secret_key,
+    >>> fail = decrypt_original(delegating_sk=bobs_secret_key,
     ...                         capsule=capsule,
     ...                         ciphertext=ciphertext)
     Traceback (most recent call last):
@@ -196,7 +196,7 @@ Finally, Bob decrypts the re-encrypted ciphertext using his key.
 .. doctest:: capsule_story
 
     >>> from umbral import decrypt_reencrypted
-    >>> cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+    >>> cleartext = decrypt_reencrypted(receiving_sk=bobs_secret_key,
     ...                                 delegating_pk=alices_public_key,
     ...                                 capsule=capsule,
     ...                                 verified_cfrags=cfrags,

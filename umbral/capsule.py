@@ -43,7 +43,7 @@ class Capsule(Serializable):
         return bytes(self.point_e) + bytes(self.point_v) + bytes(self.signature)
 
     @classmethod
-    def from_public_key(cls, pk: PublicKey) -> Tuple['Capsule', CurvePoint]:
+    def from_public_key(cls, delegating_pk: PublicKey) -> Tuple['Capsule', CurvePoint]:
         g = CurvePoint.generator()
 
         priv_r = CurveScalar.random_nonzero()
@@ -55,12 +55,12 @@ class Capsule(Serializable):
         h = hash_capsule_points(pub_r, pub_u)
         s = priv_u + (priv_r * h)
 
-        shared_key = pk._point_key * (priv_r + priv_u)
+        shared_key = delegating_pk._point_key * (priv_r + priv_u)
 
         return cls(point_e=pub_r, point_v=pub_u, signature=s), shared_key
 
-    def open_original(self, sk: SecretKey) -> CurvePoint:
-        return (self.point_e + self.point_v) * sk.secret_scalar()
+    def open_original(self, delegating_sk: SecretKey) -> CurvePoint:
+        return (self.point_e + self.point_v) * delegating_sk.secret_scalar()
 
     def open_reencrypted(self,
                          receiving_sk: SecretKey,

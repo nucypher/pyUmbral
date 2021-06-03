@@ -103,7 +103,7 @@ cfrags = [cfrag.verify(capsule,
 # ------------------------------------
 # Finally, Bob decrypts the re-encrypted ciphertext using his key.
 
-bob_cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+bob_cleartext = decrypt_reencrypted(receiving_sk=bobs_secret_key,
                                     delegating_pk=alices_public_key,
                                     capsule=bob_capsule,
                                     verified_cfrags=cfrags,

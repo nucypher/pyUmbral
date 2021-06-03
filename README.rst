@@ -147,7 +147,7 @@ and then decrypts the re-encrypted ciphertext.
 
     from umbral import decrypt_reencrypted
 
-    bob_cleartext = pre.decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+    bob_cleartext = pre.decrypt_reencrypted(receiving_sk=bobs_secret_key,
                                             delegating_pk=alices_public_key,
                                             capsule=capsule,
                                             cfrags=cfrags,

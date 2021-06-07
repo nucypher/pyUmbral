@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Tuple, Sequence
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .errors import GenericError
 from .hashing import hash_capsule_points, hash_to_polynomial_arg, hash_to_shared_secret
 from .keys import PublicKey, SecretKey
 from .serializable import Serializable, Deserializable
@@ -40,7 +39,7 @@ class Capsule(Serializable, Deserializable):
     def _from_exact_bytes(cls, data: bytes):
         capsule = cls(*cls._split(data, *cls._COMPONENT_TYPES))
         if not capsule._verify():
-            raise GenericError("Capsule self-verification failed. Serialized data may be damaged.")
+            raise ValueError("Capsule self-verification failed. Serialized data may be damaged.")
         return capsule
 
     def __bytes__(self):
@@ -110,7 +109,7 @@ class Capsule(Serializable, Deserializable):
         # TODO: check for d == 0? Or just let if fail?
         inv_d = d.invert()
         if orig_pub_key * (s * inv_d) != (e_prime * h) + v_prime:
-            raise GenericError("Internal validation failed")
+            raise ValueError("Internal validation failed")
 
         return (e_prime + v_prime) * d
 

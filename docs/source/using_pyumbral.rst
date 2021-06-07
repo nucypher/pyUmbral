@@ -135,7 +135,7 @@ or re-encrypted for him by Ursula, he will not be able to open it.
     ...                         ciphertext=ciphertext)
     Traceback (most recent call last):
         ...
-    umbral.GenericError
+    ValueError
 
 
 Ursulas perform re-encryption

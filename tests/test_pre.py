@@ -4,7 +4,6 @@ from umbral import (
     SecretKey,
     PublicKey,
     Signer,
-    GenericError,
     KeyFrag,
     CapsuleFrag,
     encrypt,
@@ -25,7 +24,7 @@ def test_public_key_encryption(alices_keys):
 
     # Wrong secret key
     sk = SecretKey.random()
-    with pytest.raises(GenericError):
+    with pytest.raises(ValueError):
         decrypt_original(sk, capsule, ciphertext)
 
 

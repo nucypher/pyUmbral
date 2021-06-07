@@ -5,7 +5,6 @@ from umbral import (
     SecretKey,
     PublicKey,
     Signer,
-    GenericError,
     encrypt,
     decrypt_original,
     reencrypt,
@@ -29,7 +28,7 @@ def test_capsule_serialization(alices_keys):
     capsule.point_e = CurvePoint.random()
     capsule_bytes = bytes(capsule)
 
-    with pytest.raises(GenericError):
+    with pytest.raises(ValueError):
         Capsule.from_bytes(capsule_bytes)
 
 
@@ -86,7 +85,7 @@ def test_open_reencrypted(alices_keys, bobs_keys):
         capsule.open_reencrypted(receiving_sk, delegating_pk, [])
 
     # Not enough cfrags
-    with pytest.raises(GenericError, match="Internal validation failed"):
+    with pytest.raises(ValueError, match="Internal validation failed"):
         capsule.open_reencrypted(receiving_sk, delegating_pk, cfrags[:threshold-1])
 
     # Repeating cfrags

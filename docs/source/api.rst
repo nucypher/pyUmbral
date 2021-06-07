@@ -69,9 +69,6 @@ Encryption, re-encryption and decryption
 Utilities
 ---------
 
-.. autoclass:: umbral.GenericError
-    :show-inheritance:
-
 .. autoclass:: umbral.VerificationError
     :show-inheritance:
 

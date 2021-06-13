@@ -237,9 +237,8 @@ create_test_vector_file(vector_suite, 'vectors_kfrags.json', generate_again=gene
 
 vectors = list()
 
-metadata = b'kfrag_metadata'
 for kfrag in kfrags:
-    cfrag = reencrypt(capsule, kfrag, metadata)
+    cfrag = reencrypt(capsule, kfrag)
     json_input = {'kfrag': hexlify(kfrag), 'cfrag': hexlify(cfrag)}
     vectors.append(json_input)
 
@@ -249,10 +248,9 @@ vector_suite = {
                     'enclosed Capsule, under the enclosed delegating, '
                     'verifying and receiving keys. Each CFrag must deserialize '
                     'correctly and can be replicated with a call to '
-                    '`reencrypt(kfrag, capsule, , b\'kfrag_metadata\')`'),
+                    '`reencrypt(kfrag, capsule)`'),
     'params': 'default',
     'capsule': hexlify(capsule),
-    'metadata': hexlify(metadata),
     'verifying_pk': hexlify(verifying_pk),
     'delegating_pk': hexlify(delegating_pk),
     'receiving_pk': hexlify(receiving_pk),

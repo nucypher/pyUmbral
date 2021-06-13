@@ -3,10 +3,10 @@ from typing import Tuple
 from . import openssl
 from .curve import CURVE
 from .curve_scalar import CurveScalar
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 
 
-class CurvePoint(Serializable):
+class CurvePoint(Serializable, Deserializable):
     """
     Represents an OpenSSL EC_POINT except more Pythonic.
     """
@@ -34,14 +34,15 @@ class CurvePoint(Serializable):
         return openssl.point_to_affine_coords(CURVE, self._backend_point)
 
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['CurvePoint', bytes]:
+    def serialized_size(cls):
+        return CURVE.field_element_size + 1 # compressed point size
+
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
         """
         Returns a CurvePoint object from the given byte data on the curve provided.
         """
-        size = CURVE.field_element_size + 1 # compressed point size
-        point_data, data = cls.__take_bytes__(data, size)
-        point = openssl.point_from_bytes(CURVE, point_data)
-        return cls(point), data
+        return cls(openssl.point_from_bytes(CURVE, data))
 
     def __bytes__(self) -> bytes:
         """

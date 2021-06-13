@@ -2,10 +2,9 @@ from typing import TYPE_CHECKING, Tuple, Sequence
 
 from .curve_point import CurvePoint
 from .curve_scalar import CurveScalar
-from .errors import GenericError
 from .hashing import hash_capsule_points, hash_to_polynomial_arg, hash_to_shared_secret
 from .keys import PublicKey, SecretKey
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable
 if TYPE_CHECKING: # pragma: no cover
     from .capsule_frag import CapsuleFrag
 
@@ -19,7 +18,7 @@ def lambda_coeff(xs: Sequence[CurveScalar], i: int) -> CurveScalar:
     return res
 
 
-class Capsule(Serializable):
+class Capsule(Serializable, Deserializable):
     """
     Encapsulated symmetric key.
     """
@@ -29,21 +28,25 @@ class Capsule(Serializable):
         self.point_v = point_v
         self.signature = signature
 
+    _COMPONENT_TYPES = CurvePoint, CurvePoint, CurveScalar
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
     @classmethod
-    def __take__(cls, data: bytes) -> Tuple['Capsule', bytes]:
-        (e, v, sig), data = cls.__take_types__(data, CurvePoint, CurvePoint, CurveScalar)
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
 
-        capsule = cls(e, v, sig)
+    @classmethod
+    def _from_exact_bytes(cls, data: bytes):
+        capsule = cls(*cls._split(data, *cls._COMPONENT_TYPES))
         if not capsule._verify():
-            raise GenericError("Capsule self-verification failed. Serialized data may be damaged.")
+            raise ValueError("Capsule self-verification failed. Serialized data may be damaged.")
+        return capsule
 
-        return capsule, data
-
-    def __bytes__(self) -> bytes:
+    def __bytes__(self):
         return bytes(self.point_e) + bytes(self.point_v) + bytes(self.signature)
 
     @classmethod
-    def from_public_key(cls, pk: PublicKey) -> Tuple['Capsule', CurvePoint]:
+    def from_public_key(cls, delegating_pk: PublicKey) -> Tuple['Capsule', CurvePoint]:
         g = CurvePoint.generator()
 
         priv_r = CurveScalar.random_nonzero()
@@ -55,12 +58,12 @@ class Capsule(Serializable):
         h = hash_capsule_points(pub_r, pub_u)
         s = priv_u + (priv_r * h)
 
-        shared_key = pk._point_key * (priv_r + priv_u)
+        shared_key = delegating_pk._point_key * (priv_r + priv_u)
 
         return cls(point_e=pub_r, point_v=pub_u, signature=s), shared_key
 
-    def open_original(self, sk: SecretKey) -> CurvePoint:
-        return (self.point_e + self.point_v) * sk.secret_scalar()
+    def open_original(self, delegating_sk: SecretKey) -> CurvePoint:
+        return (self.point_e + self.point_v) * delegating_sk.secret_scalar()
 
     def open_reencrypted(self,
                          receiving_sk: SecretKey,
@@ -106,7 +109,7 @@ class Capsule(Serializable):
         # TODO: check for d == 0? Or just let if fail?
         inv_d = d.invert()
         if orig_pub_key * (s * inv_d) != (e_prime * h) + v_prime:
-            raise GenericError("Internal validation failed")
+            raise ValueError("Internal validation failed")
 
         return (e_prime + v_prime) * d
 

@@ -4,7 +4,7 @@ from .__about__ import (
 
 from .capsule import Capsule
 from .capsule_frag import CapsuleFrag, VerifiedCapsuleFrag
-from .errors import GenericError, VerificationError
+from .errors import VerificationError
 from .key_frag import KeyFrag, VerifiedKeyFrag
 from .keys import SecretKey, PublicKey, SecretKeyFactory
 from .pre import encrypt, decrypt_original, decrypt_reencrypted, reencrypt, generate_kfrags
@@ -21,7 +21,6 @@ __all__ = [
     "VerifiedKeyFrag",
     "CapsuleFrag",
     "VerifiedCapsuleFrag",
-    "GenericError",
     "VerificationError",
     "encrypt",
     "decrypt_original",

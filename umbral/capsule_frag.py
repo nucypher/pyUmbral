@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Type
 
 from .capsule import Capsule
 from .curve_point import CurvePoint
@@ -8,11 +8,11 @@ from .hashing import hash_to_cfrag_verification, kfrag_signature_message
 from .keys import PublicKey
 from .key_frag import KeyFrag, KeyFragID
 from .params import PARAMETERS
-from .serializable import Serializable
+from .serializable import Serializable, Deserializable, HasSerializedSize
 from .signing import Signature
 
 
-class CapsuleFragProof(Serializable):
+class CapsuleFragProof(Serializable, Deserializable):
 
     def __init__(self,
                  point_e2: CurvePoint,
@@ -34,23 +34,23 @@ class CapsuleFragProof(Serializable):
         return (self.point_e2, self.point_v2, self.kfrag_commitment,
                 self.kfrag_pok, self.signature, self.kfrag_signature)
 
+    _COMPONENT_TYPES: Tuple[Type[HasSerializedSize], ...] = (
+        CurvePoint, CurvePoint, CurvePoint, CurvePoint, CurveScalar, Signature)
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
     def __eq__(self, other):
         return self._components() == other._components()
 
     @classmethod
-    def __take__(cls, data):
-        types = [CurvePoint, CurvePoint, CurvePoint, CurvePoint, CurveScalar, Signature]
-        components, data = cls.__take_types__(data, *types)
-        return cls(*components), data
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
+
+    @classmethod
+    def _from_exact_bytes(cls, data):
+        return cls(*cls._split(data, *cls._COMPONENT_TYPES))
 
     def __bytes__(self):
-        return (bytes(self.point_e2) +
-                bytes(self.point_v2) +
-                bytes(self.kfrag_commitment) +
-                bytes(self.kfrag_pok) +
-                bytes(self.signature) +
-                bytes(self.kfrag_signature)
-                )
+        return b''.join(bytes(comp) for comp in self._components())
 
     @classmethod
     def from_kfrag_and_cfrag(cls,
@@ -58,7 +58,6 @@ class CapsuleFragProof(Serializable):
                              kfrag: KeyFrag,
                              cfrag_e1: CurvePoint,
                              cfrag_v1: CurvePoint,
-                             metadata: Optional[bytes],
                              ) -> 'CapsuleFragProof':
 
         params = PARAMETERS
@@ -81,7 +80,7 @@ class CapsuleFragProof(Serializable):
         v2 = v * t
         u2 = u * t
 
-        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2], metadata)
+        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2])
 
         ###
 
@@ -96,7 +95,7 @@ class CapsuleFragProof(Serializable):
                    )
 
 
-class CapsuleFrag(Serializable):
+class CapsuleFrag(Serializable, Deserializable):
     """
     Re-encrypted fragment of :py:class:`Capsule`.
     """
@@ -118,6 +117,10 @@ class CapsuleFrag(Serializable):
     def _components(self):
         return (self.point_e1, self.point_v1, self.kfrag_id, self.precursor, self.proof)
 
+    _COMPONENT_TYPES: Tuple[Type[HasSerializedSize], ...] = (
+        CurvePoint, CurvePoint, KeyFragID, CurvePoint, CapsuleFragProof)
+    _SERIALIZED_SIZE = sum(tp.serialized_size() for tp in _COMPONENT_TYPES)
+
     def __eq__(self, other):
         return self._components() == other._components()
 
@@ -128,28 +131,22 @@ class CapsuleFrag(Serializable):
         return f"{self.__class__.__name__}:{bytes(self).hex()[:16]}"
 
     @classmethod
-    def __take__(cls, data):
-        types = CurvePoint, CurvePoint, KeyFragID, CurvePoint, CapsuleFragProof
-        components, data = cls.__take_types__(data, *types)
-        return cls(*components), data
-
-    def __bytes__(self):
-        return (bytes(self.point_e1) +
-                bytes(self.point_v1) +
-                bytes(self.kfrag_id) +
-                bytes(self.precursor) +
-                bytes(self.proof))
+    def serialized_size(cls):
+        return cls._SERIALIZED_SIZE
 
     @classmethod
-    def reencrypted(cls,
-                    capsule: Capsule,
-                    kfrag: KeyFrag,
-                    metadata: Optional[bytes] = None,
-                    ) -> 'CapsuleFrag':
+    def _from_exact_bytes(cls, data):
+        return cls(*cls._split(data, *cls._COMPONENT_TYPES))
+
+    def __bytes__(self):
+        return b''.join(bytes(comp) for comp in self._components())
+
+    @classmethod
+    def reencrypted(cls, capsule: Capsule, kfrag: KeyFrag) -> 'CapsuleFrag':
         rk = kfrag.key
         e1 = capsule.point_e * rk
         v1 = capsule.point_v * rk
-        proof = CapsuleFragProof.from_kfrag_and_cfrag(capsule, kfrag, e1, v1, metadata)
+        proof = CapsuleFragProof.from_kfrag_and_cfrag(capsule, kfrag, e1, v1)
 
         return cls(point_e1=e1,
                    point_v1=v1,
@@ -163,12 +160,9 @@ class CapsuleFrag(Serializable):
                verifying_pk: PublicKey,
                delegating_pk: PublicKey,
                receiving_pk: PublicKey,
-               metadata: Optional[bytes] = None,
                ) -> 'VerifiedCapsuleFrag':
         """
         Verifies the validity of this fragment.
-
-        ``metadata`` should coincide with the one given to :py:func:`reencrypt`.
         """
 
         params = PARAMETERS
@@ -189,7 +183,7 @@ class CapsuleFrag(Serializable):
         v2 = self.proof.point_v2
         u2 = self.proof.kfrag_pok
 
-        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2], metadata)
+        h = hash_to_cfrag_verification([e, e1, e2, v, v1, v2, u, u1, u2])
 
         ###
 
@@ -221,7 +215,7 @@ class CapsuleFrag(Serializable):
         return VerifiedCapsuleFrag(self)
 
 
-class VerifiedCapsuleFrag:
+class VerifiedCapsuleFrag(Serializable):
     """
     Verified capsule frag, good for decryption.
     Can be cast to ``bytes``, but cannot be deserialized from bytes directly.
@@ -233,6 +227,10 @@ class VerifiedCapsuleFrag:
 
     def __bytes__(self):
         return bytes(self.cfrag)
+
+    @classmethod
+    def serialized_size(cls):
+        return CapsuleFrag.serialized_size()
 
     def __eq__(self, other):
         return self.cfrag == other.cfrag

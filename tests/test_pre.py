@@ -4,7 +4,6 @@ from umbral import (
     SecretKey,
     PublicKey,
     Signer,
-    GenericError,
     KeyFrag,
     CapsuleFrag,
     encrypt,
@@ -25,7 +24,7 @@ def test_public_key_encryption(alices_keys):
 
     # Wrong secret key
     sk = SecretKey.random()
-    with pytest.raises(GenericError):
+    with pytest.raises(ValueError):
         decrypt_original(sk, capsule, ciphertext)
 
 
@@ -81,7 +80,7 @@ def test_simple_api(num_kfrags, threshold):
     cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
 
     # Decryption by Bob
-    plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+    plaintext_reenc = decrypt_reencrypted(receiving_sk=receiving_sk,
                                           delegating_pk=delegating_pk,
                                           capsule=capsule,
                                           verified_cfrags=cfrags[:threshold],
@@ -105,7 +104,7 @@ def test_decrypt_unverified_cfrag(verification_keys, bobs_keys, capsule_and_ciph
     cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
     cfrags[0] = CapsuleFrag.from_bytes(bytes(cfrags[0]))
     with pytest.raises(TypeError):
-        plaintext_reenc = decrypt_reencrypted(decrypting_sk=receiving_sk,
+        plaintext_reenc = decrypt_reencrypted(receiving_sk=receiving_sk,
                                               delegating_pk=delegating_pk,
                                               capsule=capsule,
                                               verified_cfrags=cfrags,

@@ -1,6 +1,6 @@
 import random
 from umbral import (
-    SecretKey, PublicKey, Signer, GenericError, CapsuleFrag,
+    SecretKey, PublicKey, Signer, CapsuleFrag,
     encrypt, generate_kfrags, reencrypt, decrypt_original, decrypt_reencrypted)
 
 # Generate an Umbral key pair
@@ -46,7 +46,7 @@ bob_capsule = capsule
 # Attempt Bob's decryption (fail)
 try:
     fail_decrypted_data = decrypt_original(bobs_secret_key, bob_capsule, ciphertext)
-except GenericError:
+except ValueError:
     print("Decryption failed! Bob doesn't has access granted yet.")
 
 # Alice grants access to Bob by generating kfrags
@@ -103,7 +103,7 @@ cfrags = [cfrag.verify(capsule,
 # ------------------------------------
 # Finally, Bob decrypts the re-encrypted ciphertext using his key.
 
-bob_cleartext = decrypt_reencrypted(decrypting_sk=bobs_secret_key,
+bob_cleartext = decrypt_reencrypted(receiving_sk=bobs_secret_key,
                                     delegating_pk=alices_public_key,
                                     capsule=bob_capsule,
                                     verified_cfrags=cfrags,

@@ -1,9 +1,8 @@
 {
   "name": "Test vectors for CFrags",
-  "description": "This is a collection of CFrags, originated from the enclosed Capsule, under the enclosed delegating, verifying and receiving keys. Each CFrag must deserialize correctly and can be replicated with a call to `reencrypt(kfrag, capsule, , b'kfrag_metadata')`",
+  "description": "This is a collection of CFrags, originated from the enclosed Capsule, under the enclosed delegating, verifying and receiving keys. Each CFrag must deserialize correctly and can be replicated with a call to `reencrypt(kfrag, capsule)`",
   "params": "default",
   "capsule": "02558f1de19a58e73a94e8fbbc6d3b1de2d312d90746ea74cb29f046943bf5787102906780e9484aec2102a01a157f10ced5aec952cd00631d94d5ea2edfa9b6808361b109353b0827b7e4013ab92a70eb3337a37f6fe34b3ccb058592caa246c974",
-  "metadata": "6b667261675f6d65746164617461",
   "verifying_pk": "030b95b3f249297824b32d3391392d62a9aff32e8698fa78c7e8ce4a9d17071f56",
   "delegating_pk": "02d67029bb92522059225d190038230c23466e28d132d48f714f9098168a562b8a",
   "receiving_pk": "03b0d0243e8954b408047eee3b09b5ed132ccc25ec70e99fc74b6e9f54e5ecf9c7",

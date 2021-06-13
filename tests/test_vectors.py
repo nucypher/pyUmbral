@@ -147,14 +147,12 @@ def test_cfrags():
                         CapsuleFrag.from_bytes(bytes.fromhex(json_kfrag['cfrag'])))
                        for json_kfrag in vector_suite['vectors']]
 
-    metadata = bytes.fromhex(vector_suite['metadata'])
-
     for kfrag, cfrag in kfrags_n_cfrags:
         verified_kfrag = kfrag.verify(verifying_pk=verifying_pk,
                                       delegating_pk=delegating_pk,
                                       receiving_pk=receiving_pk)
 
-        new_cfrag = reencrypt(capsule, verified_kfrag, metadata=metadata).cfrag
+        new_cfrag = reencrypt(capsule, verified_kfrag).cfrag
         assert new_cfrag.point_e1 == cfrag.point_e1
         assert new_cfrag.point_v1 == cfrag.point_v1
         assert new_cfrag.kfrag_id == cfrag.kfrag_id
@@ -163,4 +161,4 @@ def test_cfrags():
                          verifying_pk=verifying_pk,
                          delegating_pk=delegating_pk,
                          receiving_pk=receiving_pk,
-                         metadata=metadata)
+                         )

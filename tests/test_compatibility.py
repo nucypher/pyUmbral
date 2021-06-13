@@ -143,16 +143,16 @@ def test_kfrags(implementations):
 
 
 def _reencrypt(umbral, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
-               capsule_bytes, kfrags_bytes, threshold, metadata):
+               capsule_bytes, kfrags_bytes, threshold):
     capsule = umbral.Capsule.from_bytes(bytes(capsule_bytes))
     verified_kfrags = _verify_kfrags(umbral, kfrags_bytes,
                                      verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes)
-    cfrags = [umbral.reencrypt(capsule, kfrag, metadata=metadata) for kfrag in verified_kfrags[:threshold]]
+    cfrags = [umbral.reencrypt(capsule, kfrag) for kfrag in verified_kfrags[:threshold]]
     return [bytes(cfrag) for cfrag in cfrags]
 
 
 def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
-                         capsule_bytes, cfrags_bytes, ciphertext, metadata):
+                         capsule_bytes, cfrags_bytes, ciphertext):
 
     receiving_sk = umbral.SecretKey.from_bytes(receiving_sk_bytes)
     receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
@@ -166,11 +166,11 @@ def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verify
                                     verifying_pk=verifying_pk,
                                     delegating_pk=delegating_pk,
                                     receiving_pk=receiving_pk,
-                                    metadata=metadata)
+                                    )
                        for cfrag in cfrags]
 
     # Decryption by Bob
-    plaintext = umbral.decrypt_reencrypted(decrypting_sk=receiving_sk,
+    plaintext = umbral.decrypt_reencrypted(receiving_sk=receiving_sk,
                                            delegating_pk=delegating_pk,
                                            capsule=capsule,
                                            verified_cfrags=verified_cfrags,
@@ -184,7 +184,6 @@ def test_reencrypt(implementations):
 
     umbral1, umbral2 = implementations
 
-    metadata = b'metadata'
     threshold = 2
     num_kfrags = 3
     plaintext = b'peace at dawn'
@@ -203,13 +202,13 @@ def test_reencrypt(implementations):
     # On client 2
 
     cfrags_bytes = _reencrypt(umbral2, verifying_pk_bytes, delegating_pk_bytes, receiving_pk_bytes,
-                              capsule_bytes, kfrags_bytes, threshold, metadata)
+                              capsule_bytes, kfrags_bytes, threshold)
 
     # On client 1
 
     plaintext_reencrypted = _decrypt_reencrypted(umbral1,
                                                  receiving_sk_bytes, delegating_pk_bytes, verifying_pk_bytes,
-                                                 capsule_bytes, cfrags_bytes, ciphertext, metadata)
+                                                 capsule_bytes, cfrags_bytes, ciphertext)
 
     assert plaintext_reencrypted == plaintext
 
@@ -243,3 +242,30 @@ def test_signer(implementations):
 
     assert _verify_message(umbral1, pk_bytes, signature2_bytes, message)
     assert _verify_message(umbral2, pk_bytes, signature1_bytes, message)
+
+
+def _measure_sizes(umbral):
+
+    sized_types = [
+        umbral.SecretKey,
+        umbral.SecretKeyFactory,
+        umbral.PublicKey,
+        umbral.Signature,
+        umbral.Capsule,
+        umbral.KeyFrag,
+        umbral.VerifiedKeyFrag,
+        umbral.CapsuleFrag,
+        umbral.VerifiedCapsuleFrag,
+        ]
+
+    return {tp.__name__: tp.serialized_size() for tp in sized_types}
+
+
+def test_serialization_size(implementations):
+
+    umbral1, umbral2 = implementations
+
+    sizes1 = _measure_sizes(umbral1)
+    sizes2 = _measure_sizes(umbral1)
+
+    assert sizes1 == sizes2

@@ -6,7 +6,7 @@ from .openssl import backend, ErrorInvalidCompressedPoint
 from .curve import CURVE
 from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
-from .serializable import Serializable, serialize_bool
+from .serializable import Serializable, bool_bytes
 
 if TYPE_CHECKING: # pragma: no cover
     from .key_frag import KeyFragID
@@ -63,14 +63,10 @@ def hash_to_shared_secret(precursor: CurvePoint,
     return CurveScalar.from_digest(digest)
 
 
-def hash_to_cfrag_verification(points: Iterable[CurvePoint],
-                               metadata: Optional[bytes] = None
-                               ) -> CurveScalar:
+def hash_to_cfrag_verification(points: Iterable[CurvePoint]) -> CurveScalar:
     digest = Hash(b"CFRAG_VERIFICATION")
     for point in points:
         digest.update(point)
-    if metadata is not None:
-        digest.update(metadata)
     return CurveScalar.from_digest(digest)
 
 
@@ -83,14 +79,14 @@ def kfrag_signature_message(kfrag_id: 'KeyFragID',
 
     # Have to convert to bytes manually because `mypy` is not smart enough to resolve types.
 
-    delegating_part = ([serialize_bool(True), bytes(maybe_delegating_pk)]
+    delegating_part = ([bool_bytes(True), bytes(maybe_delegating_pk)]
                         if maybe_delegating_pk
-                        else [serialize_bool(False)])
+                        else [bool_bytes(False)])
     cast(List[Serializable], delegating_part)
 
-    receiving_part = ([serialize_bool(True), bytes(maybe_receiving_pk)]
+    receiving_part = ([bool_bytes(True), bytes(maybe_receiving_pk)]
                        if maybe_receiving_pk
-                       else [serialize_bool(False)])
+                       else [bool_bytes(False)])
 
     components = ([bytes(kfrag_id), bytes(commitment), bytes(precursor)] +
                   delegating_part +

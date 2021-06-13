@@ -8,25 +8,25 @@ from .key_frag import VerifiedKeyFrag, KeyFrag, KeyFragBase
 from .signing import Signer
 
 
-def encrypt(pk: PublicKey, plaintext: bytes) -> Tuple[Capsule, bytes]:
+def encrypt(delegating_pk: PublicKey, plaintext: bytes) -> Tuple[Capsule, bytes]:
     """
     Generates and encapsulates a symmetric key and uses it to encrypt the given plaintext.
 
     Returns the KEM Capsule and the ciphertext.
     """
-    capsule, key_seed = Capsule.from_public_key(pk)
+    capsule, key_seed = Capsule.from_public_key(delegating_pk)
     dem = DEM(bytes(key_seed))
     ciphertext = dem.encrypt(plaintext, authenticated_data=bytes(capsule))
     return capsule, ciphertext
 
 
-def decrypt_original(sk: SecretKey, capsule: Capsule, ciphertext: bytes) -> bytes:
+def decrypt_original(delegating_sk: SecretKey, capsule: Capsule, ciphertext: bytes) -> bytes:
     """
-    Opens the capsule using the original (Alice's) key used for encryption and gets what's inside.
+    Opens the capsule using the delegator's key used for encryption and gets what's inside.
     We hope that's a symmetric key, which we use to decrypt the ciphertext
     and return the resulting cleartext.
     """
-    key_seed = capsule.open_original(sk)
+    key_seed = capsule.open_original(delegating_sk)
     dem = DEM(bytes(key_seed))
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))
 
@@ -60,26 +60,20 @@ def generate_kfrags(delegating_sk: SecretKey,
     return [VerifiedKeyFrag(kfrag) for kfrag in kfrags]
 
 
-def reencrypt(capsule: Capsule,
-              kfrag: VerifiedKeyFrag,
-              metadata: Optional[bytes] = None
-              ) -> VerifiedCapsuleFrag:
+def reencrypt(capsule: Capsule, kfrag: VerifiedKeyFrag) -> VerifiedCapsuleFrag:
     """
     Creates a capsule fragment using the given key fragment.
     Capsule fragments can later be used to decrypt the ciphertext.
-
-    If `metadata` is provided, it will have to be used for verification in
-    :py:meth:`CapsuleFrag.verify`.
     """
     # We could let duck typing do its work,
     # but it's better to make a common error more understandable.
     if isinstance(kfrag, KeyFrag) and not isinstance(kfrag, VerifiedKeyFrag):
         raise TypeError("KeyFrag must be verified before reencryption")
 
-    return VerifiedCapsuleFrag(CapsuleFrag.reencrypted(capsule, kfrag.kfrag, metadata))
+    return VerifiedCapsuleFrag(CapsuleFrag.reencrypted(capsule, kfrag.kfrag))
 
 
-def decrypt_reencrypted(decrypting_sk: SecretKey,
+def decrypt_reencrypted(receiving_sk: SecretKey,
                         delegating_pk: PublicKey,
                         capsule: Capsule,
                         verified_cfrags: Sequence[VerifiedCapsuleFrag],
@@ -95,6 +89,6 @@ def decrypt_reencrypted(decrypting_sk: SecretKey,
             raise TypeError("All CapsuleFrags must be verified before decryption")
 
     cfrags = [vcfrag.cfrag for vcfrag in verified_cfrags]
-    key_seed = capsule.open_reencrypted(decrypting_sk, delegating_pk, cfrags)
+    key_seed = capsule.open_reencrypted(receiving_sk, delegating_pk, cfrags)
     dem = DEM(bytes(key_seed))
     return dem.decrypt(ciphertext, authenticated_data=bytes(capsule))

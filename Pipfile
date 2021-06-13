@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 setuptools = "*"
-cryptography = ">=2.3"
-pynacl = "*"
+cryptography = "~=3.0"
+pynacl = "~=1.0"
 
 [dev-packages]
 bumpversion = "*"
@@ -22,7 +22,7 @@ codecov = "*"
 # Testing libraries
 nbval = "*"
 # Docs
-sphinx = "*"
+sphinx = "~=4.0"
 sphinx-autobuild = "*"
 sphinx_rtd_theme = "*"
 # Overrides vulnerable versions allowed by codecov and sphinx:

@@ -58,8 +58,8 @@ class VerifyVersionCommand(install):
 
 INSTALL_REQUIRES = [
     'setuptools',
-    'cryptography>=2.3',
-    'pynacl',
+    'cryptography~=3.0',
+    'pynacl~=1.0',
 ]
 
 DEV_INSTALL_REQUIRES = [
@@ -75,7 +75,11 @@ DEV_INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'testing': DEV_INSTALL_REQUIRES,
-    'docs': ['sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme'],
+    'docs': [
+        'sphinx~=4.0',
+        'sphinx-autobuild',
+        'sphinx_rtd_theme',
+        ],
     'benchmarks': ['pytest-benchmark'],
 }
 

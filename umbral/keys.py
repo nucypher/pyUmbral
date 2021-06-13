@@ -13,8 +13,6 @@ class SecretKey(Serializable, Deserializable):
     Umbral secret (private) key.
     """
 
-    __SERIALIZATION_INFO = b"SECRET_KEY"
-
     def __init__(self, scalar_key: CurveScalar):
         self._scalar_key = scalar_key
         # Cached public key. Access it via `PublicKey.from_secret_key()` -

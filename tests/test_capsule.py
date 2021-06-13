@@ -3,7 +3,6 @@ import pytest
 from umbral import (
     Capsule,
     SecretKey,
-    PublicKey,
     Signer,
     encrypt,
     decrypt_original,
@@ -17,7 +16,7 @@ from umbral.curve_point import CurvePoint
 def test_capsule_serialization(alices_keys):
 
     delegating_sk, _signing_sk = alices_keys
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     capsule, _key = Capsule.from_public_key(delegating_pk)
     new_capsule = Capsule.from_bytes(bytes(capsule))
@@ -35,7 +34,7 @@ def test_capsule_serialization(alices_keys):
 def test_capsule_is_hashable(alices_keys):
 
     delegating_sk, _signing_sk = alices_keys
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     capsule1, key1 = Capsule.from_public_key(delegating_pk)
     capsule2, key2 = Capsule.from_public_key(delegating_pk)
@@ -51,7 +50,7 @@ def test_capsule_is_hashable(alices_keys):
 def test_open_original(alices_keys):
 
     delegating_sk, _signing_sk = alices_keys
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     capsule, key = Capsule.from_public_key(delegating_pk)
     key_back = capsule.open_original(delegating_sk)
@@ -67,7 +66,7 @@ def test_open_reencrypted(alices_keys, bobs_keys):
     receiving_sk, receiving_pk = bobs_keys
 
     signer = Signer(signing_sk)
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     capsule, key = Capsule.from_public_key(delegating_pk)
     kfrags = generate_kfrags(delegating_sk=delegating_sk,

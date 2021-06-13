@@ -21,13 +21,13 @@ def pytest_generate_tests(metafunc):
 
 def _create_keypair(umbral):
     sk = umbral.SecretKey.random()
-    pk = umbral.PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     return bytes(sk), bytes(pk)
 
 
 def _restore_keys(umbral, sk_bytes, pk_bytes):
     sk = umbral.SecretKey.from_bytes(sk_bytes)
-    pk_from_sk = umbral.PublicKey.from_secret_key(sk)
+    pk_from_sk = sk.public_key()
     pk_from_bytes = umbral.PublicKey.from_bytes(pk_bytes)
     assert pk_from_sk == pk_from_bytes
 
@@ -155,7 +155,7 @@ def _decrypt_reencrypted(umbral, receiving_sk_bytes, delegating_pk_bytes, verify
                          capsule_bytes, cfrags_bytes, ciphertext):
 
     receiving_sk = umbral.SecretKey.from_bytes(receiving_sk_bytes)
-    receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
+    receiving_pk = receiving_sk.public_key()
     delegating_pk = umbral.PublicKey.from_bytes(delegating_pk_bytes)
     verifying_pk = umbral.PublicKey.from_bytes(verifying_pk_bytes)
 
@@ -216,7 +216,7 @@ def test_reencrypt(implementations):
 def _sign_message(umbral, sk_bytes, message):
     sk = umbral.SecretKey.from_bytes(sk_bytes)
     signer = umbral.Signer(sk)
-    assert signer.verifying_key() == umbral.PublicKey.from_secret_key(sk)
+    assert signer.verifying_key() == sk.public_key()
     return bytes(signer.sign(message))
 
 

@@ -1,6 +1,6 @@
 import random
 from umbral import (
-    SecretKey, PublicKey, Signer, CapsuleFrag,
+    SecretKey, Signer, CapsuleFrag,
     encrypt, generate_kfrags, reencrypt, decrypt_original, decrypt_reencrypted)
 
 # Generate an Umbral key pair
@@ -9,10 +9,10 @@ from umbral import (
 # A delegating key pair and a Signing key pair.
 
 alices_secret_key = SecretKey.random()
-alices_public_key = PublicKey.from_secret_key(alices_secret_key)
+alices_public_key = alices_secret_key.public_key()
 
 alices_signing_key = SecretKey.random()
-alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
+alices_verifying_key = alices_signing_key.public_key()
 alices_signer = Signer(alices_signing_key)
 
 # Encrypt some data for Alice
@@ -38,7 +38,7 @@ print(cleartext)
 # -----------
 
 bobs_secret_key = SecretKey.random()
-bobs_public_key = PublicKey.from_secret_key(bobs_secret_key)
+bobs_public_key = bobs_secret_key.public_key()
 
 # Bob receives a capsule through a side channel (s3, ipfs, Google cloud, etc)
 bob_capsule = capsule

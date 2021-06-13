@@ -54,7 +54,7 @@ class Signer:
         """
         Returns the public verification key corresponding to the secret key used for signing.
         """
-        return PublicKey.from_secret_key(self.__secret_key)
+        return self.__secret_key.public_key()
 
     def __str__(self):
         return f"{self.__class__.__name__}:..."

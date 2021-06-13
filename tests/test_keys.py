@@ -10,10 +10,10 @@ def test_gen_key():
     sk = SecretKey.random()
     assert type(sk) == SecretKey
 
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     assert type(pk) == PublicKey
 
-    pk2 = PublicKey.from_secret_key(sk)
+    pk2 = sk.public_key()
     assert pk == pk2
 
 
@@ -30,19 +30,19 @@ def test_derive_key_from_label():
     sk1 = factory.secret_key_by_label(label)
     assert type(sk1) == SecretKey
 
-    pk1 = PublicKey.from_secret_key(sk1)
+    pk1 = sk1.public_key()
     assert type(pk1) == PublicKey
 
     # Check that key derivation is reproducible
     sk2 = factory.secret_key_by_label(label)
-    pk2 = PublicKey.from_secret_key(sk2)
+    pk2 = sk2.public_key()
     assert sk1 == sk2
     assert pk1 == pk2
 
     # Different labels on the same master secret create different keys
     label = b"my_tax_information"
     sk3 = factory.secret_key_by_label(label)
-    pk3 = PublicKey.from_secret_key(sk3)
+    pk3 = sk3.public_key()
     assert sk1 != sk3
 
 
@@ -81,7 +81,7 @@ def test_secret_key_factory_hash():
 
 def test_public_key_serialization():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
 
     encoded_key = bytes(pk)
     decoded_key = PublicKey.from_bytes(encoded_key)
@@ -89,12 +89,12 @@ def test_public_key_serialization():
 
 
 def test_public_key_point():
-    pk = PublicKey.from_secret_key(SecretKey.random())
+    pk = SecretKey.random().public_key()
     assert bytes(pk) == bytes(pk.point())
 
 
 def test_public_key_str():
-    pk = PublicKey.from_secret_key(SecretKey.random())
+    pk = SecretKey.random().public_key()
     s = str(pk)
     assert 'PublicKey' in s
 
@@ -113,10 +113,10 @@ def test_secret_key_factory_serialization():
 
 def test_public_key_is_hashable():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
 
     sk2 = SecretKey.random()
-    pk2 = PublicKey.from_secret_key(sk2)
+    pk2 = sk2.public_key()
     assert hash(pk) != hash(pk2)
 
     pk3 = PublicKey.from_bytes(bytes(pk))

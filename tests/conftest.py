@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import SecretKey, PublicKey, Signer, generate_kfrags, encrypt
+from umbral import SecretKey, Signer, generate_kfrags, encrypt
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def alices_keys():
 @pytest.fixture
 def bobs_keys():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     return sk, pk
 
 
@@ -22,8 +22,8 @@ def verification_keys(alices_keys, bobs_keys):
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
-    verifying_pk = PublicKey.from_secret_key(signing_sk)
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    verifying_pk = signing_sk.public_key()
+    delegating_pk = delegating_sk.public_key()
 
     return verifying_pk, delegating_pk, receiving_pk
 
@@ -52,7 +52,7 @@ def message():
 @pytest.fixture
 def capsule_and_ciphertext(alices_keys, message):
     delegating_sk, _signing_sk = alices_keys
-    capsule, ciphertext = encrypt(PublicKey.from_secret_key(delegating_sk), message)
+    capsule, ciphertext = encrypt(delegating_sk.public_key(), message)
     return capsule, ciphertext
 
 

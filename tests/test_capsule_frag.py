@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import encrypt, reencrypt, CapsuleFrag, PublicKey, Capsule, VerificationError
+from umbral import encrypt, reencrypt, CapsuleFrag, Capsule, VerificationError
 from umbral.curve_point import CurvePoint
 
 

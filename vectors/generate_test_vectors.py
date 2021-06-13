@@ -2,7 +2,7 @@ import json
 import os
 
 from umbral import (
-    SecretKey, PublicKey, Signer, KeyFrag, CapsuleFrag,
+    SecretKey, Signer, KeyFrag, CapsuleFrag,
     encrypt, generate_kfrags, reencrypt)
 from umbral.curve_scalar import CurveScalar
 from umbral.curve_point import  CurvePoint
@@ -44,9 +44,9 @@ delegating_sk = SecretKey.random()
 receiving_sk = SecretKey.random()
 signing_sk = SecretKey.random()
 
-verifying_pk = PublicKey.from_secret_key(signing_sk)
-delegating_pk = PublicKey.from_secret_key(delegating_sk)
-receiving_pk = PublicKey.from_secret_key(receiving_sk)
+verifying_pk = signing_sk.public_key()
+delegating_pk = delegating_sk.public_key()
+receiving_pk = receiving_sk.public_key()
 
 kfrags = generate_kfrags(delegating_sk=delegating_sk,
                          receiving_pk=receiving_pk,

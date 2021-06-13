@@ -307,7 +307,7 @@ class KeyFragBase:
 
         g = CurvePoint.generator()
 
-        delegating_pk = PublicKey.from_secret_key(delegating_sk)
+        delegating_pk = delegating_sk.public_key()
 
         receiving_pk_point = receiving_pk.point()
 

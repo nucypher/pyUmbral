@@ -22,10 +22,10 @@ class Deserializable(HasSerializedSize):
     A mixin for composable deserialization.
     """
 
-    _T = TypeVar('_T', bound='Deserializable')
+    Self = TypeVar('Self', bound='Deserializable')
 
     @classmethod
-    def from_bytes(cls: Type[_T], data: bytes) -> _T:
+    def from_bytes(cls: Type[Self], data: bytes) -> Self:
         """
         Restores the object from serialized bytes.
         """
@@ -64,7 +64,7 @@ class Deserializable(HasSerializedSize):
 
     @classmethod
     @abstractmethod
-    def _from_exact_bytes(cls: Type[_T], data: bytes) -> _T:
+    def _from_exact_bytes(cls: Type[Self], data: bytes) -> Self:
         """
         Deserializes the object from a bytestring of exactly the expected length
         (defined by ``serialized_size()``).

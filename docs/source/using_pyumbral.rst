@@ -56,7 +56,7 @@ A delegating key pair and a signing key pair.
 Encrypt with a public key
 --------------------------
 Now let's encrypt data with Alice's public key.
-Invocation of :py:func:`encrypt` returns both a ``capsule`` and a ``ciphertext``.
+Invocation of :py:func:`umbral.encrypt` returns both a ``capsule`` and a ``ciphertext``.
 Note that anyone with Alice's public key can perform this operation.
 
 

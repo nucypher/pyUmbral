@@ -37,7 +37,7 @@ class SecretKey(Serializable, Deserializable):
     def __hash__(self):
         raise RuntimeError("Hashing secret objects is not secure")
 
-    def secret_scalar(self):
+    def secret_scalar(self) -> CurveScalar:
         return self._scalar_key
 
     @classmethod
@@ -60,7 +60,7 @@ class PublicKey(Serializable, Deserializable):
     def __init__(self, point_key: CurvePoint):
         self._point_key = point_key
 
-    def point(self):
+    def point(self) -> CurvePoint:
         return self._point_key
 
     @classmethod

@@ -8,7 +8,7 @@ from umbral.hashing import Hash
 @pytest.mark.parametrize('execution_number', range(20))  # Run this test 20 times.
 def test_sign_and_verify(execution_number):
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
 
     message = b"peace at dawn" + str(execution_number).encode()
@@ -20,7 +20,7 @@ def test_sign_and_verify(execution_number):
 @pytest.mark.parametrize('execution_number', range(20))  # Run this test 20 times.
 def test_sign_serialize_and_verify(execution_number):
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
 
     message = b"peace at dawn" + str(execution_number).encode()
@@ -35,7 +35,7 @@ def test_sign_serialize_and_verify(execution_number):
 
 def test_verification_fail():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
 
     message = b"peace at dawn"
@@ -55,7 +55,7 @@ def test_verification_fail():
 
 def test_signature_str():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
     signature = signer.sign(b'peace at dawn')
     s = str(signature)
@@ -64,7 +64,7 @@ def test_signature_str():
 
 def test_signature_is_hashable():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
 
     message = b'peace at dawn'
@@ -106,6 +106,6 @@ def test_signer_bytes():
 
 def test_signer_pubkey():
     sk = SecretKey.random()
-    pk = PublicKey.from_secret_key(sk)
+    pk = sk.public_key()
     signer = Signer(sk)
     assert signer.verifying_key() == pk

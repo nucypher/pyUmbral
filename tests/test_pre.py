@@ -2,7 +2,6 @@ import pytest
 
 from umbral import (
     SecretKey,
-    PublicKey,
     Signer,
     KeyFrag,
     CapsuleFrag,
@@ -16,7 +15,7 @@ from umbral import (
 
 def test_public_key_encryption(alices_keys):
     delegating_sk, _ = alices_keys
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
     plaintext = b'peace at dawn'
     capsule, ciphertext = encrypt(delegating_pk, plaintext)
     plaintext_decrypted = decrypt_original(delegating_sk, capsule, ciphertext)
@@ -51,32 +50,32 @@ def test_simple_api(num_kfrags, threshold):
 
     # Key Generation (Alice)
     delegating_sk = SecretKey.random()
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     signing_sk = SecretKey.random()
     signer = Signer(signing_sk)
-    verifying_pk = PublicKey.from_secret_key(signing_sk)
+    verifying_pk = signing_sk.public_key()
 
-    # Key Generation (Bob)
+    # Key Generation (Bob)
     receiving_sk = SecretKey.random()
-    receiving_pk = PublicKey.from_secret_key(receiving_sk)
+    receiving_pk = receiving_sk.public_key()
 
-    # Encryption by an unnamed data source
+    # Encryption by an unnamed data source
     plaintext = b'peace at dawn'
     capsule, ciphertext = encrypt(delegating_pk, plaintext)
 
-    # Decryption by Alice
+    # Decryption by Alice
     plaintext_decrypted = decrypt_original(delegating_sk, capsule, ciphertext)
     assert plaintext_decrypted == plaintext
 
-    # Split Re-Encryption Key Generation (aka Delegation)
+    # Split Re-Encryption Key Generation (aka Delegation)
     kfrags = generate_kfrags(delegating_sk=delegating_sk,
                              receiving_pk=receiving_pk,
                              signer=signer,
                              threshold=threshold,
                              num_kfrags=num_kfrags)
 
-    # Bob requests re-encryption to some set of M ursulas
+    # Bob requests re-encryption to some set of M ursulas
     cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
 
     # Decryption by Bob

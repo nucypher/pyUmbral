@@ -82,7 +82,7 @@ class Capsule(Serializable, Deserializable):
         if not all(cfrag.precursor == precursor for cfrag in cfrags[1:]):
             raise ValueError("CapsuleFrags are not pairwise consistent")
 
-        pub_key = PublicKey.from_secret_key(receiving_sk).point()
+        pub_key = receiving_sk.public_key().point()
         dh_point = precursor * receiving_sk.secret_scalar()
 
         # Combination of CFrags via Shamir's Secret Sharing reconstruction

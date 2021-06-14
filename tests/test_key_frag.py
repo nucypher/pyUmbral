@@ -1,6 +1,6 @@
 import pytest
 
-from umbral import KeyFrag, PublicKey, Signer, VerificationError
+from umbral import KeyFrag, Signer, VerificationError
 from umbral.key_frag import KeyFragID, KeyFragBase, VerifiedKeyFrag
 from umbral.curve_scalar import CurveScalar
 
@@ -56,8 +56,8 @@ def test_kfrag_signing(alices_keys, bobs_keys, sign_delegating_key, sign_receivi
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
-    verifying_pk = PublicKey.from_secret_key(signing_sk)
-    delegating_pk = PublicKey.from_secret_key(delegating_sk)
+    verifying_pk = signing_sk.public_key()
+    delegating_pk = delegating_sk.public_key()
 
     base = KeyFragBase(delegating_sk=delegating_sk,
                        receiving_pk=receiving_pk,

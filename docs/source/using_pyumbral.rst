@@ -43,20 +43,20 @@ A delegating key pair and a signing key pair.
 
 .. doctest:: capsule_story
 
-    >>> from umbral import SecretKey, PublicKey, Signer
+    >>> from umbral import SecretKey, Signer
 
     >>> alices_secret_key = SecretKey.random()
-    >>> alices_public_key = PublicKey.from_secret_key(alices_secret_key)
+    >>> alices_public_key = alices_secret_key.public_key()
 
     >>> alices_signing_key = SecretKey.random()
-    >>> alices_verifying_key = PublicKey.from_secret_key(alices_signing_key)
+    >>> alices_verifying_key = alices_signing_key.public_key()
     >>> alices_signer = Signer(alices_signing_key)
 
 
 Encrypt with a public key
 --------------------------
 Now let's encrypt data with Alice's public key.
-Invocation of :py:func:`encrypt` returns both a ``capsule`` and a ``ciphertext``.
+Invocation of :py:func:`umbral.encrypt` returns both a ``capsule`` and a ``ciphertext``.
 Note that anyone with Alice's public key can perform this operation.
 
 
@@ -87,7 +87,7 @@ Bob Exists
 .. doctest:: capsule_story
 
     >>> bobs_secret_key = SecretKey.random()
-    >>> bobs_public_key = PublicKey.from_secret_key(bobs_secret_key)
+    >>> bobs_public_key = bobs_secret_key.public_key()
 
 
 Alice grants access to Bob by generating kfrags

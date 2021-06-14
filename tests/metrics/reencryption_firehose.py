@@ -14,13 +14,13 @@ REENCRYPTIONS = 1000
 def __produce_kfrags_and_capsule(m: int, n: int) -> Tuple[List[umbral.KeyFrag], umbral.Capsule]:
 
     delegating_sk = umbral.SecretKey.random()
-    delegating_pk = umbral.PublicKey.from_secret_key(delegating_sk)
+    delegating_pk = delegating_sk.public_key()
 
     signing_sk = umbral.SecretKey.random()
     signer = umbral.Signer(signing_sk)
 
     receiving_sk = umbral.SecretKey.random()
-    receiving_pk = umbral.PublicKey.from_secret_key(receiving_sk)
+    receiving_pk = receiving_sk.public_key()
 
     plain_data = os.urandom(32)
     capsule, ciphertext = umbral.encrypt(delegating_pk, plain_data)

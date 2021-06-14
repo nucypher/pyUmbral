@@ -22,7 +22,7 @@ class Signer:
     def __init__(self, secret_key: SecretKey):
         self.__secret_key = secret_key
 
-    def sign_digest(self, digest: 'Hash') -> 'Signature':
+    def sign_digest(self, digest: Hash) -> 'Signature':
 
         secret_bn = self.__secret_key.secret_scalar()._backend_bignum
         r_int, s_int = openssl.ecdsa_sign(curve=CURVE,
@@ -54,7 +54,7 @@ class Signer:
         """
         Returns the public verification key corresponding to the secret key used for signing.
         """
-        return PublicKey.from_secret_key(self.__secret_key)
+        return self.__secret_key.public_key()
 
     def __str__(self):
         return f"{self.__class__.__name__}:..."
@@ -75,7 +75,7 @@ class Signature(Serializable, Deserializable):
         self.r = r
         self.s = s
 
-    def verify_digest(self, verifying_key: 'PublicKey', digest: 'Hash') -> bool:
+    def verify_digest(self, verifying_key: PublicKey, digest: Hash) -> bool:
         return openssl.ecdsa_verify(curve=CURVE,
                                     sig_r=int(self.r),
                                     sig_s=int(self.s),

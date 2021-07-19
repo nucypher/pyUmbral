@@ -111,7 +111,7 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
 
     def secret_key_by_label(self, label: bytes) -> SecretKey:
         """
-        Creates a :py:class:`SecretKey` from the given label.
+        Creates a :py:class:`SecretKey` deterministically from the given label.
         """
         tag = b"KEY_DERIVATION/" + label
         key = kdf(self.__key_seed, self._DERIVED_KEY_SIZE, info=tag)
@@ -121,6 +121,14 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
         scalar_key = CurveScalar.from_digest(digest)
 
         return SecretKey(scalar_key)
+
+    def secret_key_factory_by_label(self, label: bytes) -> 'SecretKeyFactory':
+        """
+        Creates a :py:class:`SecretKeyFactory` deterministically from the given label.
+        """
+        tag = b"FACTORY_DERIVATION/" + label
+        key_seed = kdf(self.__key_seed, self._KEY_SEED_SIZE, info=tag)
+        return SecretKeyFactory(key_seed)
 
     @classmethod
     def serialized_size(cls):

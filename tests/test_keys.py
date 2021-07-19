@@ -46,6 +46,28 @@ def test_derive_key_from_label():
     assert sk1 != sk3
 
 
+def test_derive_skf_from_label():
+    root = SecretKeyFactory.random()
+
+    skf_label = b"Alice"
+
+    skf = root.secret_key_factory_by_label(skf_label)
+    assert type(skf) == SecretKeyFactory
+
+    skf_same = root.secret_key_factory_by_label(skf_label)
+    assert skf.to_secret_bytes() == skf_same.to_secret_bytes()
+
+    # Just in case, check that they produce the same secret keys too.
+    key_label = b"my_healthcare_information"
+    key = skf.secret_key_by_label(key_label)
+    key_same = skf_same.secret_key_by_label(key_label)
+    assert key.to_secret_bytes() == key_same.to_secret_bytes()
+
+    # Different label produces a different factory
+    skf_different = root.secret_key_factory_by_label(b"Bob")
+    assert skf.to_secret_bytes() != skf_different.to_secret_bytes()
+
+
 def test_secret_key_serialization():
     sk = SecretKey.random()
     encoded_key = sk.to_secret_bytes()

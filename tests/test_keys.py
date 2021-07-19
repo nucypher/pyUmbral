@@ -68,6 +68,24 @@ def test_derive_skf_from_label():
     assert skf.to_secret_bytes() != skf_different.to_secret_bytes()
 
 
+def test_from_secure_randomness():
+
+    seed = os.urandom(SecretKeyFactory.seed_size())
+    skf = SecretKeyFactory.from_secure_randomness(seed)
+    assert type(skf) == SecretKeyFactory
+
+    # Check that it can produce keys
+    sk = skf.secret_key_by_label(b"key label")
+
+    # Wrong seed size
+
+    with pytest.raises(ValueError, match=f"Expected {len(seed)} bytes, got {len(seed) + 1}"):
+        SecretKeyFactory.from_secure_randomness(seed + b'a')
+
+    with pytest.raises(ValueError, match=f"Expected {len(seed)} bytes, got {len(seed) - 1}"):
+        SecretKeyFactory.from_secure_randomness(seed[:-1])
+
+
 def test_secret_key_serialization():
     sk = SecretKey.random()
     encoded_key = sk.to_secret_bytes()

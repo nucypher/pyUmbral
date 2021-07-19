@@ -109,6 +109,29 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
         """
         return cls(os.urandom(cls._KEY_SEED_SIZE))
 
+    @classmethod
+    def seed_size(cls):
+        """
+        Returns the seed size required by
+        :py:meth:`~SecretKeyFactory.from_secure_randomness`.
+        """
+        return cls._KEY_SEED_SIZE
+
+    @classmethod
+    def from_secure_randomness(cls, seed: bytes) -> 'SecretKeyFactory':
+        """
+        Creates a secret key factory using the given random bytes
+        (of size :py:meth:`~SecretKeyFactory.seed_size`).
+
+        .. warning::
+
+            Make sure the given seed has been obtained
+            from a cryptographically secure source of randomness!
+        """
+        if len(seed) != cls.seed_size():
+            raise ValueError(f"Expected {cls.seed_size()} bytes, got {len(seed)}")
+        return cls(seed)
+
     def secret_key_by_label(self, label: bytes) -> SecretKey:
         """
         Creates a :py:class:`SecretKey` deterministically from the given label.

@@ -73,12 +73,16 @@ Utilities
     :show-inheritance:
 
 .. autoclass:: umbral.serializable.HasSerializedSize
-    :members: serialized_size
+    :members:
 
 .. autoclass:: umbral.serializable.Serializable
     :special-members: __bytes__
     :show-inheritance:
 
+.. autoclass:: umbral.serializable.SerializableSecret
+    :members:
+    :show-inheritance:
+
 .. autoclass:: umbral.serializable.Deserializable
-    :members: from_bytes
+    :members:
     :show-inheritance:

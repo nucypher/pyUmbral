@@ -22,7 +22,7 @@ def pytest_generate_tests(metafunc):
 def _create_keypair(umbral):
     sk = umbral.SecretKey.random()
     pk = sk.public_key()
-    return bytes(sk), bytes(pk)
+    return sk.to_secret_bytes(), bytes(pk)
 
 
 def _restore_keys(umbral, sk_bytes, pk_bytes):
@@ -45,7 +45,7 @@ def test_keys(implementations):
 def _create_sk_factory_and_sk(umbral, label):
     skf = umbral.SecretKeyFactory.random()
     sk = skf.secret_key_by_label(label)
-    return bytes(skf), bytes(sk)
+    return skf.to_secret_bytes(), sk.to_secret_bytes()
 
 
 def _check_sk_is_same(umbral, label, skf_bytes, sk_bytes):

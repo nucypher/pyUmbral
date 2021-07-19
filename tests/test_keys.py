@@ -48,7 +48,7 @@ def test_derive_key_from_label():
 
 def test_secret_key_serialization():
     sk = SecretKey.random()
-    encoded_key = bytes(sk)
+    encoded_key = sk.to_secret_bytes()
     decoded_key = SecretKey.from_bytes(encoded_key)
     assert sk == decoded_key
 
@@ -102,7 +102,7 @@ def test_public_key_str():
 def test_secret_key_factory_serialization():
     factory = SecretKeyFactory.random()
 
-    encoded_factory = bytes(factory)
+    encoded_factory = factory.to_secret_bytes()
     decoded_factory = SecretKeyFactory.from_bytes(encoded_factory)
 
     label = os.urandom(32)

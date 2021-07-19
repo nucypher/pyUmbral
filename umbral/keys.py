@@ -5,10 +5,10 @@ from .curve_scalar import CurveScalar
 from .curve_point import CurvePoint
 from .dem import kdf
 from .hashing import Hash
-from .serializable import Serializable, Deserializable
+from .serializable import Serializable, SerializableSecret, Deserializable
 
 
-class SecretKey(Serializable, Deserializable):
+class SecretKey(SerializableSecret, Deserializable):
     """
     Umbral secret (private) key.
     """
@@ -53,7 +53,7 @@ class SecretKey(Serializable, Deserializable):
     def _from_exact_bytes(cls, data: bytes):
         return cls(CurveScalar._from_exact_bytes(data))
 
-    def __bytes__(self) -> bytes:
+    def to_secret_bytes(self) -> bytes:
         return bytes(self._scalar_key)
 
 
@@ -91,7 +91,7 @@ class PublicKey(Serializable, Deserializable):
         return hash((self.__class__, bytes(self)))
 
 
-class SecretKeyFactory(Serializable, Deserializable):
+class SecretKeyFactory(SerializableSecret, Deserializable):
     """
     This class handles keyring material for Umbral, by allowing deterministic
     derivation of :py:class:`SecretKey` objects based on labels.
@@ -133,7 +133,7 @@ class SecretKeyFactory(Serializable, Deserializable):
     def _from_exact_bytes(cls, data: bytes):
         return cls(data)
 
-    def __bytes__(self) -> bytes:
+    def to_secret_bytes(self) -> bytes:
         return bytes(self.__key_seed)
 
     def __str__(self):

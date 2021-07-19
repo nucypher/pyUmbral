@@ -36,7 +36,7 @@ def test_derive_key_from_label():
     # Check that key derivation is reproducible
     sk2 = factory.secret_key_by_label(label)
     pk2 = sk2.public_key()
-    assert sk1 == sk2
+    assert sk1.to_secret_bytes() == sk2.to_secret_bytes()
     assert pk1 == pk2
 
     # Different labels on the same master secret create different keys
@@ -50,7 +50,7 @@ def test_secret_key_serialization():
     sk = SecretKey.random()
     encoded_key = sk.to_secret_bytes()
     decoded_key = SecretKey.from_bytes(encoded_key)
-    assert sk == decoded_key
+    assert sk.to_secret_bytes() == decoded_key.to_secret_bytes()
 
 
 def test_secret_key_str():
@@ -108,7 +108,7 @@ def test_secret_key_factory_serialization():
     label = os.urandom(32)
     sk1 = factory.secret_key_by_label(label)
     sk2 = decoded_factory.secret_key_by_label(label)
-    assert sk1 == sk2
+    assert sk1.to_secret_bytes() == sk2.to_secret_bytes()
 
 
 def test_public_key_is_hashable():

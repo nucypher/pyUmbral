@@ -33,9 +33,6 @@ class SecretKey(SerializableSecret, Deserializable):
         """
         return self._public_key
 
-    def __eq__(self, other):
-        return self._scalar_key == other._scalar_key
-
     def __str__(self):
         return f"{self.__class__.__name__}:..."
 

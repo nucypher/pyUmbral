@@ -52,7 +52,7 @@ def _check_sk_is_same(umbral, label, skf_bytes, sk_bytes):
     skf = umbral.SecretKeyFactory.from_bytes(skf_bytes)
     sk_restored = umbral.SecretKey.from_bytes(sk_bytes)
     sk_generated = skf.secret_key_by_label(label)
-    assert sk_restored == sk_generated
+    assert sk_restored.to_secret_bytes() == sk_generated.to_secret_bytes()
 
 
 def test_secret_key_factory(implementations):

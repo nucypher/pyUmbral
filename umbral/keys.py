@@ -96,7 +96,7 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
     Don't use this key material directly as a key.
     """
 
-    _KEY_SEED_SIZE = 64
+    _KEY_SEED_SIZE = 32
     _DERIVED_KEY_SIZE = 64
 
     def __init__(self, key_seed: bytes):

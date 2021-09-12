@@ -115,7 +115,7 @@ which are next sent to N proxies or *Ursulas*.
                              receiving_pk=bobs_public_key,
                              signer=alices_signer,
                              threshold=10,
-                             num_kfrags=20)
+                             shares=20)
 
 
 **Re-Encryption**

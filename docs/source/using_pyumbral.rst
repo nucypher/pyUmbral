@@ -96,7 +96,7 @@ When Alice wants to grant Bob access to view her encrypted data,
 she creates *re-encryption key fragments*, or *"kfrags"*,
 which are next sent to N proxies or *Ursulas*.
 
-Alice must specify ``num_kfrags`` (the total number of kfrags),
+Alice must specify ``shares`` (the total number of kfrags),
 and a ``threshold`` (the minimum number of kfrags needed to activate a capsule).
 In the following example, Alice creates 20 kfrags,
 but Bob needs to get only 10 re-encryptions to activate the capsule.
@@ -108,7 +108,7 @@ but Bob needs to get only 10 re-encryptions to activate the capsule.
     ...                          receiving_pk=bobs_public_key,
     ...                          signer=alices_signer,
     ...                          threshold=10,
-    ...                          num_kfrags=20)
+    ...                          shares=20)
 
 
 Bob receives a capsule

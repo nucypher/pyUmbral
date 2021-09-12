@@ -61,7 +61,7 @@ kfrags = generate_kfrags(delegating_sk=alices_secret_key,
                          receiving_pk=bobs_public_key,
                          signer=alices_signer,
                          threshold=10,
-                         num_kfrags=20)
+                         shares=20)
 
 # Ursulas perform re-encryption
 # ------------------------------

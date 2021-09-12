@@ -35,7 +35,7 @@ def kfrags(alices_keys, bobs_keys):
     yield generate_kfrags(delegating_sk=delegating_sk,
                           signer=Signer(signing_sk),
                           receiving_pk=receiving_pk,
-                          threshold=6, num_kfrags=10)
+                          threshold=6, shares=10)
 
 
 @pytest.fixture(scope='session')

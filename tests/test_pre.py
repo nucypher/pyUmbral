@@ -28,7 +28,7 @@ def test_public_key_encryption(alices_keys):
 
 
 SIMPLE_API_PARAMETERS = (
-    # (num_kfrags, threshold)
+    # (shares, threshold)
     (1, 1),
     (6, 1),
     (6, 4),
@@ -36,8 +36,8 @@ SIMPLE_API_PARAMETERS = (
     (50, 30)
 )
 
-@pytest.mark.parametrize("num_kfrags, threshold", SIMPLE_API_PARAMETERS)
-def test_simple_api(num_kfrags, threshold):
+@pytest.mark.parametrize("shares, threshold", SIMPLE_API_PARAMETERS)
+def test_simple_api(shares, threshold):
     """
     This test models the main interactions between actors (i.e., Alice,
     Bob, Data Source, and Ursulas) and artifacts (i.e., public and private keys,
@@ -73,7 +73,7 @@ def test_simple_api(num_kfrags, threshold):
                              receiving_pk=receiving_pk,
                              signer=signer,
                              threshold=threshold,
-                             num_kfrags=num_kfrags)
+                             shares=shares)
 
     # Bob requests re-encryption to some set of M ursulas
     cfrags = [reencrypt(capsule, kfrag) for kfrag in kfrags]
@@ -111,7 +111,7 @@ def test_decrypt_unverified_cfrag(verification_keys, bobs_keys, capsule_and_ciph
                                               )
 
 
-def test_wrong_num_kfrags(alices_keys, bobs_keys):
+def test_wrong_shares(alices_keys, bobs_keys):
     delegating_sk, signing_sk = alices_keys
     _receiving_sk, receiving_pk = bobs_keys
 
@@ -121,4 +121,4 @@ def test_wrong_num_kfrags(alices_keys, bobs_keys):
                         signer=Signer(signing_sk),
                         receiving_pk=receiving_pk,
                         threshold=3,
-                        num_kfrags=2)
+                        shares=2)

@@ -100,7 +100,7 @@ def test_encrypt_decrypt(implementations):
 
 
 def _generate_kfrags(umbral, delegating_sk_bytes, receiving_pk_bytes,
-                     signing_sk_bytes, threshold, num_kfrags):
+                     signing_sk_bytes, threshold, shares):
 
     delegating_sk = umbral.SecretKey.from_bytes(delegating_sk_bytes)
     receiving_pk = umbral.PublicKey.from_bytes(receiving_pk_bytes)
@@ -110,7 +110,7 @@ def _generate_kfrags(umbral, delegating_sk_bytes, receiving_pk_bytes,
                                     receiving_pk=receiving_pk,
                                     signer=umbral.Signer(signing_sk),
                                     threshold=threshold,
-                                    num_kfrags=num_kfrags,
+                                    shares=shares,
                                     sign_delegating_key=True,
                                     sign_receiving_key=True,
                                     )
@@ -133,7 +133,7 @@ def test_kfrags(implementations):
     umbral1, umbral2 = implementations
 
     threshold = 2
-    num_kfrags = 3
+    shares = 3
     plaintext = b'peace at dawn'
 
     # On client 1
@@ -142,7 +142,7 @@ def test_kfrags(implementations):
     delegating_sk_bytes, delegating_pk_bytes = _create_keypair(umbral1)
     signing_sk_bytes, verifying_pk_bytes = _create_keypair(umbral1)
     kfrags_bytes = _generate_kfrags(umbral1, delegating_sk_bytes, receiving_pk_bytes,
-                                    signing_sk_bytes, threshold, num_kfrags)
+                                    signing_sk_bytes, threshold, shares)
 
     # On client 2
 
@@ -192,7 +192,7 @@ def test_reencrypt(implementations):
     umbral1, umbral2 = implementations
 
     threshold = 2
-    num_kfrags = 3
+    shares = 3
     plaintext = b'peace at dawn'
 
     # On client 1
@@ -204,7 +204,7 @@ def test_reencrypt(implementations):
     capsule_bytes, ciphertext = _encrypt(umbral1, plaintext, delegating_pk_bytes)
 
     kfrags_bytes = _generate_kfrags(umbral1, delegating_sk_bytes, receiving_pk_bytes,
-                                    signing_sk_bytes, threshold, num_kfrags)
+                                    signing_sk_bytes, threshold, shares)
 
     # On client 2
 

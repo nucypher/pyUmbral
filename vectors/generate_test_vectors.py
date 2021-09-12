@@ -52,7 +52,7 @@ kfrags = generate_kfrags(delegating_sk=delegating_sk,
                          receiving_pk=receiving_pk,
                          signer=Signer(signing_sk),
                          threshold=6,
-                         num_kfrags=10,
+                         shares=10,
                          )
 
 plain_data = b'peace at dawn'

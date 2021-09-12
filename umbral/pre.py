@@ -35,12 +35,12 @@ def generate_kfrags(delegating_sk: SecretKey,
                     receiving_pk: PublicKey,
                     signer: Signer,
                     threshold: int,
-                    num_kfrags: int,
+                    shares: int,
                     sign_delegating_key: bool = True,
                     sign_receiving_key: bool = True,
                     ) -> List[VerifiedKeyFrag]:
     """
-    Generates ``num_kfrags`` key fragments to pass to proxies for re-encryption.
+    Generates ``shares`` key fragments to pass to proxies for re-encryption.
     At least ``threshold`` of them will be needed for decryption.
     If ``sign_delegating_key`` or ``sign_receiving_key`` are ``True``,
     the corresponding keys will have to be provided to :py:meth:`KeyFrag.verify`.
@@ -49,12 +49,12 @@ def generate_kfrags(delegating_sk: SecretKey,
     base = KeyFragBase(delegating_sk, receiving_pk, signer, threshold)
 
     # Technically we could allow it, but what would be the use of these kfrags?
-    if num_kfrags < threshold:
-        raise ValueError(f"Creating less kfrags ({num_kfrags}) "
+    if shares < threshold:
+        raise ValueError(f"Creating less kfrags ({shares}) "
                          f"than threshold ({threshold}) makes them useless")
 
     kfrags = [KeyFrag.from_base(base, sign_delegating_key, sign_receiving_key)
-              for _ in range(num_kfrags)]
+              for _ in range(shares)]
 
     # Make them verified - we know they're good.
     return [VerifiedKeyFrag(kfrag) for kfrag in kfrags]

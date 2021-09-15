@@ -27,21 +27,21 @@ def test_derive_key_from_label():
 
     label = b"my_healthcare_information"
 
-    sk1 = factory.secret_key_by_label(label)
+    sk1 = factory.make_key(label)
     assert type(sk1) == SecretKey
 
     pk1 = sk1.public_key()
     assert type(pk1) == PublicKey
 
     # Check that key derivation is reproducible
-    sk2 = factory.secret_key_by_label(label)
+    sk2 = factory.make_key(label)
     pk2 = sk2.public_key()
     assert sk1.to_secret_bytes() == sk2.to_secret_bytes()
     assert pk1 == pk2
 
     # Different labels on the same master secret create different keys
     label = b"my_tax_information"
-    sk3 = factory.secret_key_by_label(label)
+    sk3 = factory.make_key(label)
     pk3 = sk3.public_key()
     assert sk1 != sk3
 
@@ -51,20 +51,20 @@ def test_derive_skf_from_label():
 
     skf_label = b"Alice"
 
-    skf = root.secret_key_factory_by_label(skf_label)
+    skf = root.make_factory(skf_label)
     assert type(skf) == SecretKeyFactory
 
-    skf_same = root.secret_key_factory_by_label(skf_label)
+    skf_same = root.make_factory(skf_label)
     assert skf.to_secret_bytes() == skf_same.to_secret_bytes()
 
     # Just in case, check that they produce the same secret keys too.
     key_label = b"my_healthcare_information"
-    key = skf.secret_key_by_label(key_label)
-    key_same = skf_same.secret_key_by_label(key_label)
+    key = skf.make_key(key_label)
+    key_same = skf_same.make_key(key_label)
     assert key.to_secret_bytes() == key_same.to_secret_bytes()
 
     # Different label produces a different factory
-    skf_different = root.secret_key_factory_by_label(b"Bob")
+    skf_different = root.make_factory(b"Bob")
     assert skf.to_secret_bytes() != skf_different.to_secret_bytes()
 
 
@@ -75,7 +75,7 @@ def test_from_secure_randomness():
     assert type(skf) == SecretKeyFactory
 
     # Check that it can produce keys
-    sk = skf.secret_key_by_label(b"key label")
+    sk = skf.make_key(b"key label")
 
     # Wrong seed size
 
@@ -146,8 +146,8 @@ def test_secret_key_factory_serialization():
     decoded_factory = SecretKeyFactory.from_bytes(encoded_factory)
 
     label = os.urandom(32)
-    sk1 = factory.secret_key_by_label(label)
-    sk2 = decoded_factory.secret_key_by_label(label)
+    sk1 = factory.make_key(label)
+    sk2 = decoded_factory.make_key(label)
     assert sk1.to_secret_bytes() == sk2.to_secret_bytes()
 
 

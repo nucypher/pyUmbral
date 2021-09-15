@@ -75,21 +75,21 @@ class Signature(Serializable, Deserializable):
         self.r = r
         self.s = s
 
-    def verify_digest(self, verifying_key: PublicKey, digest: Hash) -> bool:
+    def verify_digest(self, verifying_pk: PublicKey, digest: Hash) -> bool:
         return openssl.ecdsa_verify(curve=CURVE,
                                     sig_r=int(self.r),
                                     sig_s=int(self.s),
-                                    public_point=verifying_key.point()._backend_point,
+                                    public_point=verifying_pk.point()._backend_point,
                                     prehashed_message=digest.finalize(),
                                     hash_algorithm=digest._backend_hash_algorithm)
 
-    def verify(self, verifying_key: PublicKey, message: bytes) -> bool:
+    def verify(self, verifying_pk: PublicKey, message: bytes) -> bool:
         """
         Returns ``True`` if the ``message`` was signed by someone possessing the secret counterpart
-        to ``verifying_key``.
+        to ``verifying_pk``.
         """
         digest = digest_for_signing(message)
-        return self.verify_digest(verifying_key, digest)
+        return self.verify_digest(verifying_pk, digest)
 
     @classmethod
     def serialized_size(cls):

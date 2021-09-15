@@ -132,7 +132,7 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
             raise ValueError(f"Expected {cls.seed_size()} bytes, got {len(seed)}")
         return cls(seed)
 
-    def secret_key_by_label(self, label: bytes) -> SecretKey:
+    def make_key(self, label: bytes) -> SecretKey:
         """
         Creates a :py:class:`SecretKey` deterministically from the given label.
         """
@@ -145,7 +145,7 @@ class SecretKeyFactory(SerializableSecret, Deserializable):
 
         return SecretKey(scalar_key)
 
-    def secret_key_factory_by_label(self, label: bytes) -> 'SecretKeyFactory':
+    def make_factory(self, label: bytes) -> 'SecretKeyFactory':
         """
         Creates a :py:class:`SecretKeyFactory` deterministically from the given label.
         """

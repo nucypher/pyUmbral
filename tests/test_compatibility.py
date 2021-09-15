@@ -44,8 +44,8 @@ def test_keys(implementations):
 
 def _create_sk_factory_and_sk(umbral, skf_label, key_label):
     skf = umbral.SecretKeyFactory.random()
-    derived_skf = skf.secret_key_factory_by_label(skf_label)
-    sk = derived_skf.secret_key_by_label(key_label)
+    derived_skf = skf.make_factory(skf_label)
+    sk = derived_skf.make_key(key_label)
     return skf.to_secret_bytes(), derived_skf.to_secret_bytes(), sk.to_secret_bytes()
 
 
@@ -53,11 +53,11 @@ def _check_sk_is_same(umbral, skf_label, key_label, skf_bytes, derived_skf_bytes
     skf = umbral.SecretKeyFactory.from_bytes(skf_bytes)
 
     derived_skf_restored = umbral.SecretKeyFactory.from_bytes(derived_skf_bytes)
-    derived_skf_generated = skf.secret_key_factory_by_label(skf_label)
+    derived_skf_generated = skf.make_factory(skf_label)
     assert derived_skf_generated.to_secret_bytes() == derived_skf_restored.to_secret_bytes()
 
     sk_restored = umbral.SecretKey.from_bytes(sk_bytes)
-    sk_generated = derived_skf_generated.secret_key_by_label(key_label)
+    sk_generated = derived_skf_generated.make_key(key_label)
     assert sk_restored.to_secret_bytes() == sk_generated.to_secret_bytes()
 
 

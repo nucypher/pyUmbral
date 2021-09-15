@@ -23,10 +23,8 @@ project = 'pyUmbral'
 copyright = u'2019, Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch, Bogdan Opanchuk'
 author = u'Michael Egorov, Justin Myles Holmes, David Nuñez, John Pacific, Kieran Prasch, Bogdan Opanchuk'
 
-# The short X.Y version
-version = '0.1'
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = '0.3.0'
 
 
 # -- General configuration ---------------------------------------------------

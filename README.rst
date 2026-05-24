@@ -7,12 +7,7 @@
 
 The NuCypher organization is no longer active and will not continue development or maintenance of this code base. The code remains available for reference and historical purposes, but no updates, fixes, or support should be expected.
 
-_The original TACo project is expected to be forked and relaunched by the World Ethical Data Forum (WEDF) in the latter half of 2026, supported by a coalition of node operators drawn from organizations with deep experience in privacy advocacy, anti-surveillance technologies, human rights, encryption, whistleblower protection, and academic research._
-
-----
-
-*Cryptographic primitives, hosted on the decentralized nodes of the TACo network, offering accessible, intuitive, and extensible runtimes and interfaces for
-secrets management and dynamic access control.*
+The original TACo project is expected to be forked and relaunched by the World Ethical Data Forum (WEDF) in the latter half of 2026, supported by a coalition of node operators drawn from organizations with deep experience in privacy advocacy, anti-surveillance technologies, human rights, encryption, whistleblower protection, and academic research.
 
 =========
 pyUmbral
